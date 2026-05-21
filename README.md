@@ -1,16 +1,84 @@
-# React + Vite
+# SRX Tech Ecommerce
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Una aplicación de comercio electrónico moderna construida con React, Vite y varias bibliotecas modernas.
 
-Currently, two official plugins are available:
+## 🚀 Demo en vivo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+La aplicación está desplegada en GitHub Pages: [https://TheYafar.github.io/SRX-Tech-Ecommerce](https://TheYafar.github.io/SRX-Tech-Ecommerce)
 
-## React Compiler
+## ✨ Características
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Diseño moderno y responsive** - Interfaz de usuario atractiva y adaptable a todos los dispositivos
+- **Autenticación de usuarios** - Sistema de registro e inicio de sesión
+- **Carrito de compras** - Gestión completa de productos en el carrito
+- **Lista de deseos** - Funcionalidad para guardar productos favoritos
+- **Modal de detalles de producto** - Vista detallada de cada producto
+- **Checkout** - Proceso de pago simulado
+- **Notificaciones** - Sistema de notificaciones en tiempo real
+- **Animaciones** - Transiciones suaves con Framer Motion
 
-## Expanding the ESLint configuration
+## 🛠️ Tecnologías utilizadas
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **React 19** - Biblioteca principal para la interfaz de usuario
+- **Vite** - Herramienta de construcción rápida
+- **React Router DOM** - Enrutamiento de la aplicación
+- **Framer Motion** - Animaciones y transiciones
+- **React Hook Form** - Manejo de formularios
+- **Zod** - Validación de esquemas
+- **Lucide React** - Iconos modernos
+- **GitHub Pages** - Despliegue de la aplicación
+
+## 📦 Instalación y ejecución local
+
+1. Clona el repositorio:
+```bash
+git clone https://github.com/TheYafar/SRX-Tech-Ecommerce.git
+cd SRX-Tech-Ecommerce
+```
+
+2. Instala las dependencias:
+```bash
+npm install
+```
+
+3. Ejecuta el servidor de desarrollo:
+```bash
+npm run dev
+```
+
+4. Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
+
+## 🚀 Despliegue
+
+La aplicación está configurada para desplegarse automáticamente en GitHub Pages. Para desplegar manualmente:
+
+```bash
+npm run deploy
+```
+
+## 📁 Estructura del proyecto
+
+```
+src/
+├── components/     # Componentes reutilizables
+├── context/       # Contextos de React (Auth, Cart, etc.)
+├── pages/         # Páginas de la aplicación
+├── layouts/       # Layouts principales
+├── hooks/         # Hooks personalizados
+├── services/      # Servicios y APIs
+├── data/          # Datos y mockups
+├── styles/        # Estilos globales
+└── utils/         # Utilidades y helpers
+```
+
+## 🔧 Scripts disponibles
+
+- `npm run dev` - Inicia el servidor de desarrollo
+- `npm run build` - Construye la aplicación para producción
+- `npm run preview` - Previsualiza la construcción de producción
+- `npm run lint` - Ejecuta ESLint
+- `npm run deploy` - Despliega en GitHub Pages
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT.

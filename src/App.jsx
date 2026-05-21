@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -16,7 +16,7 @@ export default function App() {
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
-            <BrowserRouter>
+            <HashRouter>
               <Routes>
                 <Route path="/" element={<MainLayout />}>
                   <Route index element={<Home />} />
@@ -24,7 +24,7 @@ export default function App() {
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
-            </BrowserRouter>
+            </HashRouter>
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
