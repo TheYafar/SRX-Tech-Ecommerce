@@ -1,0 +1,470 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { X, CreditCard, Shield, Zap, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import './CheckoutModal.css';
+
+export default function CheckoutModal({ isOpen, onClose }) {
+  const { cartItems, cartTotal, clearCart } = useCart();
+  const { user } = useAuth();
+  const [paymentMethod, setPaymentMethod] = useState('zelle');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [orderId, setOrderId] = useState('');
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
+    address: '',
+    city: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvc: ''
+  });
+
+  if (!isOpen) return null;
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    // Simular procesamiento de pago
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const generatedId = 'SRX-' + Math.floor(100000 + Math.random() * 900000);
+    setOrderId(generatedId);
+    setIsSuccess(true);
+    clearCart();
+    setIsProcessing(false);
+  };
+
+  const handleSuccessClose = () => {
+    setIsSuccess(false);
+    onClose();
+  };
+
+  const paymentMethods = [
+    { id: 'zelle', name: 'Zelle', icon: <Shield size={20} />, color: '#0066cc' },
+    { id: 'pago-movil', name: 'Pago Móvil', icon: <Zap size={20} />, color: '#28a745' },
+    { id: 'binance', name: 'Binance Pay', icon: <CreditCard size={20} />, color: '#fcd535' },
+    { id: 'paypal', name: 'PayPal', icon: <CreditCard size={20} />, color: '#003087' },
+    { id: 'tarjeta', name: 'Tarjeta Crédito', icon: <CreditCard size={20} />, color: '#1e225e' }
+  ];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    exit: { opacity: 0, transition: { duration: 0.2 } }
+  };
+
+  const contentVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 25, stiffness: 300 } },
+    exit: { y: -20, opacity: 0, transition: { duration: 0.2 } }
+  };
+
+  return (
+    <motion.div
+      className="checkout-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="checkout-container"
+        variants={contentVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button 
+          className="checkout-close"
+          onClick={onClose}
+          aria-label="Cerrar modal"
+        >
+          <X size={24} />
+        </button>
+
+        {isSuccess ? (
+          <motion.div 
+            className="checkout-success"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring" }}
+          >
+            <motion.div 
+              className="success-icon"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.2 }}
+            >
+              <CheckCircle size={64} />
+            </motion.div>
+            <h2 className="success-title">¡Pedido Confirmado!</h2>
+            <p className="success-subtitle">Tu orden ha sido procesada exitosamente.</p>
+            
+            <div className="order-details">
+              <div className="order-row">
+                <span className="order-label">ID del Pedido:</span>
+                <span className="order-value">{orderId}</span>
+              </div>
+              <div className="order-row">
+                <span className="order-label">Método de Pago:</span>
+                <span className="order-value payment-tag">{paymentMethod.toUpperCase()}</span>
+              </div>
+              <div className="order-row">
+                <span className="order-label">Monto Total:</span>
+                <span className="order-value total">${cartTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="success-instructions">
+              <p>Te hemos enviado las instrucciones de pago a tu correo. Por favor, reporta tu capture una vez realizada la transferencia.</p>
+            </div>
+
+            <motion.button 
+              className="success-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSuccessClose}
+            >
+              Continuar Comprando
+            </motion.button>
+          </motion.div>
+        ) : (
+          <div className="checkout-content">
+            <div className="checkout-header">
+              <h2 className="checkout-title">Checkout</h2>
+              <p className="checkout-subtitle">Completa tu orden de compra</p>
+            </div>
+
+            <div className="checkout-body">
+              {/* Payment Method Selection */}
+              <motion.div 
+                className="payment-methods"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h3 className="section-title">Método de Pago</h3>
+                <div className="payment-grid">
+                  {paymentMethods.map((method) => (
+                    <label 
+                      key={method.id}
+                      className={`payment-option-card ${paymentMethod === method.id ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod(method.id)}
+                    >
+                      <input 
+                        type="radio" 
+                        name="payment" 
+                        value={method.id}
+                        checked={paymentMethod === method.id}
+                        onChange={() => setPaymentMethod(method.id)}
+                        className="hidden-radio"
+                      />
+                      <div className="payment-option-icon">
+                        {method.icon}
+                      </div>
+                      <span className="payment-option-name">{method.name}</span>
+                      {paymentMethod === method.id && (
+                        <motion.div 
+                          className="payment-option-check"
+                          layoutId="check"
+                        >
+                          <CheckCircle size={16} />
+                        </motion.div>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Payment Details Form */}
+              <motion.div 
+                className="payment-details"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <h3 className="section-title">Detalles de Pago</h3>
+                
+                {paymentMethod === 'tarjeta' ? (
+                  <form className="card-payment-form" onSubmit={handleCheckout}>
+                    <div className="form-group">
+                      <label className="form-label">Nombre en la tarjeta</label>
+                      <div className="input-with-icon">
+                        <User size={18} className="input-icon" />
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Nombre completo"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Número de tarjeta</label>
+                      <div className="input-with-icon">
+                        <CreditCard size={18} className="input-icon" />
+                        <input
+                          type="text"
+                          name="cardNumber"
+                          value={formData.cardNumber}
+                          onChange={handleInputChange}
+                          placeholder="0000 0000 0000 0000"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label className="form-label">Fecha de expiración</label>
+                        <div className="input-with-icon">
+                          <Calendar size={18} className="input-icon" />
+                          <input
+                            type="text"
+                            name="cardExpiry"
+                            value={formData.cardExpiry}
+                            onChange={handleInputChange}
+                            placeholder="MM/YY"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">CVC</label>
+                        <div className="input-with-icon">
+                          <Shield size={18} className="input-icon" />
+                          <input
+                            type="text"
+                            name="cardCvc"
+                            value={formData.cardCvc}
+                            onChange={handleInputChange}
+                            placeholder="123"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Correo electrónico</label>
+                      <div className="input-with-icon">
+                        <Mail size={18} className="input-icon" />
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="tu@email.com"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Dirección de envío</label>
+                      <div className="input-with-icon">
+                        <MapPin size={18} className="input-icon" />
+                        <input
+                          type="text"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          placeholder="Dirección completa"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label className="form-label">Ciudad</label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          placeholder="Ciudad"
+                          className="form-input"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Teléfono</label>
+                        <div className="input-with-icon">
+                          <Phone size={18} className="input-icon" />
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="+58 424-000-0000"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit"
+                      className="checkout-submit-btn"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <span className="loading-spinner-small"></span>
+                      ) : (
+                        <>
+                          <Lock size={20} />
+                          <span>Confirmar Pago por ${cartTotal.toFixed(2)}</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="other-payment-methods">
+                    <div className="payment-instruction">
+                      <div className="instruction-icon">
+                        <CheckCircle size={24} />
+                      </div>
+                      <div className="instruction-text">
+                        <h4>Procedimiento de Pago</h4>
+                        <p>Después de confirmar tu pedido, te enviaremos las instrucciones de pago a tu correo electrónico.</p>
+                      </div>
+                    </div>
+
+                    <div className="payment-details-form">
+                      <div className="form-group">
+                        <label className="form-label">Correo electrónico</label>
+                        <div className="input-with-icon">
+                          <Mail size={18} className="input-icon" />
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            placeholder="tu@email.com"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Teléfono</label>
+                        <div className="input-with-icon">
+                          <Phone size={18} className="input-icon" />
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="+58 424-000-0000"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <button 
+                        type="button"
+                        className="checkout-submit-btn"
+                        onClick={handleCheckout}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <span className="loading-spinner-small"></span>
+                        ) : (
+                          <>
+                            <span>Confirmar Pedido</span>
+                            <ChevronRight size={20} />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+
+            {/* Order Summary */}
+            <motion.div 
+              className="order-summary"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <h3 className="summary-title">Resumen del Pedido</h3>
+              
+              <div className="summary-items">
+                {cartItems.map((item) => {
+                  const price = item.salePrice || item.price;
+                  return (
+                    <div key={item.id} className="summary-item">
+                      <div className="summary-item-info">
+                        <img src={item.image} alt={item.name} className="summary-item-image" />
+                        <div className="summary-item-details">
+                          <h4 className="summary-item-name">{item.name}</h4>
+                          <span className="summary-item-qty">x{item.quantity}</span>
+                        </div>
+                      </div>
+                      <span className="summary-item-price">${(price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="summary-totals">
+                <div className="summary-row">
+                  <span>Subtotal</span>
+                  <span>${cartTotal.toFixed(2)}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Envío</span>
+                  <span className="free-shipping">Gratis</span>
+                </div>
+                <div className="summary-row total">
+                  <span>Total</span>
+                  <span>${cartTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="security-badges">
+                <div className="security-item">
+                  <Shield size={16} />
+                  <span>Pago 100% Seguro</span>
+                </div>
+                <div className="security-item">
+                  <Lock size={16} />
+                  <span>Encriptación SSL</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
