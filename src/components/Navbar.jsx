@@ -85,9 +85,9 @@ export default function Navbar() {
           <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="nav-link">
             Inicio
           </Link>
-          <button onClick={() => scrollToSection('tienda')} className="nav-link">
+          <Link to="/tienda" className="nav-link">
             Tienda
-          </button>
+          </Link>
           <button onClick={() => scrollToSection('categorias')} className="nav-link">
             Categorías
           </button>
@@ -242,9 +242,9 @@ export default function Navbar() {
           <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="mobile-nav-link">
             Inicio
           </Link>
-          <button onClick={() => scrollToSection('tienda')} className="mobile-nav-link">
+          <Link to="/tienda" onClick={() => setIsMobileMenuOpen(false)} className="mobile-nav-link">
             Tienda
-          </button>
+          </Link>
           <button onClick={() => scrollToSection('categorias')} className="mobile-nav-link">
             Categorías
           </button>

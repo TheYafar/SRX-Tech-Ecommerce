@@ -56,9 +56,11 @@
   box-shadow: var(--shadow-md);
 }
 
-.category-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-xl);
+@media (hover: hover) {
+  .category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+  }
 }
 
 .category-img-wrapper {
@@ -74,8 +76,10 @@
   transition: transform var(--transition-slow);
 }
 
-.category-card:hover .category-img {
-  transform: scale(1.06);
+@media (hover: hover) {
+  .category-card:hover .category-img {
+    transform: scale(1.06);
+  }
 }
 
 .category-overlay-dark {
@@ -142,10 +146,12 @@
   backdrop-filter: blur(4px);
 }
 
-.pill-btn-outline:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: #fff;
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .pill-btn-outline:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: #fff;
+    transform: translateY(-2px);
+  }
 }
 
 /* ── Responsive ── */

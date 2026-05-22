@@ -14,9 +14,11 @@
   border: 1px solid var(--border-color);
 }
 
-.product-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-4px);
+@media (hover: hover) {
+  .product-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
 }
 
 /* ── Image Container ── */
@@ -37,8 +39,10 @@
   transition: transform var(--transition-slow);
 }
 
-.product-card:hover .card-image {
-  transform: scale(1.07);
+@media (hover: hover) {
+  .product-card:hover .card-image {
+    transform: scale(1.07);
+  }
 }
 
 /* ── Sale Badge ── */
@@ -96,8 +100,10 @@
   transition: opacity var(--transition-normal);
 }
 
-.product-card:hover .card-actions-overlay {
-  opacity: 1;
+@media (hover: hover) {
+  .product-card:hover .card-actions-overlay {
+    opacity: 1;
+  }
 }
 
 /* ── Quick Action Buttons ── */
@@ -116,10 +122,12 @@
   box-shadow: var(--shadow-md);
 }
 
-.quick-action-btn:hover {
-  background: #fff;
-  transform: translateY(-3px) scale(1.1);
-  box-shadow: var(--shadow-lg);
+@media (hover: hover) {
+  .quick-action-btn:hover {
+    background: #fff;
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 .view-btn:hover {
@@ -227,12 +235,14 @@
   letter-spacing: 0.1px;
 }
 
-.pill-btn:hover {
-  border-color: var(--navy);
-  background: var(--navy);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-navy);
+@media (hover: hover) {
+  .pill-btn:hover {
+    border-color: var(--navy);
+    background: var(--navy);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-navy);
+  }
 }
 
 .cart-btn.added-to-cart {
@@ -261,4 +271,5 @@
   .current-price { font-size: 1.1rem; }
   .card-sale-circle { width: 40px; height: 40px; font-size: 0.6rem; }
   .quick-action-btn { width: 38px; height: 38px; }
+  .pill-btn { min-height: 44px; /* Better touch target */ }
 }

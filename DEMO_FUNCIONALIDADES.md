@@ -136,3 +136,77 @@
 5. **Experimenta con el carrito** (añadir, quitar, modificar cantidades)
 
 La aplicación ahora tiene una experiencia de usuario moderna, fluida y atractiva que combina funcionalidad práctica con diseño visual impactante.
+
+
+## 🛒 Nueva Funcionalidad: Página de Tienda
+
+### 8. **Página de Tienda Completa**
+- **Click en "Tienda"** en el navbar (desktop o móvil)
+- **Navegación a página separada**: `/tienda`
+- **Categorías visuales**:
+  - Productos SRX
+  - Lentes
+  - Iluminación
+- **Filtrado por categoría**:
+  - Click en cualquier categoría para filtrar productos
+  - Botón "Todos" para mostrar todos los productos
+  - Indicador visual de categoría activa
+- **Grid de productos**:
+  - Muestra todos los productos disponibles
+  - Mismo diseño de tarjetas que en la página principal
+  - Filtrado en tiempo real
+- **Diseño responsive**:
+  - Hero section con gradiente
+  - Grid de categorías adaptable
+  - Filtros optimizados para móvil
+
+### 9. **Filtrado de Productos**
+- **Filtro por categoría**:
+  - Barra de filtros en la sección de productos
+  - Botones para cada categoría disponible
+  - Estado activo/inactivo visual
+- **Sin productos en categoría**:
+  - Mensaje amigable cuando no hay productos
+  - Botón para volver a "Todos los productos"
+- **Navegación de regreso**:
+  - Enlace "Volver al inicio" al final de la página
+
+## 🎯 Nuevo Flujo de Usuario para Probar
+
+### Flujo 4: Exploración de Tienda
+1. Click en "Tienda" en el navbar
+2. Observa la hero section con gradiente
+3. Explora las categorías visuales (click en cada una)
+4. Usa los filtros para ver productos por categoría
+5. Prueba el filtro "Todos" para ver todos los productos
+6. Añade productos al carrito desde la tienda
+7. Usa el enlace "Volver al inicio"
+
+## 🔍 Características Técnicas de la Tienda
+
+### **Arquitectura**
+- **Nueva ruta**: `/tienda` en React Router
+- **Página independiente**: `Store.jsx` y `Store.css`
+- **Reutilización de componentes**: `ProductCard` existente
+- **Servicio compartido**: `productService.getProducts()`
+
+### **Estado y Filtrado**
+- **Estado local**: Categoría seleccionada y productos filtrados
+- **Filtrado en tiempo real**: Sin recarga de página
+- **Manejo de estados**: Loading, error, empty states
+- **Persistencia**: Mantiene filtro durante navegación
+
+### **Diseño Visual**
+- **Hero section**: Gradiente azul con título destacado
+- **Grid de categorías**: Tarjetas con imágenes e información
+- **Filtros**: Barra con botones estilo píldora
+- **Responsive**: Adaptación completa a todos los dispositivos
+
+## 💡 Tips para Probar la Tienda
+1. **Navega entre categorías** para ver el filtrado en acción
+2. **Prueba en móvil** para ver la adaptación responsive
+3. **Observa las animaciones** al cambiar categorías
+4. **Verifica que los productos** se muestren correctamente
+5. **Usa el enlace de regreso** para volver al inicio
+
+La nueva página de tienda proporciona una experiencia de compra más completa y organizada, permitiendo a los usuarios explorar productos por categorías de manera intuitiva y visualmente atractiva.

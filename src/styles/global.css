@@ -157,4 +157,5 @@ img {
 @media (max-width: 768px) {
   .container { padding: 0 1.25rem; }
   .section-title { font-size: 1.75rem; }
+  .app-layout { padding-bottom: 75px; } /* Space for BottomNav */
 }

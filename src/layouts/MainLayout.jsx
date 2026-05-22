@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CartDrawer from '../components/CartDrawer';
 import AuthModal from '../components/AuthModal';
+import BottomNav from '../components/BottomNav';
 import { NotificationManager } from '../components/Notification';
 
 export default function MainLayout() {
@@ -23,6 +24,7 @@ export default function MainLayout() {
       {/* Overlay Drawers & Modals */}
       <CartDrawer />
       <AuthModal />
+      <BottomNav />
 
       {/* Global Notification Container */}
       <NotificationManager />

@@ -29,16 +29,16 @@
   display: block;
 }
 
-/* Gradient overlay — bottom 40% darkens so text/CTA is legible */
+/* Gradient overlay — richer gradient for better contrast */
 .hero-bg-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0)      0%,
-    rgba(0, 0, 0, 0)      50%,
-    rgba(10, 8, 18, 0.55) 78%,
-    rgba(10, 8, 18, 0.82) 100%
+    rgba(10, 8, 18, 0.1)  0%,
+    rgba(10, 8, 18, 0.3)  50%,
+    rgba(10, 8, 18, 0.75) 80%,
+    rgba(10, 8, 18, 0.95) 100%
   );
 }
 
@@ -259,5 +259,7 @@
   .hero-btn-cart {
     width: 100%;
     justify-content: center;
+    min-height: 48px; /* Better touch target */
+    border-radius: var(--radius-md); /* Softer corners on mobile buttons */
   }
 }

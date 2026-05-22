@@ -370,8 +370,13 @@
 /* ── Breakpoints ── */
 @media (max-width: 768px) {
   .desktop-nav,
-  .nav-search-container { display: none; }
-  .mobile-menu-toggle { display: flex; }
+  .nav-search-container,
+  .user-dropdown-container,
+  .cart-btn,
+  .mobile-menu-toggle { display: none !important; }
+
+  /* Center the logo on mobile since other elements are hidden */
+  .navbar-container { justify-content: center; }
 }
 
 @media (min-width: 769px) {

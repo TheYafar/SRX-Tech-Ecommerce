@@ -6,6 +6,7 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
+import Store from './pages/Store';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -20,6 +21,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<MainLayout />}>
                   <Route index element={<Home />} />
+                  <Route path="tienda" element={<Store />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>

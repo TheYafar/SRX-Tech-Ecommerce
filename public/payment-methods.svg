@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 100" width="500" height="100">
+  <!-- Zelle -->
+  <g id="zelle" transform="translate(0,0)">
+    <rect width="90" height="90" rx="15" fill="#0066cc"/>
+    <text x="45" y="55" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Zelle</text>
+  </g>
+  
+  <!-- Pago Móvil -->
+  <g id="pago-movil" transform="translate(102,0)">
+    <rect width="90" height="90" rx="15" fill="#28a745"/>
+    <text x="45" y="45" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white" text-anchor="middle">PAGO</text>
+    <text x="45" y="60" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white" text-anchor="middle">MÓVIL</text>
+  </g>
+  
+  <!-- Binance Pay -->
+  <g id="binance" transform="translate(204,0)">
+    <rect width="90" height="90" rx="15" fill="#fcd535"/>
+    <text x="45" y="55" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#181a20" text-anchor="middle">BINANCE</text>
+    <text x="45" y="70" font-family="Arial, sans-serif" font-size="10" fill="#181a20" text-anchor="middle">PAY</text>
+  </g>
+  
+  <!-- PayPal -->
+  <g id="paypal" transform="translate(306,0)">
+    <rect width="90" height="90" rx="15" fill="#003087"/>
+    <text x="45" y="55" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white" text-anchor="middle">PayPal</text>
+  </g>
+  
+  <!-- Tarjeta -->
+  <g id="tarjeta" transform="translate(408,0)">
+    <rect width="90" height="90" rx="15" fill="#1e225e"/>
+    <rect x="20" y="35" width="50" height="30" rx="5" fill="white" opacity="0.2"/>
+    <rect x="20" y="35" width="25" height="30" rx="5" fill="white" opacity="0.3"/>
+    <text x="45" y="75" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">CRÉDITO</text>
+  </g>
+</svg>

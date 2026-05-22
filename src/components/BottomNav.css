@@ -1,0 +1,101 @@
+/* ══════════════════════════════════════
+   BOTTOM NAV — Mobile fixed navigation
+   ══════════════════════════════════════ */
+
+.bottom-nav-container {
+  display: none; /* Hidden by default on PC */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom); /* Para iPhones modernos */
+}
+
+@media (max-width: 768px) {
+  .bottom-nav-container {
+    display: block;
+  }
+  
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(30, 34, 94, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    height: 65px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .bottom-nav-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    color: rgba(255, 255, 255, 0.55);
+    background: transparent;
+    border: none;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    padding: 0;
+    margin: 0;
+  }
+
+  .bottom-nav-item.active {
+    color: #ffffff;
+  }
+
+  .nav-icon {
+    margin-bottom: 4px;
+    transition: transform 0.2s ease, stroke-width 0.2s ease;
+  }
+
+  .bottom-nav-item.active .nav-icon {
+    transform: translateY(-2px);
+    stroke-width: 2.5px;
+  }
+
+  .nav-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+
+  .nav-indicator {
+    position: absolute;
+    top: 0;
+    width: 30px;
+    height: 3px;
+    background: var(--accent-light);
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+
+  /* Cart Mobile Badge */
+  .cart-icon-wrapper {
+    position: relative;
+  }
+
+  .cart-badge-mobile {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    background: var(--sale-color);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--navy);
+    padding: 0 2px;
+  }
+}

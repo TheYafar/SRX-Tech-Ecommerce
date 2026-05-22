@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { X, CreditCard, Shield, Zap, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import './CheckoutModal.css';
 
 export default function CheckoutModal({ isOpen, onClose }) {
@@ -50,12 +50,23 @@ export default function CheckoutModal({ isOpen, onClose }) {
   };
 
   const paymentMethods = [
-    { id: 'zelle', name: 'Zelle', icon: <Shield size={20} />, color: '#0066cc' },
-    { id: 'pago-movil', name: 'Pago Móvil', icon: <Zap size={20} />, color: '#28a745' },
-    { id: 'binance', name: 'Binance Pay', icon: <CreditCard size={20} />, color: '#fcd535' },
-    { id: 'paypal', name: 'PayPal', icon: <CreditCard size={20} />, color: '#003087' },
-    { id: 'tarjeta', name: 'Tarjeta Crédito', icon: <CreditCard size={20} />, color: '#1e225e' }
+    { id: 'zelle', name: 'Zelle', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwNjZjYyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlllbGxlPC90ZXh0Pjwvc3ZnPg==', color: '#0066cc' },
+    { id: 'pago-movil', name: 'Pago Móvil', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzI4YTc0NyIvPjx0ZXh0IHg9IjQ1IiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBR088L3RleHQ+PHRleHQgeD0iNDUiIHk9IjU1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1bDkk1OPC90ZXh0Pjwvc3ZnPg==', color: '#28a745' },
+    { id: 'binance', name: 'Binance Pay', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iI2ZjZDMzNSIvPjx0ZXh0IHg9IjQ1IiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzE4MWEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QklOQU5DRTwvdGV4dD48dGV4dCB4PSI0NSIgeT0iNjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmaWxsPSIjMTgxYTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QQUY8L3RleHQ+PC9zdmc+', color: '#fcd535' },
+    { id: 'paypal', name: 'PayPal', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwMzA4NyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBheVBhbDwvdGV4dD48L3N2Zz4=', color: '#003087' },
+    { id: 'tarjeta', name: 'Tarjeta', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzFlMjI1ZSIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjUwIiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMiIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjI1IiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMyIvPjx0ZXh0IHg9IjQ1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkjDkk1JVk088L3RleHQ+PC9zdmc+', color: '#1e225e' }
   ];
+
+  const getPaymentLogo = (methodId) => {
+    const logos = {
+      'zelle': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwNjZjYyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlllbGxlPC90ZXh0Pjwvc3ZnPg==',
+      'pago-movil': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzI4YTc0NyIvPjx0ZXh0IHg9IjQ1IiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBR088L3RleHQ+PHRleHQgeD0iNDUiIHk9IjU1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1bDkk1OPC90ZXh0Pjwvc3ZnPg==',
+      'binance': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iI2ZjZDMzNSIvPjx0ZXh0IHg9IjQ1IiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzE4MWEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QklOQU5DRTwvdGV4dD48dGV4dCB4PSI0NSIgeT0iNjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmaWxsPSIjMTgxYTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QQUY8L3RleHQ+PC9zdmc+',
+      'paypal': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwMzA4NyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBheVBhbDwvdGV4dD48L3N2Zz4=',
+      'tarjeta': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzFlMjI1ZSIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjUwIiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMiIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjI1IiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMyIvPjx0ZXh0IHg9IjQ1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkjDkk1JVk088L3RleHQ+PC9zdmc+'
+    };
+    return logos[methodId] || '';
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -172,7 +183,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         className="hidden-radio"
                       />
                       <div className="payment-option-icon">
-                        {method.icon}
+                        <img 
+                          src={getPaymentLogo(method.id)} 
+                          alt={method.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
                       </div>
                       <span className="payment-option-name">{method.name}</span>
                       {paymentMethod === method.id && (
