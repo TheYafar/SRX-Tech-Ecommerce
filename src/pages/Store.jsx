@@ -82,62 +82,100 @@ export default function Store() {
 
   return (
     <div className="store-page">
-      {/* Hero Section */}
+      {/* Premium Hero Section */}
       <section className="store-hero">
-        <div className="container">
+        {/* Animated Background Orbs */}
+        <motion.div 
+          className="hero-orb orb-1"
+          animate={{ x: [0, 30, 0], y: [0, -40, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div 
+          className="hero-orb orb-2"
+          animate={{ x: [0, -40, 0], y: [0, 30, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        
+        <div className="container relative z-10">
           <motion.div 
-            className="store-hero-content"
+            className="store-hero-content glass-hero-card"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            <h1 className="store-hero-title">Tienda SRX Tech</h1>
+            <motion.span 
+              className="hero-badge"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Colección Exclusiva
+            </motion.span>
+            <h1 className="store-hero-title">
+              Eleva tu <span className="text-gradient-hero">Visión</span>
+            </h1>
             <p className="store-hero-subtitle">
-              Descubre nuestra selección premium de equipos fotográficos y de video
+              Descubre nuestra selección premium de equipos fotográficos y de video de nivel profesional.
             </p>
-            <div className="store-hero-divider"></div>
+            <motion.button 
+              className="hero-cta-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                document.getElementById('catalog').scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Explorar Catálogo
+            </motion.button>
           </motion.div>
         </div>
       </section>
 
-      {/* Categories Grid */}
+      {/* Categories Bento Grid */}
       <section className="store-categories-section">
         <div className="container">
           <motion.div 
             className="section-header"
             initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <span className="section-subtitle">EXPLORA POR CATEGORÍA</span>
-            <h2 className="section-title">Nuestras categorías</h2>
+            <span className="section-subtitle">DISEÑADO PARA CREADORES</span>
+            <h2 className="section-title">Explora por Categoría</h2>
             <div className="title-divider"></div>
           </motion.div>
 
-          <div className="categories-grid">
+          <div className="categories-bento-grid">
             {categories.map((category, index) => (
               <motion.div 
                 key={category.id}
-                className="category-card"
+                className={`bento-item bento-item-${index + 1} glass-card hover-lift`}
                 initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
-                onClick={() => handleCategoryFilter(category.name)}
+                onClick={() => {
+                  handleCategoryFilter(category.name);
+                  document.getElementById('catalog').scrollIntoView({ behavior: 'smooth' });
+                }}
               >
-                <div className="category-image-wrapper">
+                <div className="bento-image-wrapper">
                   <img 
                     src={category.image} 
                     alt={category.name}
-                    className="category-image"
+                    className="bento-image"
                   />
-                  <div className="category-overlay"></div>
+                  <div className="bento-overlay"></div>
                 </div>
-                <div className="category-content">
-                  <h3 className="category-name">{category.name}</h3>
-                  <p className="category-description">{category.description}</p>
-                  <button className="category-link-btn">
-                    {category.linkText}
-                  </button>
+                <div className="bento-content">
+                  <div className="bento-content-inner">
+                    <h3 className="bento-title">{category.name}</h3>
+                    <p className="bento-desc">{category.description}</p>
+                    <span className="bento-link">
+                      {category.linkText} <span className="arrow">→</span>
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -146,38 +184,45 @@ export default function Store() {
       </section>
 
       {/* Products Section */}
-      <section className="store-products-section">
+      <section id="catalog" className="store-products-section">
         <div className="container">
           <div className="store-products-header">
             <motion.div 
               className="section-header"
               initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <span className="section-subtitle">NUESTROS PRODUCTOS</span>
+              <span className="section-subtitle">NUESTRO CATÁLOGO</span>
               <h2 className="section-title">
                 {selectedCategory === 'all' ? 'Todos los productos' : `Productos de ${selectedCategory}`}
               </h2>
-              <div className="title-divider"></div>
             </motion.div>
 
-            {/* Category Filter */}
+            {/* Premium Pill Filter */}
             <motion.div 
-              className="category-filter"
+              className="pill-filter-container"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <div className="filter-label">Filtrar por:</div>
-              <div className="filter-buttons">
+              <div className="pill-filter-scroll">
                 {productCategories.map(category => (
                   <button
                     key={category}
-                    className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
+                    className={`pill-btn ${selectedCategory === category ? 'active' : ''}`}
                     onClick={() => handleCategoryFilter(category)}
                   >
                     {category === 'all' ? 'Todos' : category}
+                    {selectedCategory === category && (
+                      <motion.div 
+                        layoutId="activePill" 
+                        className="active-pill-bg"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
                   </button>
                 ))}
               </div>
@@ -186,14 +231,14 @@ export default function Store() {
 
           {isLoading ? (
             // Shimmer Loading Skeleton Grid
-            <div className="products-grid">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <div key={n} className="product-card skeleton" style={{ height: '350px' }}>
-                  <div style={{ height: '220px', width: '100%' }}></div>
-                  <div style={{ padding: '15px' }}>
-                    <div className="skeleton" style={{ height: '18px', width: '70%', marginBottom: '10px' }}></div>
-                    <div className="skeleton" style={{ height: '14px', width: '40%', marginBottom: '15px' }}></div>
-                    <div className="skeleton" style={{ height: '40px', width: '100%', borderRadius: 'var(--radius-full)' }}></div>
+            <div className="products-premium-grid">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <div key={n} className="product-card skeleton" style={{ height: '380px' }}>
+                  <div style={{ height: '240px', width: '100%' }}></div>
+                  <div style={{ padding: '20px' }}>
+                    <div className="skeleton" style={{ height: '20px', width: '80%', marginBottom: '12px' }}></div>
+                    <div className="skeleton" style={{ height: '14px', width: '50%', marginBottom: '20px' }}></div>
+                    <div className="skeleton" style={{ height: '44px', width: '100%', borderRadius: 'var(--radius-full)' }}></div>
                   </div>
                 </div>
               ))}
@@ -202,10 +247,11 @@ export default function Store() {
             <>
               {filteredProducts.length > 0 ? (
                 <motion.div 
-                  className="products-grid"
+                  className="products-premium-grid"
                   variants={containerVariants}
                   initial="hidden"
-                  animate="visible"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-50px" }}
                 >
                   {filteredProducts.map((product) => (
                     <motion.div key={product.id} variants={itemVariants}>
@@ -215,16 +261,18 @@ export default function Store() {
                 </motion.div>
               ) : (
                 <motion.div 
-                  className="no-products-message"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  className="no-products-message glass-card"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <div className="no-products-icon">📷</div>
+                  <div className="no-products-icon-wrapper">
+                    <span className="no-products-icon">📷</span>
+                  </div>
                   <h3>No hay productos en esta categoría</h3>
-                  <p>Prueba seleccionando otra categoría o vuelve a "Todos"</p>
+                  <p>Prueba seleccionando otra categoría o vuelve a explorar todo nuestro catálogo.</p>
                   <button 
-                    className="btn-catalog"
+                    className="btn-catalog-premium"
                     onClick={() => handleCategoryFilter('all')}
                   >
                     Ver todos los productos
@@ -238,11 +286,12 @@ export default function Store() {
           <motion.div 
             className="back-to-home-wrapper"
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <Link to="/" className="back-to-home-link">
-              ← Volver al inicio
+            <Link to="/" className="back-to-home-link premium-back-link">
+              <span className="back-arrow">←</span> Volver al inicio
             </Link>
           </motion.div>
         </div>
