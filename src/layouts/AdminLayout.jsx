@@ -1,0 +1,89 @@
+import React, { useState } from 'react';
+import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { LayoutDashboard, ShoppingBag, Package, LogOut, Menu, X } from 'lucide-react';
+import './AdminLayout.css';
+
+export default function AdminLayout() {
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Simple admin role check (assuming user object has a role property or hardcoded for demo)
+  if (!user || (user.email !== 'admin@srxtech.com' && !user.isAdmin)) {
+    return <Navigate to="/" replace />;
+  }
+
+  const navItems = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+    { id: 'orders', icon: ShoppingBag, label: 'Pedidos', path: '/admin/orders' },
+    { id: 'products', icon: Package, label: 'Catálogo', path: '/admin/products' },
+  ];
+
+  return (
+    <div className="admin-layout">
+      {/* Mobile Header */}
+      <div className="admin-mobile-header">
+        <span className="admin-logo">SRX Admin</span>
+        <button className="admin-menu-btn" onClick={() => setIsSidebarOpen(true)}>
+          <Menu size={24} />
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <Link to="/" className="admin-logo-link">
+            <span className="logo-srx">SRX</span>
+            <span className="logo-divider">|</span>
+            <span className="logo-tech">Admin</span>
+          </Link>
+          <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="admin-user-info">
+          <div className="admin-avatar">
+            <img src={user.avatar || 'https://ui-avatars.com/api/?name=Admin'} alt="Admin" />
+          </div>
+          <div className="admin-details">
+            <div className="admin-name">{user.name || 'Administrador'}</div>
+            <div className="admin-role">Super Admin</div>
+          </div>
+        </div>
+
+        <nav className="admin-nav">
+          {navItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`admin-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <item.icon size={20} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <button className="admin-logout-btn" onClick={logout}>
+            <LogOut size={20} />
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div className="admin-overlay" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      {/* Main Content */}
+      <main className="admin-main-content">
+        <Outlet />
+      </main>
+    </div>
+  );
+}

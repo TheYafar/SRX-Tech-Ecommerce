@@ -162,8 +162,23 @@
 }
 
 @media (max-width: 576px) {
-  .category-content { padding: 1.5rem; }
-  .cat-title { font-size: 1.3rem; }
-  .cat-description { font-size: 0.82rem; margin-bottom: 1rem; }
-  .large-card, .horizontal-card { height: 260px; }
+  .category-section {
+    padding: 4rem 0 3rem;
+  }
+
+  .category-content { padding: 1.25rem; }
+  .cat-title { font-size: 1.2rem; }
+
+  /* Hide descriptions on small screens to reduce clutter */
+  .cat-description {
+    display: none;
+  }
+
+  .large-card { height: 220px; }
+  .horizontal-card { height: 180px; }
+
+  .pill-btn-outline {
+    min-height: 40px;
+    font-size: 0.78rem;
+  }
 }

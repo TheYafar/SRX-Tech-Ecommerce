@@ -111,12 +111,27 @@
 @media (max-width: 768px) {
   .testimonials-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
   .testimonials-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
   .testimonials-section {
-    padding: 4rem 0;
+    padding: 3.5rem 0;
+  }
+  .testimonials-header {
+    margin-bottom: 2.5rem;
+  }
+  .testimonial-card {
+    padding: 1.75rem 1.5rem;
+  }
+  .testimonial-text {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* On mobile, hide the third testimonial to reduce scrolling */
+  .testimonial-card:nth-child(3) {
+    display: none;
   }
 }

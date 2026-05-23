@@ -283,10 +283,22 @@
   margin-bottom: 1.25rem;
 }
 
+.summary-subtotal-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .summary-subtotal {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
+}
+
+.summary-subtotal-ves {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-weight: 500;
 }
 
 .checkout-form {
@@ -445,10 +457,22 @@
   text-transform: uppercase;
 }
 
+.total-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .order-value.total {
   font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--accent-light);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.total-ves {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-weight: 500;
 }
 
 .success-instructions {

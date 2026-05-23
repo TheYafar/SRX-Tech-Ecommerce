@@ -194,10 +194,27 @@
   font-weight: 500;
 }
 
+.modal-price-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.current-price-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
 .current-price {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: var(--primary);
+}
+
+.current-price-ves {
+  font-size: 1rem;
+  color: var(--text-light);
+  font-weight: 500;
 }
 
 .product-description {

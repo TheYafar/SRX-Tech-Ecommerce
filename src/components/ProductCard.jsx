@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Eye, Heart, Star } from 'lucide-react';
 import ProductDetailModal from './ProductDetailModal';
@@ -9,6 +10,7 @@ import './ProductCard.css';
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isProductLiked } = useWishlist();
+  const { formatUSD, formatVES, isLoading } = useCurrency();
   const hasSale = product.salePrice && product.salePrice < product.price;
   const [isHovered, setIsHovered] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
@@ -115,19 +117,33 @@ export default function ProductCard({ product }) {
           
           <div className="card-pricing">
             {hasSale ? (
-              <>
-                <span className="original-price">${product.price.toFixed(2)}</span>
-                <motion.span 
-                  className="current-price sale-price"
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200 }}
-                >
-                  ${product.salePrice.toFixed(2)}
-                </motion.span>
-              </>
+              <div className="pricing-wrapper">
+                <div className="usd-prices">
+                  <span className="original-price">{formatUSD(product.price)}</span>
+                  <motion.span 
+                    className="current-price sale-price"
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                  >
+                    {formatUSD(product.salePrice)}
+                  </motion.span>
+                </div>
+                {!isLoading && (
+                  <div className="ves-price">
+                    Ref: {formatVES(product.salePrice)}
+                  </div>
+                )}
+              </div>
             ) : (
-              <span className="current-price">${product.price.toFixed(2)}</span>
+              <div className="pricing-wrapper">
+                <span className="current-price">{formatUSD(product.price)}</span>
+                {!isLoading && (
+                  <div className="ves-price">
+                    Ref: {formatVES(product.price)}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           

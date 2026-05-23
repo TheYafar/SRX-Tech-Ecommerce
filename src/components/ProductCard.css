@@ -193,8 +193,26 @@
 .card-pricing {
   display: flex;
   align-items: baseline;
+  align-items: flex-end;
+  margin-bottom: 1.2rem;
+}
+
+.pricing-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.usd-prices {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+}
+
+.ves-price {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 0.2rem;
 }
 
 .current-price {
@@ -267,9 +285,33 @@
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .card-title { font-size: 0.9rem; }
-  .card-tagline { font-size: 0.78rem; }
+  .card-tagline { font-size: 0.78rem; margin-bottom: 0.5rem; }
   .current-price { font-size: 1.1rem; }
   .card-sale-circle { width: 40px; height: 40px; font-size: 0.6rem; }
   .quick-action-btn { width: 38px; height: 38px; }
   .pill-btn { min-height: 44px; /* Better touch target */ }
+
+  /* Hide hover overlay on touch devices — show quick actions as static buttons */
+  .card-actions-overlay {
+    display: none;
+  }
+
+  .card-info {
+    padding: 0.85rem 0.85rem 1rem;
+  }
+
+  .card-pricing {
+    margin-bottom: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-image-container {
+    padding-top: 85%; /* Slightly less tall for small screens */
+  }
+
+  .card-category-badge {
+    font-size: 0.62rem;
+    padding: 0.18rem 0.55rem;
+  }
 }

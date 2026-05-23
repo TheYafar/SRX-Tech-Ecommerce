@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard, Sparkles, CheckCircle2 } from 'lucide-react';
 import CheckoutModal from './CheckoutModal';
 import './CartDrawer.css';
 
 export default function CartDrawer() {
   const { user } = useAuth();
+  const { formatUSD, formatVES, isLoading } = useCurrency();
   const { 
     cartItems, 
     isCartOpen, 
@@ -63,7 +65,10 @@ export default function CartDrawer() {
               </div>
               <div className="order-row">
                 <span className="order-label">Monto Total:</span>
-                <span className="order-value total">${cartTotal.toFixed(2)}</span>
+                <div className="order-value total-group">
+                  <span className="total-usd">{formatUSD(cartTotal)}</span>
+                  {!isLoading && <span className="total-ves">/ {formatVES(cartTotal)}</span>}
+                </div>
               </div>
             </div>
 
@@ -119,7 +124,10 @@ export default function CartDrawer() {
                           <h4 className="cart-item-name">{item.name}</h4>
                           <span className="cart-item-category">{item.category}</span>
                           <div className="cart-item-price-quantity">
-                            <span className="cart-item-price">${price.toFixed(2)}</span>
+                            <div className="cart-item-price-group">
+                              <span className="cart-item-price">{formatUSD(price)}</span>
+                              {!isLoading && <span className="cart-item-price-ves">{formatVES(price)}</span>}
+                            </div>
                             
                             <div className="quantity-controls">
                               <button 
@@ -157,7 +165,10 @@ export default function CartDrawer() {
               <div className="cart-drawer-footer">
                 <div className="cart-summary-row">
                   <span>Subtotal</span>
-                  <span className="summary-subtotal">${cartTotal.toFixed(2)}</span>
+                  <div className="summary-subtotal-group">
+                    <span className="summary-subtotal">{formatUSD(cartTotal)}</span>
+                    {!isLoading && <span className="summary-subtotal-ves">{formatVES(cartTotal)}</span>}
+                  </div>
                 </div>
                 
                 <button 

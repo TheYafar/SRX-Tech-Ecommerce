@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, CreditCard, Zap, Lock } from 'lucide-react';
 import './ProductDetailModal.css';
 
 export default function ProductDetailModal({ product, isOpen, onClose }) {
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { formatUSD, formatVES, isLoading } = useCurrency();
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
@@ -171,12 +173,18 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                 >
                   <div className="price-container">
                     {hasSale ? (
-                      <>
-                        <span className="original-price">${price.toFixed(2)}</span>
-                        <span className="current-price">${product.salePrice.toFixed(2)}</span>
-                      </>
+                      <div className="modal-price-group">
+                        <span className="original-price">{formatUSD(product.price)}</span>
+                        <div className="current-price-group">
+                          <span className="current-price">{formatUSD(product.salePrice)}</span>
+                          {!isLoading && <span className="current-price-ves">/ {formatVES(product.salePrice)}</span>}
+                        </div>
+                      </div>
                     ) : (
-                      <span className="current-price">${price.toFixed(2)}</span>
+                      <div className="modal-price-group">
+                        <span className="current-price">{formatUSD(price)}</span>
+                        {!isLoading && <span className="current-price-ves">/ {formatVES(price)}</span>}
+                      </div>
                     )}
                   </div>
                 </motion.div>

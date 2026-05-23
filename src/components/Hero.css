@@ -262,4 +262,24 @@
     min-height: 48px; /* Better touch target */
     border-radius: var(--radius-md); /* Softer corners on mobile buttons */
   }
+
+  /* Hide floating badges on very small screens to reduce visual clutter */
+  .price-badge,
+  .rating-badge {
+    display: none;
+  }
+
+  .hero-section {
+    min-height: 65vh;
+  }
+
+  .hero-cta-tagline {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.85rem;
+  }
+
+  /* Hide ambient circles on mobile */
+  .hero-background-elements {
+    display: none;
+  }
 }

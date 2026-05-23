@@ -226,19 +226,6 @@ export default function Navbar() {
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
         <div className="mobile-nav-menu animate-fade-in">
-          <div className="mobile-search-container">
-            <form onSubmit={handleSearch} className="mobile-search-form">
-              <Search size={18} className="mobile-search-icon" />
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                className="mobile-search-input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
-          </div>
-          
           <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="mobile-nav-link">
             Inicio
           </Link>
@@ -288,6 +275,24 @@ export default function Navbar() {
           )}
         </div>
       )}
+
+      {/* Floating Mobile Search Bubble */}
+      <div className="mobile-floating-search">
+        <div className="container">
+          <form onSubmit={handleSearch} className="floating-search-form">
+            <input
+              type="text"
+              placeholder="Buscar productos, marcas y más..."
+              className="floating-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button type="submit" className="floating-search-submit">
+              <Search size={18} />
+            </button>
+          </form>
+        </div>
+      </div>
     </header>
   );
 }

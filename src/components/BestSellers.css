@@ -90,13 +90,29 @@
     gap: 1.5rem;
   }
   .best-sellers-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+  .best-sellers-section {
+    padding: 4rem 0;
+  }
+  .best-sellers-header {
+    margin-bottom: 2.5rem;
   }
 }
 
 @media (max-width: 576px) {
   .best-sellers-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    max-width: 100%;
+  }
+
+  .best-sellers-section {
+    padding: 3rem 0;
+  }
+
+  /* Hide 'Ver colección' button on small mobile — not needed */
+  .best-sellers-action {
+    display: none;
   }
 }

@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
+import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import './CheckoutModal.css';
 
 export default function CheckoutModal({ isOpen, onClose }) {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
+  const { formatUSD, formatVES, isLoading } = useCurrency();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -20,19 +23,58 @@ export default function CheckoutModal({ isOpen, onClose }) {
     city: '',
     cardNumber: '',
     cardExpiry: '',
-    cardCvc: ''
+    cardCvc: '',
+    referenceNumber: '',
+    receiptFile: null
   });
+  const [couponCode, setCouponCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+
+  const finalTotal = Math.max(0, cartTotal - discount);
 
   if (!isOpen) return null;
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, files } = e.target;
+    if (type === 'file') {
+      setFormData(prev => ({ ...prev, [name]: files[0] }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const applyCoupon = () => {
+    if (!couponCode) {
+      setCouponError('Ingresa un código válido');
+      return;
+    }
+    // Lógica simulada de cupones
+    if (couponCode.toUpperCase() === 'DESCUENTO10') {
+      setDiscount(cartTotal * 0.10);
+      setCouponSuccess('¡Cupón del 10% aplicado!');
+      setCouponError('');
+    } else if (couponCode.toUpperCase() === 'MENOS5') {
+      setDiscount(5);
+      setCouponSuccess('¡Cupón de $5 aplicado!');
+      setCouponError('');
+    } else {
+      setDiscount(0);
+      setCouponError('Cupón inválido o expirado');
+      setCouponSuccess('');
+    }
   };
 
   const handleCheckout = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
+
+    // Si hay archivo, subirlo a Supabase Storage (simulado aquí)
+    if (formData.receiptFile) {
+      console.log('Subiendo comprobante...', formData.receiptFile);
+      // const url = await uploadReceipt(formData.receiptFile);
+    }
 
     // Simular procesamiento de pago
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -134,7 +176,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               </div>
               <div className="order-row">
                 <span className="order-label">Monto Total:</span>
-                <span className="order-value total">${cartTotal.toFixed(2)}</span>
+                <span className="order-value total">${finalTotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -353,7 +395,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                       ) : (
                         <>
                           <Lock size={20} />
-                          <span>Confirmar Pago por ${cartTotal.toFixed(2)}</span>
+                          <span>Confirmar Pago por ${finalTotal.toFixed(2)}</span>
                         </>
                       )}
                     </button>
@@ -371,53 +413,118 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="payment-details-form">
-                      <div className="form-group">
-                        <label className="form-label">Correo electrónico</label>
-                        <div className="input-with-icon">
-                          <Mail size={18} className="input-icon" />
-                          <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="tu@email.com"
-                            className="form-input"
-                            required
-                          />
+                      {paymentMethod === 'paypal' ? (
+                        <div className="paypal-button-container">
+                          <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
+                            <PayPalButtons 
+                              style={{ layout: "vertical", shape: "pill" }}
+                              createOrder={(data, actions) => {
+                                return actions.order.create({
+                                  purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
+                                });
+                              }}
+                              onApprove={(data, actions) => {
+                                return actions.order.capture().then((details) => {
+                                  handleCheckout({ preventDefault: () => {} });
+                                });
+                              }}
+                            />
+                          </PayPalScriptProvider>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="payment-instructions-box">
+                            {paymentMethod === 'pago-movil' && (
+                              <div className="ves-amount-instruction">
+                                <p>Monto a transferir: <strong>{formatVES(finalTotal)}</strong></p>
+                              </div>
+                            )}
+                          </div>
 
-                      <div className="form-group">
-                        <label className="form-label">Teléfono</label>
-                        <div className="input-with-icon">
-                          <Phone size={18} className="input-icon" />
-                          <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="+58 424-000-0000"
-                            className="form-input"
-                            required
-                          />
-                        </div>
-                      </div>
+                          <div className="form-group">
+                            <label className="form-label">Número de Referencia</label>
+                            <div className="input-with-icon">
+                              <Shield size={18} className="input-icon" />
+                              <input
+                                type="text"
+                                name="referenceNumber"
+                                value={formData.referenceNumber}
+                                onChange={handleInputChange}
+                                placeholder="Ej: 123456789"
+                                className="form-input"
+                                required
+                              />
+                            </div>
+                          </div>
 
-                      <button 
-                        type="button"
-                        className="checkout-submit-btn"
-                        onClick={handleCheckout}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? (
-                          <span className="loading-spinner-small"></span>
-                        ) : (
-                          <>
-                            <span>Confirmar Pedido</span>
-                            <ChevronRight size={20} />
-                          </>
-                        )}
-                      </button>
+                          <div className="form-group">
+                            <label className="form-label">Comprobante (Capture)</label>
+                            <div className="file-upload-container">
+                              <input
+                                type="file"
+                                id="receiptFile"
+                                name="receiptFile"
+                                accept="image/*"
+                                onChange={handleInputChange}
+                                className="file-input-hidden"
+                                required
+                              />
+                              <label htmlFor="receiptFile" className="file-upload-label">
+                                <Upload size={20} />
+                                <span>{formData.receiptFile ? formData.receiptFile.name : 'Subir Imagen'}</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Correo electrónico</label>
+                            <div className="input-with-icon">
+                              <Mail size={18} className="input-icon" />
+                              <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="tu@email.com"
+                                className="form-input"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Teléfono</label>
+                            <div className="input-with-icon">
+                              <Phone size={18} className="input-icon" />
+                              <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="+58 424-000-0000"
+                                className="form-input"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <button 
+                            type="button"
+                            className="checkout-submit-btn"
+                            onClick={handleCheckout}
+                            disabled={isProcessing || !formData.referenceNumber || !formData.receiptFile}
+                          >
+                            {isProcessing ? (
+                              <span className="loading-spinner-small"></span>
+                            ) : (
+                              <>
+                                <span>Confirmar Pago</span>
+                                <ChevronRight size={20} />
+                              </>
+                            )}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -433,6 +540,21 @@ export default function CheckoutModal({ isOpen, onClose }) {
             >
               <h3 className="summary-title">Resumen del Pedido</h3>
               
+              <div className="coupon-section">
+                <div className="coupon-input-group">
+                  <input 
+                    type="text" 
+                    placeholder="Código de descuento" 
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="coupon-input"
+                  />
+                  <button type="button" onClick={applyCoupon} className="coupon-btn">Aplicar</button>
+                </div>
+                {couponError && <span className="coupon-message error">{couponError}</span>}
+                {couponSuccess && <span className="coupon-message success">{couponSuccess}</span>}
+              </div>
+
               <div className="summary-items">
                 {cartItems.map((item) => {
                   const price = item.salePrice || item.price;
@@ -456,13 +578,19 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   <span>Subtotal</span>
                   <span>${cartTotal.toFixed(2)}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="summary-row discount-row">
+                    <span>Descuento</span>
+                    <span>-${discount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="summary-row">
                   <span>Envío</span>
                   <span className="free-shipping">Gratis</span>
                 </div>
                 <div className="summary-row total">
                   <span>Total</span>
-                  <span>${cartTotal.toFixed(2)}</span>
+                  <span>${finalTotal.toFixed(2)}</span>
                 </div>
               </div>
 

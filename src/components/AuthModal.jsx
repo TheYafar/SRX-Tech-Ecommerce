@@ -27,14 +27,14 @@ export default function AuthModal() {
 
     try {
       if (isLogin) {
-        const result = login(data.email, data.password);
+        const result = await login(data.email, data.password);
         if (!result.success) {
-          setAuthError('Credenciales inválidas');
+          setAuthError(result.error === 'Invalid login credentials' ? 'Credenciales inválidas' : result.error);
         }
       } else {
-        const result = register(data.name, data.email, data.password);
+        const result = await register(data.name, data.email, data.password);
         if (!result.success) {
-          setAuthError('Error al registrar usuario');
+          setAuthError(result.error || 'Error al registrar usuario');
         }
       }
     } catch (error) {
