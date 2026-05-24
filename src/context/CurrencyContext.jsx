@@ -18,21 +18,33 @@ export function CurrencyProvider({ children }) {
   const fetchRate = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    console.log("💰 [CurrencyContext] Iniciando obtención de tasa de cambio Binance...");
+    console.log("💰 [CurrencyContext] Iniciando obtención de tasa de cambio (paralelo)...");
 
     try {
       // AbortController para evitar que un fetch colgado bloquee la app
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-      const response = await fetch(
-        'https://ve.dolarapi.com/v1/dolares/binance',
-        { signal: controller.signal }
-      );
+      let response;
+      try {
+        response = await fetch(
+          'https://ve.dolarapi.com/v1/dolares/paralelo',
+          { signal: controller.signal }
+        );
+      } catch (networkErr) {
+        // Capturamos errores de red (DNS, CORS, offline) ANTES de que
+        // el navegador pinte un error rojo en la consola de Network.
+        clearTimeout(timeoutId);
+        throw new Error(
+          networkErr.name === 'AbortError'
+            ? 'La petición a dolarapi.com excedió el tiempo de espera (timeout).'
+            : `Error de red al contactar dolarapi.com: ${networkErr.message}`
+        );
+      }
 
       clearTimeout(timeoutId);
 
-      // Si la respuesta no es exitosa, lanzamos un error explícito
+      // Si la respuesta no es exitosa, generamos un warning limpio
       if (!response.ok) {
         throw new Error(
           `API respondió con status ${response.status} (${response.statusText})`
@@ -40,7 +52,7 @@ export function CurrencyProvider({ children }) {
       }
 
       const data = await response.json();
-      console.log("📥 [CurrencyContext] Datos recibidos de dolarapi.com:", data);
+      console.log("📥 [CurrencyContext] Datos recibidos de dolarapi.com (paralelo):", data);
 
       if (data?.promedio && typeof data.promedio === 'number') {
         console.log(`✅ [CurrencyContext] Tasa de cambio actualizada con éxito a: ${data.promedio} VES/USD.`);
@@ -49,18 +61,13 @@ export function CurrencyProvider({ children }) {
         throw new Error('La respuesta de la API no contiene un campo "promedio" válido.');
       }
     } catch (err) {
-      // ─── No bloqueamos la app. Solo avisamos y usamos la tasa de respaldo ───
-      const message = err.name === 'AbortError'
-        ? 'La petición a dolarapi.com excedió el tiempo de espera (timeout).'
-        : err.message;
-
+      // ─── No bloqueamos la app. Solo avisamos con un warn limpio ───
       console.warn(
-        `⚠️ [CurrencyContext] No se pudo obtener la tasa de cambio: ${message}. ` +
-        `Detalles del error:`, err,
-        `\nUsando tasa de respaldo: ${FALLBACK_RATE} VES/USD.`
+        `⚠️ [CurrencyContext] ${err.message}\n` +
+        `   → Usando tasa de respaldo: ${FALLBACK_RATE} VES/USD.`
       );
 
-      setError(message);
+      setError(err.message);
 
       // Solo aplicamos fallback si no tenemos ya un valor real previo
       setExchangeRate((prev) => prev ?? FALLBACK_RATE);

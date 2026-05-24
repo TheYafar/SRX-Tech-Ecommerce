@@ -31,11 +31,18 @@ const formatUser = async (sessionUser) => {
 
   try {
     console.log(`🔍 [AuthContext:formatUser] Consultando rol para ID: ${sessionUser.id}`);
-    const { data, error } = await supabase
+    
+    const fetchPromise = supabase
       .from('profiles')
       .select('role')
       .eq('id', sessionUser.id)
       .maybeSingle(); // maybeSingle = no throw if row no exist. GOOD ROCK!
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout de consulta en Supabase (5s)')), 5000);
+    });
+
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (error) {
       console.warn("⚠️ [AuthContext:formatUser] Error consultando profiles. Usando rol por defecto 'cliente':", {
@@ -52,7 +59,7 @@ const formatUser = async (sessionUser) => {
     }
   } catch (err) {
     // Try/catch = cavernicola safety net. App no freeze!
-    console.error('💥 [AuthContext:formatUser] Excepción inesperada. Usando rol por defecto:', err);
+    console.error('💥 [AuthContext:formatUser] Excepción inesperada (timeout o red). Usando rol por defecto:', err);
   }
 
   return {
@@ -124,25 +131,33 @@ export const AuthProvider = ({ children }) => {
   // Listener above will handle formatUser + setUser automatically.
   // ----------------------------------------------------------
   const login = async (email, password) => {
+    setIsLoading(true); // 🦴 GRONK PONER CARGANDO TRUE AL INICIO DE LOGIN!
     console.log(`🔑 [AuthContext:login] Enviando credenciales a Supabase para: ${email}`);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      console.error('❌ [AuthContext:login] Error de autenticación:', {
-        message: error.message,
-        status: error.status,
-      });
-      return { success: false, error: error.message };
+      if (error) {
+        console.error('❌ [AuthContext:login] Error de autenticación:', {
+          message: error.message,
+          status: error.status,
+        });
+        return { success: false, error: error.message };
+      }
+
+      const formattedUser = data?.user ? await formatUser(data.user) : null;
+
+      // SUCCESS — onAuthStateChange listener will do the rest!
+      console.log('✅ [AuthContext:login] Credenciales aceptadas. Listener actualizará el estado.');
+      setIsAuthModalOpen(false);
+      showSuccess('¡Bienvenido de nuevo!', 2000);
+      return { success: true, user: formattedUser };
+    } catch (error) {
+      console.error('💥 [AuthContext:login] Error inesperado en login:', error);
+      return { success: false, error: error.message || 'Error inesperado' };
+    } finally {
+      setIsLoading(false); // 🦴 GRONK APAGAR CARGANDO SIEMPRE, PASE LO QUE PASE!
     }
-
-    const formattedUser = data?.user ? await formatUser(data.user) : null;
-
-    // SUCCESS — onAuthStateChange listener will do the rest!
-    console.log('✅ [AuthContext:login] Credenciales aceptadas. Listener actualizará el estado.');
-    setIsAuthModalOpen(false);
-    showSuccess('¡Bienvenido de nuevo!', 2000);
-    return { success: true, user: formattedUser };
   };
 
   // ----------------------------------------------------------
@@ -150,31 +165,39 @@ export const AuthProvider = ({ children }) => {
   // Listener above will handle formatUser + setUser automatically.
   // ----------------------------------------------------------
   const register = async (name, email, password) => {
+    setIsLoading(true); // 🦴 GRONK PONER CARGANDO TRUE AL INICIO DE REGISTRO!
     console.log(`📝 [AuthContext:register] Enviando datos de registro a Supabase para: ${email} (${name})`);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name },
-      },
-    });
-
-    if (error) {
-      console.error('❌ [AuthContext:register] Error de registro:', {
-        message: error.message,
-        status: error.status,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name },
+        },
       });
-      return { success: false, error: error.message };
+
+      if (error) {
+        console.error('❌ [AuthContext:register] Error de registro:', {
+          message: error.message,
+          status: error.status,
+        });
+        return { success: false, error: error.message };
+      }
+
+      const formattedUser = data?.user ? await formatUser(data.user) : null;
+
+      // SUCCESS — onAuthStateChange listener will do the rest!
+      console.log('✅ [AuthContext:register] Registro aceptado. Listener actualizará el estado.');
+      setIsAuthModalOpen(false);
+      showSuccess('¡Cuenta creada exitosamente!', 2000);
+      return { success: true, user: formattedUser };
+    } catch (error) {
+      console.error('💥 [AuthContext:register] Error inesperado en registro:', error);
+      return { success: false, error: error.message || 'Error inesperado' };
+    } finally {
+      setIsLoading(false); // 🦴 GRONK APAGAR CARGANDO SIEMPRE!
     }
-
-    const formattedUser = data?.user ? await formatUser(data.user) : null;
-
-    // SUCCESS — onAuthStateChange listener will do the rest!
-    console.log('✅ [AuthContext:register] Registro aceptado. Listener actualizará el estado.');
-    setIsAuthModalOpen(false);
-    showSuccess('¡Cuenta creada exitosamente!', 2000);
-    return { success: true, user: formattedUser };
   };
 
   // ----------------------------------------------------------
