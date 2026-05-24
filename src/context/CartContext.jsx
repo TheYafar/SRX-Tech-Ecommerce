@@ -37,7 +37,7 @@ export const CartProvider = ({ children }) => {
     // Auto-open cart when adding an item
     setIsCartOpen(true);
     
-    showSuccess(`"${product.name}" añadido al carrito`, 2000);
+    showSuccess(`"${product.name || product.title}" añadido al carrito`, 2000);
   };
 
   const removeFromCart = (productId) => {

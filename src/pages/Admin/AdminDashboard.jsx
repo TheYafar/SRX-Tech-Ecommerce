@@ -1,60 +1,355 @@
-import React from 'react';
-import { ShoppingBag, Users, DollarSign, Activity } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { PackagePlus, CheckCircle, XCircle, Image as ImageIcon, DollarSign, UploadCloud, Loader2 } from 'lucide-react';
+import { supabase, uploadProductImage } from '../../utils/supabaseClient';
+import { useNotifications } from '../../context/NotificationContext';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
-  return (
-    <div className="admin-dashboard animate-fade-in">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Dashboard</h1>
-        <p className="admin-page-subtitle">Resumen de actividad de la tienda</p>
-      </div>
+  const { showSuccess, showError, showInfo } = useNotifications();
+  const [activeTab, setActiveTab] = useState('addProduct'); // 'addProduct', 'payments'
+  
+  // States for Add Product
+  const [productData, setProductData] = useState({
+    title: '',
+    description: '',
+    price_usd: '',
+    stock: '',
+    features: ''
+  });
+  const [productImage, setProductImage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-      <div className="dashboard-stats">
-        <div className="stat-card">
-          <div className="stat-icon-wrapper blue">
-            <DollarSign size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Ventas del Mes</span>
-            <span className="stat-value">$12,450.00</span>
-          </div>
-        </div>
+  // States for Payments
+  const [pendingPayments, setPendingPayments] = useState([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper green">
-            <ShoppingBag size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Pedidos Nuevos</span>
-            <span className="stat-value">45</span>
-          </div>
-        </div>
+  const fetchPendingPayments = useCallback(async () => {
+    setIsLoadingPayments(true);
+    console.log("🔍 [AdminDashboard:fetchPendingPayments] Consultando pagos pendientes en Supabase...");
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper purple">
-            <Users size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Nuevos Clientes</span>
-            <span className="stat-value">128</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon-wrapper orange">
-            <Activity size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Tasa de Conversión</span>
-            <span className="stat-value">3.2%</span>
-          </div>
-        </div>
-      </div>
+      if (error) {
+        throw error;
+      }
       
-      <div className="dashboard-recent">
-        <h2>Actividad Reciente</h2>
-        <p>El dashboard completo estará conectado pronto a Supabase.</p>
+      console.log(`📥 [AdminDashboard:fetchPendingPayments] Pagos pendientes cargados (${data?.length || 0} registros):`, data);
+      setPendingPayments(data || []);
+    } catch (error) {
+      console.error('❌ [AdminDashboard:fetchPendingPayments] Error cargando pagos desde Supabase:', {
+        message: error.message,
+        details: error
+      });
+      showError('No se pudieron cargar los pagos pendientes.');
+    } finally {
+      setIsLoadingPayments(false);
+    }
+  }, [showError]);
+
+  useEffect(() => {
+    let timeoutId;
+    if (activeTab === 'payments') {
+      timeoutId = setTimeout(() => {
+        fetchPendingPayments();
+      }, 0);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [activeTab, fetchPendingPayments]);
+
+  const handleProductInputChange = (e) => {
+    const { name, value } = e.target;
+    setProductData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      console.log('📷 [AdminDashboard:handleImageChange] Imagen seleccionada:', selectedFile.name, `(${selectedFile.size} bytes)`);
+      setProductImage(selectedFile);
+    }
+  };
+
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    console.log("🚀 [AdminDashboard:handleAddProduct] Iniciando proceso de creación de producto...", productData);
+
+    if (!productData.title || !productData.price_usd || !productImage) {
+      console.warn("⚠️ [AdminDashboard:handleAddProduct] Faltan campos obligatorios para añadir producto.");
+      showError('Por favor completa todos los campos requeridos y sube una imagen.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // 1. Upload image to storage
+      console.log(`🚀 [AdminDashboard:handleAddProduct] Subiendo imagen: ${productImage.name}`);
+      const imageUrl = await uploadProductImage(productImage);
+      if (!imageUrl) {
+        throw new Error('La función de subida de imagen devolvió nulo.');
+      }
+
+      // 2. Parse features if JSON
+      let parsedFeatures = {};
+      try {
+        if (productData.features.trim() !== '') {
+          parsedFeatures = JSON.parse(productData.features);
+          console.log('⚙️ [AdminDashboard:handleAddProduct] Características JSON parseadas:', parsedFeatures);
+        }
+      } catch (err) {
+        console.warn('⚠️ [AdminDashboard:handleAddProduct] Características no son un JSON válido. Guardando como {}', err);
+        showError('Las características deben ser un JSON válido. Guardando como objeto vacío.');
+      }
+
+      // 3. Insert into products table
+      console.log(`✍️ [AdminDashboard:handleAddProduct] Insertando fila en tabla 'products' de Supabase...`);
+      const { error } = await supabase.from('products').insert([
+        {
+          title: productData.title,
+          description: productData.description,
+          price_usd: parseFloat(productData.price_usd),
+          stock: parseInt(productData.stock) || 0,
+          features: parsedFeatures,
+          image_url: imageUrl
+        }
+      ]);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ [AdminDashboard:handleAddProduct] Producto creado con éxito.');
+      showSuccess('Producto añadido correctamente.');
+      // Reset form
+      setProductData({ title: '', description: '', price_usd: '', stock: '', features: '' });
+      setProductImage(null);
+      e.target.reset();
+    } catch (error) {
+      console.error('❌ [AdminDashboard:handleAddProduct] Error atrapado al añadir producto a Supabase:', {
+        message: error.message,
+        details: error
+      });
+      showError('Ocurrió un error al añadir el producto.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePaymentAction = async (paymentId, newStatus) => {
+    console.log(`🚀 [AdminDashboard:handlePaymentAction] Cambiando estado de pago ID: ${paymentId} a: ${newStatus}`);
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: newStatus })
+        .eq('id', paymentId);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`✅ [AdminDashboard:handlePaymentAction] Estado de pago actualizado correctamente.`);
+      showSuccess(`Pago ${newStatus === 'approved' ? 'aprobado' : 'rechazado'} correctamente.`);
+      fetchPendingPayments();
+    } catch (error) {
+      console.error('❌ [AdminDashboard:handlePaymentAction] Error al actualizar estado del pago en Supabase:', {
+        message: error.message,
+        details: error
+      });
+      showError('No se pudo actualizar el estado del pago.');
+    }
+  };
+
+  return (
+    <div className="admin-dashboard-panel animate-fade-in">
+      <div className="admin-dashboard-header">
+        <h1 className="admin-panel-title">SRX Control Panel</h1>
+        <p className="admin-panel-subtitle">Gestión centralizada de operaciones</p>
+      </div>
+
+      <div className="admin-tabs">
+        <button 
+          className={`admin-tab-btn ${activeTab === 'addProduct' ? 'active' : ''}`}
+          onClick={() => setActiveTab('addProduct')}
+        >
+          <PackagePlus size={18} />
+          <span>Añadir Producto</span>
+        </button>
+        <button 
+          className={`admin-tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
+          onClick={() => setActiveTab('payments')}
+        >
+          <DollarSign size={18} />
+          <span>Verificación de Pagos</span>
+        </button>
+      </div>
+
+      <div className="admin-dashboard-content">
+        {activeTab === 'addProduct' && (
+          <div className="admin-section">
+            <h2 className="admin-section-title">Nuevo Producto</h2>
+            <form className="admin-form" onSubmit={handleAddProduct}>
+              <div className="form-group">
+                <label>Título del Producto</label>
+                <input 
+                  type="text" 
+                  name="title" 
+                  value={productData.title} 
+                  onChange={handleProductInputChange} 
+                  placeholder="Ej: Sony A7S III" 
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Descripción</label>
+                <textarea 
+                  name="description" 
+                  value={productData.description} 
+                  onChange={handleProductInputChange} 
+                  placeholder="Descripción detallada del producto..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Precio (USD)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    name="price_usd" 
+                    value={productData.price_usd} 
+                    onChange={handleProductInputChange} 
+                    placeholder="Ej: 3499.99" 
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Stock</label>
+                  <input 
+                    type="number" 
+                    name="stock" 
+                    value={productData.stock} 
+                    onChange={handleProductInputChange} 
+                    placeholder="Ej: 15" 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Características (JSON)</label>
+                <textarea 
+                  name="features" 
+                  value={productData.features} 
+                  onChange={handleProductInputChange} 
+                  placeholder='{"Resolución": "4K", "Sensor": "Full Frame"}'
+                  rows={3}
+                  className="font-mono"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Imagen del Producto</label>
+                <div className="file-upload-wrapper">
+                  <input 
+                    type="file" 
+                    id="productImage" 
+                    accept="image/*" 
+                    onChange={handleImageChange} 
+                    className="file-input-hidden"
+                  />
+                  <label htmlFor="productImage" className="file-upload-box">
+                    <UploadCloud size={32} className="upload-icon" />
+                    <span className="upload-text">
+                      {productImage ? productImage.name : 'Haz clic para seleccionar una imagen'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" className="admin-submit-btn" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <><Loader2 size={18} className="spin" /> Guardando...</>
+                ) : (
+                  <><PackagePlus size={18} /> Añadir Producto al Catálogo</>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'payments' && (
+          <div className="admin-section">
+            <h2 className="admin-section-title">Pagos Pendientes de Verificación</h2>
+            
+            {isLoadingPayments ? (
+              <div className="admin-loading-state">
+                <Loader2 size={32} className="spin" />
+                <p>Cargando pagos pendientes...</p>
+              </div>
+            ) : pendingPayments.length === 0 ? (
+              <div className="admin-empty-state">
+                <CheckCircle size={48} className="empty-icon text-green" />
+                <p>¡Todo al día! No hay pagos pendientes por verificar.</p>
+              </div>
+            ) : (
+              <div className="payments-grid">
+                {pendingPayments.map(payment => (
+                  <div key={payment.id} className="payment-card">
+                    <div className="payment-card-header">
+                      <span className="payment-id">Pedido #{payment.order_id || 'N/A'}</span>
+                      <span className="payment-amount">${payment.amount}</span>
+                    </div>
+                    
+                    <div className="payment-details">
+                      <p><strong>Fecha:</strong> {new Date(payment.created_at).toLocaleString()}</p>
+                      <p><strong>Método:</strong> {payment.payment_method || 'Transferencia'}</p>
+                      {payment.user_id && <p><strong>Usuario ID:</strong> {payment.user_id}</p>}
+                    </div>
+
+                    <div className="payment-proof">
+                      {payment.proof_image_url ? (
+                        <div className="proof-image-container">
+                          <img src={payment.proof_image_url} alt="Comprobante" className="proof-image" />
+                          <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="view-full-btn">
+                            Ver comprobante completo
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="no-proof">
+                          <ImageIcon size={24} />
+                          <span>Sin imagen de comprobante</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="payment-actions">
+                      <button 
+                        className="btn-reject"
+                        onClick={() => handlePaymentAction(payment.id, 'rejected')}
+                      >
+                        <XCircle size={18} />
+                        Rechazar
+                      </button>
+                      <button 
+                        className="btn-approve"
+                        onClick={() => handlePaymentAction(payment.id, 'approved')}
+                      >
+                        <CheckCircle size={18} />
+                        Aprobar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

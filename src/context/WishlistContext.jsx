@@ -31,14 +31,14 @@ export const WishlistProvider = ({ children }) => {
       if (prev.some((item) => item.id === product.id)) return prev;
       return [...prev, product];
     });
-    showSuccess(`"${product.name}" añadido a tus favoritos`, 2000);
+    showSuccess(`"${product.name || product.title}" añadido a tus favoritos`, 2000);
   }, [showSuccess]);
 
   const removeFromWishlist = useCallback((productId) => {
     setWishlistItems((prev) => {
       const product = prev.find((item) => item.id === productId);
       if (product) {
-        showInfo(`"${product.name}" eliminado de tus favoritos`, 2000);
+        showInfo(`"${product.name || product.title}" eliminado de tus favoritos`, 2000);
       }
       return prev.filter((item) => item.id !== productId);
     });

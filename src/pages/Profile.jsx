@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
@@ -25,8 +25,9 @@ export default function Profile() {
   const { wishlistItems, toggleWishlist } = useWishlist();
   const { cartCount, addToCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'orders' | 'wishlist'
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'profile'); // 'profile' | 'orders' | 'wishlist'
   const [orders, setOrders] = useState([]);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
@@ -40,6 +41,7 @@ export default function Profile() {
 
   // Load orders history from localStorage
   useEffect(() => {
+    let timeoutId;
     if (user) {
       const savedOrders = localStorage.getItem('srx_orders');
       if (savedOrders) {
@@ -49,12 +51,17 @@ export default function Profile() {
           const userOrders = parsed.filter(o => o.userEmail === user.email);
           // Sort by newest date
           userOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
-          setOrders(userOrders);
+          timeoutId = setTimeout(() => {
+            setOrders(userOrders);
+          }, 0);
         } catch (e) {
           console.error('Error cargando historial de pedidos:', e);
         }
       }
     }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [user]);
 
   if (!user) return null; // Prevent rendering during redirect

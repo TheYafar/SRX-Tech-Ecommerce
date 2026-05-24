@@ -5,10 +5,11 @@ import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import './CheckoutModal.css';
 
 export default function CheckoutModal({ isOpen, onClose }) {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal, clearCart, checkout } = useCart();
   const { user } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
@@ -66,24 +67,80 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
   };
 
-  const handleCheckout = async (e) => {
-    e.preventDefault();
+  const processCheckout = async () => {
     setIsProcessing(true);
+    console.log("🛒 [CheckoutModal:processCheckout] Iniciando procesamiento de pedido...", {
+      paymentMethod,
+      total: finalTotal,
+      userEmail: user?.email,
+      hasReceipt: !!formData.receiptFile
+    });
 
-    // Si hay archivo, subirlo a Supabase Storage (simulado aquí)
+    let uploadedReceiptUrl = null;
+
+    // 1. Subir comprobante a Supabase Storage si se adjuntó uno
     if (formData.receiptFile) {
-      console.log('Subiendo comprobante...', formData.receiptFile);
-      // const url = await uploadReceipt(formData.receiptFile);
+      console.log('🚀 [CheckoutModal:processCheckout] Subiendo comprobante a Supabase Storage...', formData.receiptFile);
+      try {
+        uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
+        if (uploadedReceiptUrl) {
+          console.log('✅ [CheckoutModal:processCheckout] Comprobante subido exitosamente. URL:', uploadedReceiptUrl);
+        } else {
+          console.error('❌ [CheckoutModal:processCheckout] Falló la subida del comprobante a Supabase.');
+        }
+      } catch (err) {
+        console.error('💥 [CheckoutModal:processCheckout] Excepción al subir comprobante:', err);
+      }
     }
 
-    // Simular procesamiento de pago
+    // 2. Simular latencia de red para procesar el pago
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const generatedId = 'SRX-' + Math.floor(100000 + Math.random() * 900000);
+    // 3. Crear orden localmente en localStorage mediante context
+    const generatedId = checkout(paymentMethod, user?.email);
+    console.log(`📦 [CheckoutModal:processCheckout] Orden creada localmente con ID: ${generatedId}`);
+
+    // 4. Registrar pago en la tabla 'payments' de Supabase para la aprobación del administrador
+    try {
+      console.log(`✍️ [CheckoutModal:processCheckout] Insertando registro en tabla 'payments' de Supabase para aprobación del administrador...`);
+      const { data, error: insertError } = await supabase
+        .from('payments')
+        .insert([
+          {
+            order_id: generatedId,
+            amount: finalTotal,
+            payment_method: paymentMethod,
+            user_id: user?.id || null,
+            proof_image_url: uploadedReceiptUrl,
+            status: 'pending'
+          }
+        ]);
+
+      if (insertError) {
+        console.error('❌ [CheckoutModal:processCheckout] Error al insertar en tabla payments de Supabase:', {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        });
+      } else {
+        console.log('✅ [CheckoutModal:processCheckout] Pago registrado exitosamente en la base de datos de Supabase.');
+      }
+    } catch (err) {
+      console.error('💥 [CheckoutModal:processCheckout] Excepción al registrar el pago en la base de datos:', err);
+    }
+
+    // 5. Actualizar estado y limpiar carrito
     setOrderId(generatedId);
     setIsSuccess(true);
     clearCart();
     setIsProcessing(false);
+  };
+
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    console.log("🖱️ [CheckoutModal:handleCheckout] Checkout iniciado por envío de formulario.");
+    await processCheckout();
   };
 
   const handleSuccessClose = () => {
@@ -425,7 +482,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                               }}
                               onApprove={(data, actions) => {
                                 return actions.order.capture().then((details) => {
-                                  handleCheckout({ preventDefault: () => {} });
+                                  processCheckout();
                                 });
                               }}
                             />
@@ -511,7 +568,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                           <button 
                             type="button"
                             className="checkout-submit-btn"
-                            onClick={handleCheckout}
+                            onClick={processCheckout}
                             disabled={isProcessing || !formData.referenceNumber || !formData.receiptFile}
                           >
                             {isProcessing ? (

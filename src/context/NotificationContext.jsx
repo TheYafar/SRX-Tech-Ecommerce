@@ -18,7 +18,7 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   const showNotification = useCallback((message, type = 'info', duration = 3000) => {
-    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+    const id = Date.now() + Math.random().toString(36).substring(2, 11);
     setNotifications((prev) => [...prev, { id, message, type, duration }]);
     
     if (duration) {

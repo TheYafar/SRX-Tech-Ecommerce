@@ -91,6 +91,11 @@ export default function Navbar() {
           <button onClick={() => scrollToSection('categorias')} className="nav-link">
             Categorías
           </button>
+          {user?.role === 'admin' && (
+            <Link to="/admin" className="nav-link" style={{ color: '#00f2fe', fontWeight: 'bold' }}>
+              Panel de Control
+            </Link>
+          )}
         </nav>
 
         {/* Search Bar */}
@@ -235,6 +240,11 @@ export default function Navbar() {
           <button onClick={() => scrollToSection('categorias')} className="mobile-nav-link">
             Categorías
           </button>
+          {user?.role === 'admin' && (
+            <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="mobile-nav-link" style={{ color: '#00f2fe', fontWeight: 'bold' }}>
+              Panel de Control
+            </Link>
+          )}
           
           {user ? (
             <>

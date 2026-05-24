@@ -16,18 +16,25 @@ export default function Store() {
     let isMounted = true;
     
     const loadProducts = async () => {
+      console.log("🛒 [Store] Iniciando carga de productos desde productService...");
       try {
         setIsLoading(true);
         const data = await productService.getProducts();
+        console.log(`📥 [Store] Productos recibidos del servicio (${data.length} items):`, data);
         
         if (isMounted) {
           setAllProducts(data);
           setFilteredProducts(data);
         }
       } catch (error) {
-        console.error('Error cargando productos:', error);
+        console.error('❌ [Store] Error atrapado al cargar productos en la tienda:', {
+          message: error.message,
+          stack: error.stack,
+          details: error
+        });
       } finally {
         if (isMounted) {
+          console.log("🏁 [Store] Carga de productos finalizada. Estableciendo isLoading = false");
           setIsLoading(false);
         }
       }

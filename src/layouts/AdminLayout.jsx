@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LayoutDashboard, ShoppingBag, Package, LogOut, Menu, X } from 'lucide-react';
+import { NotificationManager } from '../components/Notification';
 import './AdminLayout.css';
 
 export default function AdminLayout() {
@@ -9,10 +10,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Simple admin role check (assuming user object has a role property or hardcoded for demo)
-  if (!user || (user.email !== 'admin@srxtech.com' && !user.isAdmin)) {
-    return <Navigate to="/" replace />;
-  }
+  // No se necesita verificación aquí: AdminRoute ya confirma que user.role === 'admin'
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -84,6 +82,9 @@ export default function AdminLayout() {
       <main className="admin-main-content">
         <Outlet />
       </main>
+
+      {/* Notification Toast Container */}
+      <NotificationManager />
     </div>
   );
 }

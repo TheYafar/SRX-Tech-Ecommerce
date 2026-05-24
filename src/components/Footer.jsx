@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mail, Send } from 'lucide-react';
 import './Footer.css';
 
 const FacebookIcon = ({ size = 20 }) => (
@@ -35,16 +36,21 @@ export default function Footer() {
         <div className="footer-brand-col">
           <div className="footer-brand">SRX Tech</div>
           <p className="footer-description">
-            Equipamiento audiovisual premium para creadores y profesionales. Eleva la calidad de tu producción.
+            Únete a nuestra comunidad y recibe ofertas exclusivas, novedades y consejos sobre tecnología premium.
           </p>
-          <form className="newsletter-form" onSubmit={handleSubscribe}>
-            <input 
-              type="email" 
-              placeholder="Tu correo electrónico" 
-              className="newsletter-input" 
-              required
-            />
-            <button type="submit" className="newsletter-btn">Suscribir</button>
+          <form className="footer-newsletter-form" onSubmit={handleSubscribe}>
+            <div className="footer-newsletter-input-wrapper">
+              <Mail className="footer-newsletter-icon" size={18} />
+              <input 
+                type="email" 
+                placeholder="Ingresa tu correo" 
+                className="footer-newsletter-input" 
+                required
+              />
+              <button type="submit" className="footer-newsletter-btn" aria-label="Suscribirse">
+                <Send size={18} />
+              </button>
+            </div>
           </form>
         </div>
 

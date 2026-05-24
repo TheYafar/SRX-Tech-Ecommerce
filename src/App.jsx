@@ -14,6 +14,7 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminOrders from './pages/Admin/AdminOrders';
 import AdminProducts from './pages/Admin/AdminProducts';
+import AdminRoute from './components/AdminRoute';
 import './App.css';
 
 export default function App() {
@@ -31,7 +32,7 @@ export default function App() {
                     <Route path="profile" element={<Profile />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
-                  <Route path="/admin" element={<AdminLayout />}>
+                  <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="products" element={<AdminProducts />} />

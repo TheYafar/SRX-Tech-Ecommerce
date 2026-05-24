@@ -4,14 +4,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { loginSchema, registerSchema } from '../utils/validation';
 import './AuthModal.css';
 
 export default function AuthModal() {
   const { isAuthModalOpen, authMode, closeAuthModal, login, register, setAuthMode } = useAuth();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 🦴 GRONK RENOMBRA: evita shadow con context isLoading
   const [authError, setAuthError] = useState('');
 
   const isLogin = authMode === 'login';
@@ -22,25 +24,50 @@ export default function AuthModal() {
   });
 
   const onSubmit = async (data) => {
-    setIsLoading(true);
+    setIsSubmitting(true); // 🦴 GRONK START SPINNER
     setAuthError('');
+    console.log(`🦴 [AuthModal:onSubmit] Iniciando submit. Modo: ${authMode}`);
 
     try {
       if (isLogin) {
+        console.log(`🔑 [AuthModal:onSubmit] Llamando login() para: ${data.email}`);
         const result = await login(data.email, data.password);
+        console.log(`📊 [AuthModal:onSubmit] Resultado de login():`, result);
+
         if (!result.success) {
+          // 🦴 LOGIN FALLIDO → MOSTRAR ERROR
           setAuthError(result.error === 'Invalid login credentials' ? 'Credenciales inválidas' : result.error);
+        } else if (result.user?.role === 'admin') {
+          // 🦴 ADMIN → REDIRIGIR
+          console.log(`👑 [AuthModal:onSubmit] Usuario admin detectado. Redirigiendo a /admin...`);
+          closeAuthModal();
+          navigate('/admin');
+        } else {
+          // 🦴 CLIENTE NORMAL → CERRAR MODAL EXPLÍCITAMENTE (el context ya lo hizo, pero doble seguro)
+          console.log(`✅ [AuthModal:onSubmit] Login exitoso para cliente '${result.user?.role}'. Cerrando modal.`);
+          closeAuthModal();
         }
       } else {
+        console.log(`📝 [AuthModal:onSubmit] Llamando register() para: ${data.email}`);
         const result = await register(data.name, data.email, data.password);
+        console.log(`📊 [AuthModal:onSubmit] Resultado de register():`, result);
+
         if (!result.success) {
           setAuthError(result.error || 'Error al registrar usuario');
+        } else {
+          // 🦴 REGISTRO EXITOSO → CERRAR MODAL
+          console.log(`✅ [AuthModal:onSubmit] Registro exitoso. Cerrando modal.`);
+          closeAuthModal();
         }
       }
     } catch (error) {
-      setAuthError('Error en la autenticación');
+      // 🦴 ERROR INESPERADO → MOSTRAR MENSAJE
+      console.error(`💥 [AuthModal:onSubmit] Excepción inesperada en submit:`, error);
+      setAuthError('Error inesperado en la autenticación. Intenta de nuevo.');
     } finally {
-      setIsLoading(false);
+      // 🦴 GRONK GARANTIZA: SPINNER SIEMPRE SE DETIENE. SIEMPRE. PASE LO QUE PASE.
+      console.log(`🏁 [AuthModal:onSubmit] Finally ejecutado → setIsSubmitting(false)`);
+      setIsSubmitting(false);
     }
   };
 
@@ -202,9 +229,9 @@ export default function AuthModal() {
             <button 
               type="submit" 
               className="auth-submit-btn"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <span className="loading-spinner"></span>
               ) : (
                 <>
