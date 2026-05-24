@@ -17,16 +17,24 @@ export async function uploadReceipt(file) {
     return null;
   }
 
+  const bucketName = import.meta.env.VITE_SUPABASE_RECEIPTS_BUCKET || 'comprobantes_pago';
+
   try {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `receipts/${fileName}`;
 
-    console.log(`🚀 [uploadReceipt] Iniciando subida de comprobante: ${file.name} (Ruta: ${filePath})`);
+    console.log(`🚀 [uploadReceipt] Iniciando subida de comprobante: ${file.name} (Ruta: ${filePath}) en bucket: ${bucketName}`);
 
-    const { error: uploadError } = await supabase.storage
-      .from('payments')
+    const uploadPromise = supabase.storage
+      .from(bucketName)
       .upload(filePath, file);
+
+    const timeoutPromise = new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error('La conexión ha caducado (Timeout). Verifica el RLS o tu conexión.')), 15000);
+    });
+
+    const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
 
     if (uploadError) {
       console.error('❌ [uploadReceipt] Error devuelto por Supabase al subir comprobante:', {
@@ -35,11 +43,11 @@ export async function uploadReceipt(file) {
         name: uploadError.name,
         details: uploadError
       });
-      return null;
+      throw new Error(`Error de Supabase: ${uploadError.message || 'Fallo al subir el archivo al storage'}`);
     }
 
     const { data } = supabase.storage
-      .from('payments')
+      .from(bucketName)
       .getPublicUrl(filePath);
 
     console.log('✅ [uploadReceipt] Subida exitosa. URL pública generada:', data.publicUrl);
@@ -50,7 +58,7 @@ export async function uploadReceipt(file) {
       stack: error.stack,
       error: error
     });
-    return null;
+    throw new Error(error.message || 'Error inesperado al intentar subir el comprobante de pago.');
   }
 }
 

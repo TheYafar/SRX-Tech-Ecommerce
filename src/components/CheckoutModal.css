@@ -155,8 +155,6 @@
 
 .payment-option-name {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 .payment-option-check {

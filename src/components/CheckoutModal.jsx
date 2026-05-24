@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload } from 'lucide-react';
+import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload, Smartphone } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import './CheckoutModal.css';
@@ -13,7 +13,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
   const { user } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [formData, setFormData] = useState({
@@ -68,7 +68,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
   };
 
   const processCheckout = async () => {
-    setIsProcessing(true);
+    setIsSubmitting(true);
     console.log("🛒 [CheckoutModal:processCheckout] Iniciando procesamiento de pedido...", {
       paymentMethod,
       total: finalTotal,
@@ -78,68 +78,103 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
     let uploadedReceiptUrl = null;
 
-    // 1. Subir comprobante a Supabase Storage si se adjuntó uno
-    if (formData.receiptFile) {
-      console.log('🚀 [CheckoutModal:processCheckout] Subiendo comprobante a Supabase Storage...', formData.receiptFile);
-      try {
-        uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
-        if (uploadedReceiptUrl) {
-          console.log('✅ [CheckoutModal:processCheckout] Comprobante subido exitosamente. URL:', uploadedReceiptUrl);
-        } else {
-          console.error('❌ [CheckoutModal:processCheckout] Falló la subida del comprobante a Supabase.');
-        }
-      } catch (err) {
-        console.error('💥 [CheckoutModal:processCheckout] Excepción al subir comprobante:', err);
-      }
-    }
-
-    // 2. Simular latencia de red para procesar el pago
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // 3. Crear orden localmente en localStorage mediante context
-    const generatedId = checkout(paymentMethod, user?.email);
-    console.log(`📦 [CheckoutModal:processCheckout] Orden creada localmente con ID: ${generatedId}`);
-
-    // 4. Registrar pago en la tabla 'payments' de Supabase para la aprobación del administrador
     try {
-      console.log(`✍️ [CheckoutModal:processCheckout] Insertando registro en tabla 'payments' de Supabase para aprobación del administrador...`);
-      const { data, error: insertError } = await supabase
-        .from('payments')
-        .insert([
-          {
-            order_id: generatedId,
-            amount: finalTotal,
-            payment_method: paymentMethod,
-            user_id: user?.id || null,
-            proof_image_url: uploadedReceiptUrl,
-            status: 'pending'
-          }
-        ]);
-
-      if (insertError) {
-        console.error('❌ [CheckoutModal:processCheckout] Error al insertar en tabla payments de Supabase:', {
-          message: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint,
-          code: insertError.code
-        });
-      } else {
-        console.log('✅ [CheckoutModal:processCheckout] Pago registrado exitosamente en la base de datos de Supabase.');
+      // Paso 1: Subir el comprobante a Supabase Storage
+      if (formData.receiptFile) {
+        console.log('🚀 [CheckoutModal:processCheckout] Subiendo comprobante a Supabase Storage...', formData.receiptFile);
+        uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
+        if (!uploadedReceiptUrl) {
+          throw new Error('No se pudo subir la imagen del comprobante o no se generó una dirección pública.');
+        }
+        console.log('✅ [CheckoutModal:processCheckout] Comprobante subido exitosamente. URL:', uploadedReceiptUrl);
       }
-    } catch (err) {
-      console.error('💥 [CheckoutModal:processCheckout] Excepción al registrar el pago en la base de datos:', err);
-    }
 
-    // 5. Actualizar estado y limpiar carrito
-    setOrderId(generatedId);
-    setIsSuccess(true);
-    clearCart();
-    setIsProcessing(false);
+      // Paso 2: Insertar en orders
+      console.log('📦 [CheckoutModal:processCheckout] Creando orden en tabla orders...');
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert([{
+          user_id: user.id,
+          total_amount_usd: finalTotal,
+          status: 'pending_payment'
+        }])
+        .select()
+        .single();
+
+      if (orderError) throw new Error(`Fallo al crear la orden: ${orderError.message}`);
+      
+      const newOrderId = orderData.id;
+      console.log(`✅ [CheckoutModal:processCheckout] Orden creada con ID: ${newOrderId}`);
+
+      // Paso 3: Insertar en order_items
+      if (cartItems && cartItems.length > 0) {
+        console.log('🛍️ [CheckoutModal:processCheckout] Insertando items de la orden...');
+        const orderItemsToInsert = cartItems.map(item => ({
+          order_id: newOrderId,
+          product_id: item.id,
+          quantity: item.quantity,
+          price_at_purchase_usd: item.salePrice || item.price
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItemsToInsert);
+
+        if (itemsError) throw new Error(`Fallo al insertar los productos de la orden: ${itemsError.message}`);
+        console.log('✅ [CheckoutModal:processCheckout] Items de la orden insertados correctamente.');
+      }
+
+      // Paso 4: Insertar en payments
+      console.log(`✍️ [CheckoutModal:processCheckout] Insertando registro en tabla payments...`);
+      
+      // Intentar obtener payment_method_id por nombre, si no, se va como null y se asume fallback
+      let defaultPaymentMethodId = null;
+      try {
+        const { data: pmData } = await supabase
+          .from('payment_methods')
+          .select('id')
+          .eq('name', paymentMethod)
+          .maybeSingle();
+        if (pmData) defaultPaymentMethodId = pmData.id;
+      } catch (e) {
+        console.warn('⚠️ No se pudo obtener un payment_method_id.', e);
+      }
+
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert([{
+          order_id: newOrderId,
+          payment_method_id: defaultPaymentMethodId, // En el esquema debe estar o null funciona si no lo requieren forzoso
+          amount_paid: finalTotal,
+          currency: 'USD',
+          reference_number: formData.referenceNumber || 'N/A',
+          proof_image_url: uploadedReceiptUrl,
+          status: 'pending_verification'
+        }]);
+
+      if (paymentError) throw new Error(`Fallo al registrar el pago: ${paymentError.message}`);
+
+      console.log('✅ [CheckoutModal:processCheckout] Pago registrado exitosamente en la base de datos.');
+
+      // 5. Actualizar estado y limpiar carrito
+      setOrderId(newOrderId);
+      setIsSuccess(true);
+      clearCart();
+    } catch (err) {
+      console.error('💥 [CheckoutModal:processCheckout] Excepción en el flujo de checkout:', err);
+      alert(`Fallo en el proceso de compra: ${err.message || err}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleCheckout = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🖱️ [CheckoutModal:handleCheckout] Checkout iniciado por envío de formulario.");
+    if (!user || !user.id) {
+      alert('Debes iniciar sesión para comprar');
+      return;
+    }
+    console.log("🖱️ [CheckoutModal:handleSubmit] Checkout iniciado por envío de formulario.");
     await processCheckout();
   };
 
@@ -149,23 +184,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
   };
 
   const paymentMethods = [
-    { id: 'zelle', name: 'Zelle', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwNjZjYyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlllbGxlPC90ZXh0Pjwvc3ZnPg==', color: '#0066cc' },
-    { id: 'pago-movil', name: 'Pago Móvil', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzI4YTc0NyIvPjx0ZXh0IHg9IjQ1IiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBR088L3RleHQ+PHRleHQgeD0iNDUiIHk9IjU1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1bDkk1OPC90ZXh0Pjwvc3ZnPg==', color: '#28a745' },
-    { id: 'binance', name: 'Binance Pay', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iI2ZjZDMzNSIvPjx0ZXh0IHg9IjQ1IiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzE4MWEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QklOQU5DRTwvdGV4dD48dGV4dCB4PSI0NSIgeT0iNjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmaWxsPSIjMTgxYTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QQUY8L3RleHQ+PC9zdmc+', color: '#fcd535' },
-    { id: 'paypal', name: 'PayPal', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwMzA4NyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBheVBhbDwvdGV4dD48L3N2Zz4=', color: '#003087' },
-    { id: 'tarjeta', name: 'Tarjeta', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzFlMjI1ZSIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjUwIiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMiIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjI1IiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMyIvPjx0ZXh0IHg9IjQ1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkjDkk1JVk088L3RleHQ+PC9zdmc+', color: '#1e225e' }
+    { id: 'zelle', name: 'Zelle', type: 'image', src: '/imagen/zelle.png', color: '#0066cc' },
+    { id: 'pago-movil', name: 'Pago Móvil', type: 'icon', color: '#28a745' },
+    { id: 'binance', name: 'Binance Pay', type: 'image', src: '/imagen/binance.png', color: '#fcd535' },
+    { id: 'paypal', name: 'PayPal', type: 'image', src: '/imagen/paypal.png', color: '#003087' },
+    { id: 'tarjeta', name: 'Tarjeta', type: 'icon', color: '#1e225e' }
   ];
-
-  const getPaymentLogo = (methodId) => {
-    const logos = {
-      'zelle': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwNjZjYyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlllbGxlPC90ZXh0Pjwvc3ZnPg==',
-      'pago-movil': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzI4YTc0NyIvPjx0ZXh0IHg9IjQ1IiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBR088L3RleHQ+PHRleHQgeD0iNDUiIHk9IjU1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1bDkk1OPC90ZXh0Pjwvc3ZnPg==',
-      'binance': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iI2ZjZDMzNSIvPjx0ZXh0IHg9IjQ1IiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzE4MWEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QklOQU5DRTwvdGV4dD48dGV4dCB4PSI0NSIgeT0iNjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmaWxsPSIjMTgxYTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QQUY8L3RleHQ+PC9zdmc+',
-      'paypal': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzAwMzA4NyIvPjx0ZXh0IHg9IjQ1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBheVBhbDwvdGV4dD48L3N2Zz4=',
-      'tarjeta': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxNSIgZmlsbD0iIzFlMjI1ZSIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjUwIiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMiIvPjxyZWN0IHg9IjIwIiB5PSIzNSIgd2lkdGg9IjI1IiBoZWlnaHQ9IjMwIiByeT0iNSIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMyIvPjx0ZXh0IHg9IjQ1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkjDkk1JVk088L3RleHQ+PC9zdmc+'
-    };
-    return logos[methodId] || '';
-  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -281,14 +305,20 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         onChange={() => setPaymentMethod(method.id)}
                         className="hidden-radio"
                       />
-                      <div className="payment-option-icon">
-                        <img 
-                          src={getPaymentLogo(method.id)} 
-                          alt={method.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        />
+                      <div className="payment-option-icon text-slate-700">
+                        {method.type === 'image' ? (
+                          <img 
+                            src={method.src} 
+                            alt={method.name}
+                            className="w-12 h-12 object-contain"
+                          />
+                        ) : method.id === 'pago-movil' ? (
+                          <Smartphone size={32} color={method.color} />
+                        ) : (
+                          <CreditCard size={32} color={method.color} />
+                        )}
                       </div>
-                      <span className="payment-option-name">{method.name}</span>
+                      <span className="payment-option-name text-slate-800 font-bold">{method.name}</span>
                       {paymentMethod === method.id && (
                         <motion.div 
                           className="payment-option-check"
@@ -311,10 +341,59 @@ export default function CheckoutModal({ isOpen, onClose }) {
               >
                 <h3 className="section-title">Detalles de Pago</h3>
                 
-                {paymentMethod === 'tarjeta' ? (
-                  <form className="card-payment-form" onSubmit={handleCheckout}>
+                {paymentMethod === 'paypal' ? (
+                  <div className="other-payment-methods">
+                    <div className="payment-instruction mb-4">
+                      <div className="instruction-icon">
+                        <CheckCircle size={24} />
+                      </div>
+                      <div className="instruction-text">
+                        <h4>Pago con PayPal</h4>
+                        <p>Completa tu pago usando el botón a continuación. Tu orden se procesará automáticamente.</p>
+                      </div>
+                    </div>
+                    <div className="payment-details-form">
+                      <div className="paypal-button-container">
+                        <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
+                          <PayPalButtons 
+                            style={{ layout: "vertical", shape: "pill" }}
+                            createOrder={(data, actions) => {
+                              return actions.order.create({
+                                purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
+                              });
+                            }}
+                            onApprove={(data, actions) => {
+                              return actions.order.capture().then((details) => {
+                                processCheckout();
+                              });
+                            }}
+                          />
+                        </PayPalScriptProvider>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <form className="payment-details-form" onSubmit={handleSubmit}>
+                    <div className="payment-instruction mb-4">
+                      <div className="instruction-icon">
+                        <CheckCircle size={24} />
+                      </div>
+                      <div className="instruction-text">
+                        <h4>Reporte de Pago</h4>
+                        <p>Ingresa los datos de tu transferencia y sube el comprobante para validar tu orden.</p>
+                      </div>
+                    </div>
+
+                    <div className="payment-instructions-box">
+                      {paymentMethod === 'pago-movil' && (
+                        <div className="ves-amount-instruction mb-4">
+                          <p>Monto a transferir: <strong>{formatVES(finalTotal)}</strong></p>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="form-group">
-                      <label className="form-label">Nombre en la tarjeta</label>
+                      <label className="form-label">Nombre Completo</label>
                       <div className="input-with-icon">
                         <User size={18} className="input-icon" />
                         <input
@@ -322,60 +401,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
                           name="name"
                           value={formData.name}
                           onChange={handleInputChange}
-                          placeholder="Nombre completo"
+                          placeholder="Tu nombre y apellido"
                           className="form-input"
                           required
                         />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Número de tarjeta</label>
-                      <div className="input-with-icon">
-                        <CreditCard size={18} className="input-icon" />
-                        <input
-                          type="text"
-                          name="cardNumber"
-                          value={formData.cardNumber}
-                          onChange={handleInputChange}
-                          placeholder="0000 0000 0000 0000"
-                          className="form-input"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">Fecha de expiración</label>
-                        <div className="input-with-icon">
-                          <Calendar size={18} className="input-icon" />
-                          <input
-                            type="text"
-                            name="cardExpiry"
-                            value={formData.cardExpiry}
-                            onChange={handleInputChange}
-                            placeholder="MM/YY"
-                            className="form-input"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">CVC</label>
-                        <div className="input-with-icon">
-                          <Shield size={18} className="input-icon" />
-                          <input
-                            type="text"
-                            name="cardCvc"
-                            value={formData.cardCvc}
-                            onChange={handleInputChange}
-                            placeholder="123"
-                            className="form-input"
-                            required
-                          />
-                        </div>
                       </div>
                     </div>
 
@@ -396,59 +425,66 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Dirección de envío</label>
+                      <label className="form-label">Teléfono</label>
                       <div className="input-with-icon">
-                        <MapPin size={18} className="input-icon" />
+                        <Phone size={18} className="input-icon" />
                         <input
-                          type="text"
-                          name="address"
-                          value={formData.address}
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
                           onChange={handleInputChange}
-                          placeholder="Dirección completa"
+                          placeholder="+58 424-000-0000"
                           className="form-input"
                           required
                         />
                       </div>
                     </div>
 
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">Ciudad</label>
+                    <div className="form-group">
+                      <label className="form-label">Número de Referencia</label>
+                      <div className="input-with-icon">
+                        <Shield size={18} className="input-icon" />
                         <input
                           type="text"
-                          name="city"
-                          value={formData.city}
+                          name="referenceNumber"
+                          value={formData.referenceNumber}
                           onChange={handleInputChange}
-                          placeholder="Ciudad"
+                          placeholder="Ej: 123456789"
                           className="form-input"
                           required
                         />
                       </div>
+                    </div>
 
-                      <div className="form-group">
-                        <label className="form-label">Teléfono</label>
-                        <div className="input-with-icon">
-                          <Phone size={18} className="input-icon" />
-                          <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="+58 424-000-0000"
-                            className="form-input"
-                            required
-                          />
-                        </div>
+                    <div className="form-group">
+                      <label className="form-label">Comprobante (Capture)</label>
+                      <div className="file-upload-container">
+                        <input
+                          type="file"
+                          id="receiptFile"
+                          name="receiptFile"
+                          accept="image/*"
+                          onChange={handleInputChange}
+                          className="file-input-hidden"
+                          required
+                        />
+                        <label htmlFor="receiptFile" className="file-upload-label">
+                          <Upload size={20} />
+                          <span>{formData.receiptFile ? formData.receiptFile.name : 'Subir Imagen'}</span>
+                        </label>
                       </div>
                     </div>
 
                     <button 
                       type="submit"
-                      className="checkout-submit-btn"
-                      disabled={isProcessing}
+                      className="checkout-submit-btn mt-4"
+                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile}
                     >
-                      {isProcessing ? (
-                        <span className="loading-spinner-small"></span>
+                      {isSubmitting ? (
+                        <>
+                          <span className="loading-spinner-small"></span>
+                          <span>Procesando pago...</span>
+                        </>
                       ) : (
                         <>
                           <Lock size={20} />
@@ -457,133 +493,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                       )}
                     </button>
                   </form>
-                ) : (
-                  <div className="other-payment-methods">
-                    <div className="payment-instruction">
-                      <div className="instruction-icon">
-                        <CheckCircle size={24} />
-                      </div>
-                      <div className="instruction-text">
-                        <h4>Procedimiento de Pago</h4>
-                        <p>Después de confirmar tu pedido, te enviaremos las instrucciones de pago a tu correo electrónico.</p>
-                      </div>
-                    </div>
-
-                    <div className="payment-details-form">
-                      {paymentMethod === 'paypal' ? (
-                        <div className="paypal-button-container">
-                          <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
-                            <PayPalButtons 
-                              style={{ layout: "vertical", shape: "pill" }}
-                              createOrder={(data, actions) => {
-                                return actions.order.create({
-                                  purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
-                                });
-                              }}
-                              onApprove={(data, actions) => {
-                                return actions.order.capture().then((details) => {
-                                  processCheckout();
-                                });
-                              }}
-                            />
-                          </PayPalScriptProvider>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="payment-instructions-box">
-                            {paymentMethod === 'pago-movil' && (
-                              <div className="ves-amount-instruction">
-                                <p>Monto a transferir: <strong>{formatVES(finalTotal)}</strong></p>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">Número de Referencia</label>
-                            <div className="input-with-icon">
-                              <Shield size={18} className="input-icon" />
-                              <input
-                                type="text"
-                                name="referenceNumber"
-                                value={formData.referenceNumber}
-                                onChange={handleInputChange}
-                                placeholder="Ej: 123456789"
-                                className="form-input"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">Comprobante (Capture)</label>
-                            <div className="file-upload-container">
-                              <input
-                                type="file"
-                                id="receiptFile"
-                                name="receiptFile"
-                                accept="image/*"
-                                onChange={handleInputChange}
-                                className="file-input-hidden"
-                                required
-                              />
-                              <label htmlFor="receiptFile" className="file-upload-label">
-                                <Upload size={20} />
-                                <span>{formData.receiptFile ? formData.receiptFile.name : 'Subir Imagen'}</span>
-                              </label>
-                            </div>
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">Correo electrónico</label>
-                            <div className="input-with-icon">
-                              <Mail size={18} className="input-icon" />
-                              <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="tu@email.com"
-                                className="form-input"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">Teléfono</label>
-                            <div className="input-with-icon">
-                              <Phone size={18} className="input-icon" />
-                              <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="+58 424-000-0000"
-                                className="form-input"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <button 
-                            type="button"
-                            className="checkout-submit-btn"
-                            onClick={processCheckout}
-                            disabled={isProcessing || !formData.referenceNumber || !formData.receiptFile}
-                          >
-                            {isProcessing ? (
-                              <span className="loading-spinner-small"></span>
-                            ) : (
-                              <>
-                                <span>Confirmar Pago</span>
-                                <ChevronRight size={20} />
-                              </>
-                            )}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
                 )}
               </motion.div>
             </div>
