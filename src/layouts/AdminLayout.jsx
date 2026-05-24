@@ -18,6 +18,17 @@ export default function AdminLayout() {
     { id: 'products', icon: Package, label: 'Catálogo', path: '/admin/products' },
   ];
 
+  const getInitials = (name) => {
+    if (!name) return 'AD';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+
+  const hasCustomAvatar = user?.avatar && !user.avatar.includes('ui-avatars.com');
+
   return (
     <div className="admin-layout">
       {/* Mobile Header */}
@@ -43,10 +54,19 @@ export default function AdminLayout() {
 
         <div className="admin-user-info">
           <div className="admin-avatar">
-            <img src={user.avatar || 'https://ui-avatars.com/api/?name=Admin'} alt="Admin" />
+            {hasCustomAvatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name || 'Administrador'}
+              />
+            ) : (
+              <div className="admin-avatar-initials">
+                {getInitials(user?.name || user?.email || 'Admin')}
+              </div>
+            )}
           </div>
           <div className="admin-details">
-            <div className="admin-name">{user.name || 'Administrador'}</div>
+            <div className="admin-name">{user?.name || user?.email?.split('@')[0] || 'Administrador'}</div>
             <div className="admin-role">Super Admin</div>
           </div>
         </div>

@@ -125,8 +125,8 @@ export default function CartDrawer() {
                           <span className="cart-item-category">{item.category}</span>
                           <div className="cart-item-price-quantity">
                             <div className="cart-item-price-group">
-                              <span className="cart-item-price">{formatUSD(price)}</span>
                               {!isLoading && <span className="cart-item-price-ves">{formatVES(price)}</span>}
+                              <span className="cart-item-price">{formatUSD(price)}</span>
                             </div>
                             
                             <div className="quantity-controls">

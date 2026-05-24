@@ -140,7 +140,7 @@ export default function AuthModal() {
                   <User size={18} className="input-icon" />
                   <input
                     type="text"
-                    placeholder="Nombre completo"
+                    placeholder="Juan Pérez"
                     {...formRegister('name')}
                     className={`form-input ${errors.name ? 'error' : ''}`}
                   />
@@ -156,7 +156,7 @@ export default function AuthModal() {
                 <Mail size={18} className="input-icon" />
                 <input
                   type="email"
-                  placeholder="Correo electrónico"
+                  placeholder="ejemplo@correo.com"
                   {...formRegister('email')}
                   className={`form-input ${errors.email ? 'error' : ''}`}
                 />
@@ -171,7 +171,7 @@ export default function AuthModal() {
                 <Lock size={18} className="input-icon" />
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Contraseña"
+                  placeholder="••••••••"
                   {...formRegister('password')}
                   className={`form-input ${errors.password ? 'error' : ''}`}
                 />
@@ -195,7 +195,7 @@ export default function AuthModal() {
                   <Lock size={18} className="input-icon" />
                   <input
                     type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirmar contraseña"
+                    placeholder="••••••••"
                     {...formRegister('confirmPassword')}
                     className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
                   />
