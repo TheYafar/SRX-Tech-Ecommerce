@@ -109,12 +109,31 @@ export default function CheckoutModal({ isOpen, onClose }) {
       // Paso 3: Insertar en order_items
       if (cartItems && cartItems.length > 0) {
         console.log('🛍️ [CheckoutModal:processCheckout] Insertando items de la orden...');
-        const orderItemsToInsert = cartItems.map(item => ({
-          order_id: newOrderId,
-          product_id: item.id,
-          quantity: item.quantity,
-          price_at_purchase_usd: item.salePrice || item.price
-        }));
+        const orderItemsToInsert = cartItems.map(item => {
+          // 1. Mapeo estricto: Obtener el UUID real (priorizamos product_id, luego id)
+          // Verificamos que sea un UUID válido y no un slug.
+          const isUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+          
+          let realProductId = null;
+          if (isUUID(item.product_id)) realProductId = item.product_id;
+          else if (isUUID(item.id)) realProductId = item.id;
+          else if (isUUID(item.uuid)) realProductId = item.uuid;
+          
+          if (!realProductId) {
+            throw new Error('Producto sin ID detectado');
+          }
+
+          // 3. Limpieza: Solo enviamos las columnas que existen en la tabla order_items
+          return {
+            order_id: newOrderId,
+            product_id: realProductId,
+            quantity: item.quantity,
+            price_at_purchase_usd: item.salePrice || item.price
+          };
+        });
+
+        // 2. Debug de seguridad: Imprimir datos antes del insert
+        console.log('Datos a insertar:', orderItemsToInsert);
 
         const { error: itemsError } = await supabase
           .from('order_items')
