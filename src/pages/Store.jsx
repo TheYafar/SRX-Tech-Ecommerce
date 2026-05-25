@@ -2,48 +2,53 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { useProducts } from '../context/ProductContext';
-import { categories } from '../data/products';
+import { supabase } from '../utils/supabaseClient';
 import './Store.css';
 
 export default function Store() {
-  const { products: allProducts, isLoading } = useProducts();
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
 
   useEffect(() => {
-    if (!allProducts) return;
-    
-    if (selectedCategory === 'all') {
-      setFilteredProducts([...allProducts]);
-    } else {
-      const filtered = allProducts.filter(product => {
-        const catName = product.category?.name || product.category || 'General';
-        if (typeof catName === 'string') {
-          return catName.toLowerCase() === selectedCategory.toLowerCase();
-        }
-        return false;
-      });
-      setFilteredProducts(filtered);
-    }
-  }, [allProducts, selectedCategory]);
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        // Traer productos directos sin join
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*');
+        
+        if (productsError) throw productsError;
 
-  const handleCategoryFilter = (category) => {
-    setSelectedCategory(category);
-    
-    if (category === 'all') {
-      setFilteredProducts([...allProducts]);
-    } else {
-      const filtered = allProducts.filter(product => {
-        const catName = product.category?.name || product.category || 'General';
-        if (typeof catName === 'string') {
-          return catName.toLowerCase() === category.toLowerCase();
-        }
-        return false;
-      });
-      setFilteredProducts(filtered);
+        // Traer lista de categorías para los filtros
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*');
+
+        if (categoriesError) throw categoriesError;
+
+        setProducts(productsData || []);
+        setCategories(categoriesData || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
+
+    fetchData();
+  }, []);
+
+  const handleCategoryFilter = (categoryId) => {
+    setSelectedCategory(categoryId);
   };
+
+  // Filtrado en memoria
+  const filteredProducts = selectedCategory === 'Todos'
+    ? products
+    : products.filter(p => p.category_id === selectedCategory);
 
   // Animation variants
   const containerVariants = {
@@ -70,17 +75,10 @@ export default function Store() {
     }
   };
 
-  // Get unique categories from products
-  const productCategories = ['all', ...new Set(allProducts.map(product => {
-    const catName = product.category?.name || product.category || 'General';
-    return typeof catName === 'string' ? catName : 'General';
-  }))];
-
   return (
     <div className="store-page">
       {/* Premium Hero Section */}
       <section className="store-hero">
-        {/* Animated Background Orbs */}
         <motion.div 
           className="hero-orb orb-1"
           animate={{ x: [0, 30, 0], y: [0, -40, 0] }}
@@ -127,58 +125,6 @@ export default function Store() {
         </div>
       </section>
 
-      {/* Categories Bento Grid */}
-      <section className="store-categories-section">
-        <div className="container">
-          <motion.div 
-            className="section-header"
-            initial={{ opacity: 0, y: -20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="section-subtitle">DISEÑADO PARA CREADORES</span>
-            <h2 className="section-title">Explora por Categoría</h2>
-            <div className="title-divider"></div>
-          </motion.div>
-
-          <div className="categories-bento-grid">
-            {categories.map((category, index) => (
-              <motion.div 
-                key={category.id}
-                className={`bento-item bento-item-${index + 1} glass-card hover-lift`}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                onClick={() => {
-                  handleCategoryFilter(category.name);
-                  document.getElementById('catalog').scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <div className="bento-image-wrapper">
-                  <img 
-                    src={category.image} 
-                    alt={category.name}
-                    className="bento-image"
-                  />
-                  <div className="bento-overlay"></div>
-                </div>
-                <div className="bento-content">
-                  <div className="bento-content-inner">
-                    <h3 className="bento-title">{category.name}</h3>
-                    <p className="bento-desc">{category.description}</p>
-                    <span className="bento-link">
-                      {category.linkText} <span className="arrow">→</span>
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Products Section */}
       <section id="catalog" className="store-products-section">
         <div className="container">
@@ -192,7 +138,7 @@ export default function Store() {
             >
               <span className="section-subtitle">NUESTRO CATÁLOGO</span>
               <h2 className="section-title">
-                {selectedCategory === 'all' ? 'Todos los productos' : `Productos de ${selectedCategory}`}
+                {selectedCategory === 'Todos' ? 'Todos los productos' : 'Productos filtrados'}
               </h2>
             </motion.div>
 
@@ -205,14 +151,27 @@ export default function Store() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <div className="pill-filter-scroll">
-                {productCategories.map(category => (
+                <button
+                  className={`pill-btn ${selectedCategory === 'Todos' ? 'active' : ''}`}
+                  onClick={() => handleCategoryFilter('Todos')}
+                >
+                  Todos
+                  {selectedCategory === 'Todos' && (
+                    <motion.div 
+                      layoutId="activePill" 
+                      className="active-pill-bg"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                </button>
+                {categories.map(cat => (
                   <button
-                    key={category}
-                    className={`pill-btn ${selectedCategory === category ? 'active' : ''}`}
-                    onClick={() => handleCategoryFilter(category)}
+                    key={cat.id}
+                    className={`pill-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                    onClick={() => handleCategoryFilter(cat.id)}
                   >
-                    {category === 'all' ? 'Todos' : category}
-                    {selectedCategory === category && (
+                    {cat.name}
+                    {selectedCategory === cat.id && (
                       <motion.div 
                         layoutId="activePill" 
                         className="active-pill-bg"
@@ -240,36 +199,34 @@ export default function Store() {
               ))}
             </div>
           ) : (
-            <>
+            <motion.div 
+              className="products-premium-grid"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+            >
               {filteredProducts.length > 0 ? (
-                <motion.div 
-                  className="products-premium-grid"
-                  variants={containerVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-50px" }}
-                >
-                  {filteredProducts.map((product) => {
-                    const mappedProduct = {
-                      ...product,
-                      name: product.name || product.title,
-                      price: product.price_usd || product.price,
-                      image: product.images_urls?.[0] || product.image
-                    };
-                    
-                    return (
-                      <motion.div key={product.id} variants={itemVariants}>
-                        <ProductCard product={mappedProduct} />
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
+                filteredProducts.map((producto) => {
+                  const mappedProduct = {
+                    ...producto,
+                    name: producto.name,
+                    price: producto.price_usd,
+                    image: producto.images_urls?.[0]
+                  };
+                  return (
+                    <motion.div key={producto.id} variants={itemVariants}>
+                      <ProductCard product={mappedProduct} />
+                    </motion.div>
+                  );
+                })
               ) : (
                 <motion.div 
                   className="no-products-message glass-card"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5 }}
+                  style={{ gridColumn: '1 / -1' }}
                 >
                   <div className="no-products-icon-wrapper">
                     <span className="no-products-icon">📷</span>
@@ -278,13 +235,13 @@ export default function Store() {
                   <p>Prueba seleccionando otra categoría o vuelve a explorar todo nuestro catálogo.</p>
                   <button 
                     className="btn-catalog-premium"
-                    onClick={() => handleCategoryFilter('all')}
+                    onClick={() => handleCategoryFilter('Todos')}
                   >
                     Ver todos los productos
                   </button>
                 </motion.div>
               )}
-            </>
+            </motion.div>
           )}
 
           {/* Back to Home Link */}
