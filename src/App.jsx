@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { ProductProvider } from './context/ProductContext';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Store from './pages/Store';
@@ -22,25 +23,27 @@ export default function App() {
     <NotificationProvider>
       <AuthProvider>
         <CurrencyProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <HashRouter>
-                <Routes>
-                  <Route path="/" element={<MainLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="tienda" element={<Store />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
-                  <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="orders" element={<AdminOrders />} />
-                    <Route path="products" element={<AdminProducts />} />
-                  </Route>
-                </Routes>
-              </HashRouter>
-            </WishlistProvider>
-          </CartProvider>
+          <ProductProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <HashRouter>
+                  <Routes>
+                    <Route path="/" element={<MainLayout />}>
+                      <Route index element={<Home />} />
+                      <Route path="tienda" element={<Store />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Route>
+                    <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="orders" element={<AdminOrders />} />
+                      <Route path="products" element={<AdminProducts />} />
+                    </Route>
+                  </Routes>
+                </HashRouter>
+              </WishlistProvider>
+            </CartProvider>
+          </ProductProvider>
         </CurrencyProvider>
       </AuthProvider>
     </NotificationProvider>

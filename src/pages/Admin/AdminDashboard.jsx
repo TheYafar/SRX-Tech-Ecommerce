@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PackagePlus, CheckCircle, XCircle, Image as ImageIcon, DollarSign, UploadCloud, Loader2 } from 'lucide-react';
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
+import { useProducts } from '../../context/ProductContext';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
   const { showSuccess, showError, showInfo } = useNotifications();
+  const { addProductToState } = useProducts();
   const [activeTab, setActiveTab] = useState('addProduct'); // 'addProduct', 'payments'
   
   // States for Add Product
@@ -14,10 +16,26 @@ export default function AdminDashboard() {
     description: '',
     price_usd: '',
     stock: '',
-    features: ''
+    features: '',
+    category: '',
+    category_id: ''
   });
   const [productImage, setProductImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase.from('categories').select('*');
+        if (error) throw error;
+        if (data) setCategories(data);
+      } catch (err) {
+        console.error('Error al cargar categorías:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // States for Payments
   const [pendingPayments, setPendingPayments] = useState([]);
@@ -79,9 +97,9 @@ export default function AdminDashboard() {
     e.preventDefault();
     console.log("🚀 [AdminDashboard:handleAddProduct] Iniciando proceso de creación de producto...", productData);
 
-    if (!productData.title || !productData.price_usd || !productImage) {
+    if (!productData.title || !productData.price_usd || !productImage || !productData.category_id) {
       console.warn("⚠️ [AdminDashboard:handleAddProduct] Faltan campos obligatorios para añadir producto.");
-      showError('Por favor completa todos los campos requeridos y sube una imagen.');
+      showError('Por favor completa todos los campos requeridos, incluyendo la categoría y la imagen.');
       return;
     }
 
@@ -107,33 +125,72 @@ export default function AdminDashboard() {
       }
 
       // 3. Insert into products table
-      console.log(`✍️ [AdminDashboard:handleAddProduct] Insertando fila en tabla 'products' de Supabase...`);
-      const { error } = await supabase.from('products').insert([
-        {
-          title: productData.title,
-          description: productData.description,
-          price_usd: parseFloat(productData.price_usd),
-          stock: parseInt(productData.stock) || 0,
-          features: parsedFeatures,
-          image_url: imageUrl
-        }
-      ]);
-
-      if (error) {
-        throw error;
+      console.log(`✍️ [AdminDashboard:handleAddProduct] Insertando fila en tabla 'products' de Supabase sin stock...`);
+      
+      let finalCategoryId = productData.category_id;
+      if (finalCategoryId === "" || finalCategoryId === "Seleccionar categoría") {
+        finalCategoryId = null;
       }
+
+      const objetoProducto = {
+        name: productData.title,
+        description: productData.description,
+        price_usd: parseFloat(productData.price_usd),
+        specifications: parsedFeatures,
+        images_urls: [imageUrl],
+        category_id: finalCategoryId
+      };
+
+      console.log("Datos exactos que se enviarán a Supabase:", objetoProducto);
+
+      const { data: productoCreado, error: productError } = await supabase.from('products').insert([
+        objetoProducto
+      ]).select('id').single();
+
+      if (productError) {
+        throw productError;
+      }
+
+      // 4. Register Initial Stock in inventory_transactions
+      const stockDelFormulario = parseInt(productData.stock) || 0;
+      if (stockDelFormulario > 0) {
+        console.log(`📦 [AdminDashboard:handleAddProduct] Registrando stock inicial en inventory_transactions...`);
+        const { error: stockError } = await supabase.from('inventory_transactions').insert([
+          {
+            product_id: productoCreado.id,
+            quantity: stockDelFormulario,
+            transaction_type: 'adjustment'
+          }
+        ]);
+
+        if (stockError) {
+          throw stockError;
+        }
+      }
+
+      // 🦴 GRONK ACTUALIZAR ESTADO LOCAL PARA NO RECARGAR!
+      addProductToState({
+        id: productoCreado.id,
+        name: productData.title,
+        description: productData.description,
+        price_usd: parseFloat(productData.price_usd),
+        specifications: parsedFeatures,
+        images_urls: [imageUrl],
+        image: imageUrl,
+        price: parseFloat(productData.price_usd),
+        salePrice: null,
+        category: productData.category,
+        tagline: productData.description ? productData.description.substring(0, 50) + '...' : ''
+      });
 
       console.log('✅ [AdminDashboard:handleAddProduct] Producto creado con éxito.');
       showSuccess('Producto añadido correctamente.');
       // Reset form
-      setProductData({ title: '', description: '', price_usd: '', stock: '', features: '' });
+      setProductData({ title: '', description: '', price_usd: '', stock: '', features: '', category: '', category_id: '' });
       setProductImage(null);
       e.target.reset();
     } catch (error) {
-      console.error('❌ [AdminDashboard:handleAddProduct] Error atrapado al añadir producto a Supabase:', {
-        message: error.message,
-        details: error
-      });
+      console.error("Error exacto:", error.message, error.details);
       showError('Ocurrió un error al añadir el producto.');
     } finally {
       setIsSubmitting(false);
@@ -203,6 +260,24 @@ export default function AdminDashboard() {
                   placeholder="Ej: Sony A7S III" 
                   required 
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Categoría</label>
+                <select 
+                  name="category_id" 
+                  value={productData.category_id} 
+                  onChange={handleProductInputChange} 
+                  className="admin-select"
+                  required
+                >
+                  <option value="">Selecciona una categoría</option>
+                  {categories.map(categoria => (
+                    <option key={categoria.id} value={categoria.id}>
+                      {categoria.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">

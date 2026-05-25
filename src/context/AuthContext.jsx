@@ -39,17 +39,13 @@ const formatUser = async (sessionUser) => {
       .maybeSingle(); // maybeSingle = no throw if row no exist. GOOD ROCK!
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout de consulta en Supabase (5s)')), 5000);
+      setTimeout(() => reject(new Error('Timeout de consulta en Supabase (15s)')), 15000);
     });
 
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (error) {
-      console.warn("⚠️ [AuthContext:formatUser] Error consultando profiles. Usando rol por defecto 'cliente':", {
-        message: error.message,
-        code: error.code,
-        hint: error.hint,
-      });
+      console.error("⚠️ [AuthContext:formatUser] Error real de Supabase consultando profiles. Usando rol por defecto 'cliente':", error);
       // role stays 'cliente' — cavernicola fallback!
     } else if (data && data.role) {
       role = data.role;

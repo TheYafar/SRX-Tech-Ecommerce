@@ -2,40 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { productService } from '../services/productService';
+import { useProducts } from '../context/ProductContext';
 import './BestSellers.css';
 
 export default function BestSellers() {
+  const { products: allProducts, isLoading } = useProducts();
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadProducts = async () => {
-      try {
-        setIsLoading(true);
-        // Usamos featured como proxy de más vendidos para el prototipo
-        const data = await productService.getProducts({ featured: true });
-        
-        if (isMounted) {
-          // Tomar los 4 primeros que no sean el hero
-          setProducts(data.filter((p) => !p.isHero).slice(0, 4));
-        }
-      } catch (error) {
-        console.error('Error cargando los más vendidos:', error);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadProducts();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (allProducts && allProducts.length > 0) {
+      // Simular featured tomándolos por fecha o simplemente los 4 primeros
+      setProducts(allProducts.slice(0, 4));
+    }
+  }, [allProducts]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

@@ -2,59 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { productService } from '../services/productService';
+import { useProducts } from '../context/ProductContext';
 import { categories } from '../data/products';
 import './Store.css';
 
 export default function Store() {
-  const [allProducts, setAllProducts] = useState([]);
+  const { products: allProducts, isLoading } = useProducts();
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
+    if (!allProducts) return;
     
-    const loadProducts = async () => {
-      console.log("🛒 [Store] Iniciando carga de productos desde productService...");
-      try {
-        setIsLoading(true);
-        const data = await productService.getProducts();
-        console.log(`📥 [Store] Productos recibidos del servicio (${data.length} items):`, data);
-        
-        if (isMounted) {
-          setAllProducts(data);
-          setFilteredProducts(data);
+    if (selectedCategory === 'all') {
+      setFilteredProducts([...allProducts]);
+    } else {
+      const filtered = allProducts.filter(product => {
+        const catName = product.category?.name || product.category || 'General';
+        if (typeof catName === 'string') {
+          return catName.toLowerCase() === selectedCategory.toLowerCase();
         }
-      } catch (error) {
-        console.error('❌ [Store] Error atrapado al cargar productos en la tienda:', {
-          message: error.message,
-          stack: error.stack,
-          details: error
-        });
-      } finally {
-        if (isMounted) {
-          console.log("🏁 [Store] Carga de productos finalizada. Estableciendo isLoading = false");
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadProducts();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+        return false;
+      });
+      setFilteredProducts(filtered);
+    }
+  }, [allProducts, selectedCategory]);
 
   const handleCategoryFilter = (category) => {
     setSelectedCategory(category);
     
     if (category === 'all') {
-      setFilteredProducts(allProducts);
+      setFilteredProducts([...allProducts]);
     } else {
-      const filtered = allProducts.filter(product => 
-        product.category.toLowerCase() === category.toLowerCase()
-      );
+      const filtered = allProducts.filter(product => {
+        const catName = product.category?.name || product.category || 'General';
+        if (typeof catName === 'string') {
+          return catName.toLowerCase() === category.toLowerCase();
+        }
+        return false;
+      });
       setFilteredProducts(filtered);
     }
   };
@@ -85,7 +71,10 @@ export default function Store() {
   };
 
   // Get unique categories from products
-  const productCategories = ['all', ...new Set(allProducts.map(product => product.category))];
+  const productCategories = ['all', ...new Set(allProducts.map(product => {
+    const catName = product.category?.name || product.category || 'General';
+    return typeof catName === 'string' ? catName : 'General';
+  }))];
 
   return (
     <div className="store-page">
@@ -260,11 +249,20 @@ export default function Store() {
                   whileInView="visible"
                   viewport={{ once: true, margin: "-50px" }}
                 >
-                  {filteredProducts.map((product) => (
-                    <motion.div key={product.id} variants={itemVariants}>
-                      <ProductCard product={product} />
-                    </motion.div>
-                  ))}
+                  {filteredProducts.map((product) => {
+                    const mappedProduct = {
+                      ...product,
+                      name: product.name || product.title,
+                      price: product.price_usd || product.price,
+                      image: product.images_urls?.[0] || product.image
+                    };
+                    
+                    return (
+                      <motion.div key={product.id} variants={itemVariants}>
+                        <ProductCard product={mappedProduct} />
+                      </motion.div>
+                    );
+                  })}
                 </motion.div>
               ) : (
                 <motion.div 

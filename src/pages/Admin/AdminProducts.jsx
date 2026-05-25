@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
-import { productService } from '../../services/productService';
+import { useProducts } from '../../context/ProductContext';
 import './AdminProducts.css';
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState([]);
-
-  useEffect(() => {
-    productService.getProducts().then(data => setProducts(data));
-  }, []);
+  const { products, isLoading } = useProducts();
 
   return (
     <div className="admin-products animate-fade-in">
@@ -49,7 +45,7 @@ export default function AdminProducts() {
                     <span>{product.name}</span>
                   </div>
                 </td>
-                <td>{product.category}</td>
+                <td>{product.category || 'General'}</td>
                 <td>${product.price.toFixed(2)}</td>
                 <td>{product.salePrice ? `$${product.salePrice.toFixed(2)}` : '-'}</td>
                 <td>
