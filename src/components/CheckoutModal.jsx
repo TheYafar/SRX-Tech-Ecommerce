@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload, Smartphone } from 'lucide-react';
+import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import './CheckoutModal.css';
@@ -16,6 +16,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [savedTotal, setSavedTotal] = useState(0);
+  const [orderRefCode, setOrderRefCode] = useState('');
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -175,7 +177,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
       console.log('✅ [CheckoutModal:processCheckout] Pago registrado exitosamente en la base de datos.');
 
-      // 5. Actualizar estado y limpiar carrito
+      // 5. Guardar datos ANTES de limpiar carrito (para la pantalla de éxito)
+      const totalToSave = finalTotal;
+      const refCode = newOrderId.slice(-6).toUpperCase();
+      setSavedTotal(totalToSave);
+      setOrderRefCode(refCode);
       setOrderId(newOrderId);
       setIsSuccess(true);
       clearCart();
@@ -254,43 +260,113 @@ export default function CheckoutModal({ isOpen, onClose }) {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring" }}
           >
-            <motion.div 
-              className="success-icon"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", delay: 0.2 }}
-            >
-              <CheckCircle size={64} />
-            </motion.div>
-            <h2 className="success-title">¡Pedido Confirmado!</h2>
-            <p className="success-subtitle">Tu orden ha sido procesada exitosamente.</p>
-            
-            <div className="order-details">
-              <div className="order-row">
-                <span className="order-label">ID del Pedido:</span>
-                <span className="order-value">{orderId}</span>
-              </div>
-              <div className="order-row">
-                <span className="order-label">Método de Pago:</span>
-                <span className="order-value payment-tag">{paymentMethod.toUpperCase()}</span>
-              </div>
-              <div className="order-row">
-                <span className="order-label">Monto Total:</span>
-                <span className="order-value total">${finalTotal.toFixed(2)}</span>
-              </div>
+            {/* Confetti particles */}
+            <div className="success-confetti">
+              {[...Array(12)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="confetti-particle"
+                  initial={{ y: -20, x: 0, opacity: 1, scale: 0 }}
+                  animate={{
+                    y: [0, -80 - Math.random() * 60, 120 + Math.random() * 80],
+                    x: [(Math.random() - 0.5) * 200],
+                    opacity: [0, 1, 1, 0],
+                    scale: [0, 1, 1, 0.5],
+                    rotate: [0, Math.random() * 360]
+                  }}
+                  transition={{
+                    duration: 2 + Math.random() * 1.5,
+                    delay: 0.3 + Math.random() * 0.5,
+                    ease: "easeOut"
+                  }}
+                  style={{
+                    background: ['#28a745', '#ffd700', '#1e225e', '#0066cc', '#ff6b6b', '#a855f7'][i % 6],
+                    width: 8 + Math.random() * 6,
+                    height: 8 + Math.random() * 6,
+                    borderRadius: i % 2 === 0 ? '50%' : '2px'
+                  }}
+                />
+              ))}
             </div>
 
-            <div className="success-instructions">
-              <p>Te hemos enviado las instrucciones de pago a tu correo. Por favor, reporta tu capture una vez realizada la transferencia.</p>
-            </div>
+            {/* Animated check icon with glow ring */}
+            <motion.div 
+              className="success-icon-wrapper"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.2, damping: 12, stiffness: 200 }}
+            >
+              <motion.div
+                className="success-icon-ring"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: [0.8, 1.2, 1], opacity: [0, 0.5, 0.2] }}
+                transition={{ duration: 1.5, delay: 0.4, repeat: Infinity, repeatType: "reverse" }}
+              />
+              <div className="success-icon">
+                <CheckCircle size={56} strokeWidth={2} />
+              </div>
+            </motion.div>
+
+            <motion.h2 
+              className="success-title"
+              initial={{ y: 15, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.35 }}
+            >
+              ¡Gracias por tu orden!
+            </motion.h2>
+            <motion.p 
+              className="success-subtitle"
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.45 }}
+            >
+              Tu pedido ha sido registrado con éxito. En breve validaremos tu pago y te notificaremos por correo electrónico el estado de tu compra.
+            </motion.p>
+            
+            {/* Summary Card */}
+            <motion.div 
+              className="success-summary-card"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.55, type: "spring", damping: 20 }}
+            >
+              <div className="success-summary-header">
+                <Sparkles size={18} />
+                <span>Resumen de tu pedido</span>
+              </div>
+              <div className="success-summary-body">
+                <div className="success-summary-row">
+                  <span className="success-summary-label">Número de Orden</span>
+                  <span className="success-summary-value success-ref-code">#{orderRefCode}</span>
+                </div>
+                <div className="success-summary-divider" />
+                <div className="success-summary-row">
+                  <span className="success-summary-label">Método de Pago</span>
+                  <span className="success-summary-value">
+                    <span className="success-payment-badge">{paymentMethod.toUpperCase()}</span>
+                  </span>
+                </div>
+                <div className="success-summary-divider" />
+                <div className="success-summary-row success-total-row">
+                  <span className="success-summary-label">Total a transferir</span>
+                  <span className="success-summary-value success-total-amount">${savedTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            </motion.div>
 
             <motion.button 
               className="success-btn"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              initial={{ y: 15, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.65 }}
               onClick={handleSuccessClose}
             >
-              Continuar Comprando
+              <ShoppingBag size={20} />
+              <span>Volver a la Tienda</span>
+              <ArrowRight size={18} />
             </motion.button>
           </motion.div>
         ) : (

@@ -43,12 +43,12 @@ export default function AdminDashboard() {
 
   const fetchPendingPayments = useCallback(async () => {
     setIsLoadingPayments(true);
-    console.log("🔍 [AdminDashboard:fetchPendingPayments] Consultando pagos pendientes en Supabase...");
+    console.log("🔍 [AdminDashboard:fetchPendingPayments] Consultando pagos pendientes (relacional) en Supabase...");
     try {
       const { data, error } = await supabase
         .from('payments')
-        .select('*')
-        .eq('status', 'pending')
+        .select('*, orders(*, profiles(full_name, email))')
+        .eq('status', 'pending_verification')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -197,20 +197,42 @@ export default function AdminDashboard() {
     }
   };
 
-  const handlePaymentAction = async (paymentId, newStatus) => {
+  const handlePaymentAction = async (paymentId, newStatus, orderId) => {
+    const actionLabel = newStatus === 'completed' ? 'VALIDAR' : 'RECHAZAR';
+    const confirmed = window.confirm(`¿Estás seguro de ${actionLabel} este pago? Esta acción actualizará el pago y la orden asociada.`);
+    if (!confirmed) return;
+
     console.log(`🚀 [AdminDashboard:handlePaymentAction] Cambiando estado de pago ID: ${paymentId} a: ${newStatus}`);
     try {
-      const { error } = await supabase
+      // 1. Actualizar estado del pago
+      const { error: paymentError } = await supabase
         .from('payments')
         .update({ status: newStatus })
         .eq('id', paymentId);
 
-      if (error) {
-        throw error;
+      if (paymentError) {
+        throw paymentError;
       }
 
-      console.log(`✅ [AdminDashboard:handlePaymentAction] Estado de pago actualizado correctamente.`);
-      showSuccess(`Pago ${newStatus === 'approved' ? 'aprobado' : 'rechazado'} correctamente.`);
+      // 2. Actualizar estado de la orden asociada
+      if (orderId) {
+        const orderNewStatus = newStatus === 'completed' ? 'paid' : 'rejected';
+        console.log(`🔄 [AdminDashboard:handlePaymentAction] Actualizando orden ID: ${orderId} a: ${orderNewStatus}`);
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({ status: orderNewStatus })
+          .eq('id', orderId);
+
+        if (orderError) {
+          console.error('⚠️ [AdminDashboard:handlePaymentAction] Error actualizando orden (pago sí se actualizó):', orderError);
+          showError('El pago se actualizó, pero hubo un error al actualizar la orden.');
+          fetchPendingPayments();
+          return;
+        }
+      }
+
+      console.log(`✅ [AdminDashboard:handlePaymentAction] Pago y orden actualizados correctamente.`);
+      showSuccess(`Pago ${newStatus === 'completed' ? 'validado' : 'rechazado'} correctamente.`);
       fetchPendingPayments();
     } catch (error) {
       console.error('❌ [AdminDashboard:handlePaymentAction] Error al actualizar estado del pago en Supabase:', {
@@ -374,53 +396,70 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="payments-grid">
-                {pendingPayments.map(payment => (
-                  <div key={payment.id} className="payment-card">
-                    <div className="payment-card-header">
-                      <span className="payment-id">Pedido #{payment.order_id || 'N/A'}</span>
-                      <span className="payment-amount">${payment.amount}</span>
-                    </div>
-                    
-                    <div className="payment-details">
-                      <p><strong>Fecha:</strong> {new Date(payment.created_at).toLocaleString()}</p>
-                      <p><strong>Método:</strong> {payment.payment_method || 'Transferencia'}</p>
-                      {payment.user_id && <p><strong>Usuario ID:</strong> {payment.user_id}</p>}
-                    </div>
+                {pendingPayments.map(payment => {
+                  const order = payment.orders;
+                  const profile = order?.profiles;
+                  return (
+                    <div key={payment.id} className="payment-card">
+                      <div className="payment-card-header">
+                        <span className="payment-id">Pedido #{order?.id ? String(order.id).substring(0, 8) : 'N/A'}</span>
+                        <span className="payment-amount">
+                          {payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : ''}
+                          {Number(payment.amount_paid).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {' '}<span className="payment-currency">{payment.currency || 'USD'}</span>
+                        </span>
+                      </div>
+                      
+                      <div className="payment-details">
+                        <p><strong>Cliente:</strong> {profile?.full_name || 'Sin nombre'}</p>
+                        <p><strong>Email:</strong> {profile?.email || 'N/A'}</p>
+                        <p><strong>Fecha:</strong> {new Date(payment.created_at).toLocaleString()}</p>
+                        {payment.reference_number && (
+                          <p><strong>Nº Referencia:</strong> <span className="reference-badge">{payment.reference_number}</span></p>
+                        )}
+                      </div>
 
-                    <div className="payment-proof">
-                      {payment.proof_image_url ? (
-                        <div className="proof-image-container">
-                          <img src={payment.proof_image_url} alt="Comprobante" className="proof-image" />
-                          <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="view-full-btn">
-                            Ver comprobante completo
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="no-proof">
-                          <ImageIcon size={24} />
-                          <span>Sin imagen de comprobante</span>
-                        </div>
-                      )}
-                    </div>
+                      <div className="payment-proof">
+                        {payment.proof_image_url ? (
+                          <div className="proof-image-container">
+                            <img
+                              src={payment.proof_image_url}
+                              alt="Comprobante de pago"
+                              className="proof-image"
+                              onClick={() => window.open(payment.proof_image_url, '_blank')}
+                              style={{ cursor: 'zoom-in' }}
+                            />
+                            <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="view-full-btn">
+                              🔍 Ver comprobante completo
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="no-proof">
+                            <ImageIcon size={24} />
+                            <span>Sin imagen de comprobante</span>
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="payment-actions">
-                      <button 
-                        className="btn-reject"
-                        onClick={() => handlePaymentAction(payment.id, 'rejected')}
-                      >
-                        <XCircle size={18} />
-                        Rechazar
-                      </button>
-                      <button 
-                        className="btn-approve"
-                        onClick={() => handlePaymentAction(payment.id, 'approved')}
-                      >
-                        <CheckCircle size={18} />
-                        Aprobar
-                      </button>
+                      <div className="payment-actions">
+                        <button 
+                          className="btn-reject"
+                          onClick={() => handlePaymentAction(payment.id, 'rejected', order?.id)}
+                        >
+                          <XCircle size={18} />
+                          Rechazar
+                        </button>
+                        <button 
+                          className="btn-approve"
+                          onClick={() => handlePaymentAction(payment.id, 'completed', order?.id)}
+                        >
+                          <CheckCircle size={18} />
+                          Validar Pago
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
