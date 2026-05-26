@@ -290,11 +290,10 @@ export default function AdminDashboard() {
                   name="category_id" 
                   value={productData.category_id} 
                   onChange={handleProductInputChange} 
-                  className="admin-select"
                   required
                 >
-                  <option value="">Selecciona una categoría</option>
-                  {categories.map(categoria => (
+                  <option value="" disabled>Selecciona una categoría...</option>
+                  {categories && categories.length > 0 && categories.map(categoria => (
                     <option key={categoria.id} value={categoria.id}>
                       {categoria.name}
                     </option>
