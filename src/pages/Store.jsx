@@ -198,16 +198,15 @@ export default function Store() {
                 </div>
               ))}
             </div>
-          ) : (
-            <motion.div 
-              className="products-premium-grid"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-            >
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((producto) => {
+          ) : filteredProducts.length > 0 ? (
+              <motion.div 
+                className="products-premium-grid"
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+              >
+                {filteredProducts.map((producto) => {
                   const mappedProduct = {
                     ...producto,
                     name: producto.name,
@@ -219,30 +218,62 @@ export default function Store() {
                       <ProductCard product={mappedProduct} />
                     </motion.div>
                   );
-                })
-              ) : (
-                <motion.div 
-                  className="no-products-message glass-card"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  style={{ gridColumn: '1 / -1' }}
-                >
-                  <div className="no-products-icon-wrapper">
-                    <span className="no-products-icon">📷</span>
-                  </div>
-                  <h3>No hay productos en esta categoría</h3>
-                  <p>Prueba seleccionando otra categoría o vuelve a explorar todo nuestro catálogo.</p>
-                  <button 
+                })}
+              </motion.div>
+            ) : (
+              <motion.div 
+                className="empty-state-container"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              >
+                <div className="empty-state-card">
+                  <motion.div 
+                    className="empty-state-icon-ring"
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 15 }}
+                  >
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 7h-9" />
+                      <path d="M14 17H5" />
+                      <circle cx="17" cy="17" r="3" />
+                      <circle cx="7" cy="7" r="3" />
+                    </svg>
+                  </motion.div>
+
+                  <motion.h3 
+                    className="empty-state-title"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                  >
+                    Aún no hay productos en esta categoría.
+                  </motion.h3>
+
+                  <motion.p 
+                    className="empty-state-subtitle"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.45 }}
+                  >
+                    ¡Vuelve pronto para ver novedades!
+                  </motion.p>
+
+                  <motion.button 
                     className="btn-catalog-premium"
                     onClick={() => handleCategoryFilter('Todos')}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.55 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    Ver todos los productos
-                  </button>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
+                    ← Ver todos los productos
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
 
           {/* Back to Home Link */}
           <motion.div 
