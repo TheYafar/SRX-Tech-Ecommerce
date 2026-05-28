@@ -28,6 +28,7 @@
   padding-top: 100%; /* Perfect 1:1 */
   background: var(--bg-tertiary);
   overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .card-image {
@@ -45,45 +46,50 @@
   }
 }
 
-/* ── Premium Offer Banner (Dark glassmorphism) ── */
+/* ── Premium Offer Banner (Vibrant glassmorphism) ── */
 .premium-offer-banner {
   position: absolute;
   top: 12px;
   left: 12px;
-  background-color: rgba(20, 20, 20, 0.85);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(120, 80, 255, 0.55);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
   color: #ffffff;
-  padding: 6px 14px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 1.5px;
+  padding: 6px 16px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border: 1px solid rgba(160, 130, 255, 0.3);
+  border-radius: 6px;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  animation: pulse 2.5s ease-in-out infinite;
+  box-shadow:
+    0 4px 16px rgba(120, 80, 255, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  animation: offerShimmer 3s ease-in-out infinite;
 }
 
 /* ── Price Container (Offer layout) ── */
 .price-container {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 0.6rem;
 }
 
 .old-price {
   text-decoration: line-through;
-  color: #666666;
-  font-size: 0.9rem;
+  color: rgba(160, 160, 175, 0.7);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: -0.2px;
 }
 
 .new-price {
-  color: #ffffff;
-  font-size: 1.1rem;
-  font-weight: bold;
+  color: rgb(140, 100, 255);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.4px;
 }
 
 /* ── Backorder Notice ── */
@@ -237,7 +243,6 @@
 /* ── Pricing ── */
 .card-pricing {
   display: flex;
-  align-items: baseline;
   align-items: flex-end;
   margin-bottom: 1.2rem;
 }
@@ -245,6 +250,7 @@
 .pricing-wrapper {
   display: flex;
   flex-direction: column;
+  gap: 0.15rem;
 }
 
 .usd-prices {
@@ -254,16 +260,17 @@
 }
 
 .ves-price {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-size: 0.75rem;
+  color: rgba(160, 160, 175, 0.55);
   font-weight: 500;
-  margin-top: 0.2rem;
+  margin-top: 0.1rem;
+  letter-spacing: 0.2px;
 }
 
 .current-price {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #ffffff;
   letter-spacing: -0.3px;
 }
 
@@ -322,9 +329,17 @@
 }
 
 /* ── Animations ── */
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.06); }
+@keyframes offerShimmer {
+  0%, 100% {
+    box-shadow:
+      0 4px 16px rgba(120, 80, 255, 0.35),
+      0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 6px 24px rgba(120, 80, 255, 0.55),
+      0 2px 6px rgba(0, 0, 0, 0.3);
+  }
 }
 
 /* ── Responsive ── */
@@ -332,7 +347,7 @@
   .card-title { font-size: 0.9rem; }
   .card-tagline { font-size: 0.78rem; margin-bottom: 0.5rem; }
   .current-price { font-size: 1.1rem; }
-  .premium-offer-banner { font-size: 0.7rem; padding: 3px 10px; }
+  .premium-offer-banner { font-size: 0.62rem; padding: 4px 10px; letter-spacing: 2px; }
   .quick-action-btn { width: 38px; height: 38px; }
   .pill-btn { min-height: 44px; /* Better touch target */ }
 
