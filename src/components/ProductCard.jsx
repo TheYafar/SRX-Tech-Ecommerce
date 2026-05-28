@@ -11,7 +11,9 @@ export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isProductLiked } = useWishlist();
   const { formatUSD, formatVES, isLoading } = useCurrency();
-  const hasSale = product.compareAtPrice && product.compareAtPrice > product.price;
+  const precioActual = Number(product.price || 0);
+  const precioOferta = Number(product.compareAtPrice || product.compare_at_price_usd || 0);
+  const tieneOferta = precioOferta > 0 && precioOferta < precioActual;
   const isOutOfStock = !product.stock || product.stock < 1;
   const [isHovered, setIsHovered] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
@@ -46,8 +48,8 @@ export default function ProductCard({ product }) {
         onHoverEnd={() => setIsHovered(false)}
       >
         <div className="card-image-container">
-          {hasSale && (
-            <div className="badge-offer">OFERTA</div>
+          {tieneOferta && (
+            <div className="premium-offer-banner">OFERTA</div>
           )}
           
           {product.rating && (
@@ -110,31 +112,31 @@ export default function ProductCard({ product }) {
           )}
           
           <div className="card-pricing">
-            {hasSale ? (
+            {tieneOferta ? (
               <div className="pricing-wrapper">
-                <div className="usd-prices">
-                  <span className="original-price">{formatUSD(product.compareAtPrice)}</span>
+                <div className="price-container">
+                  <span className="old-price">{formatUSD(precioActual)}</span>
                   <motion.span 
-                    className="current-price sale-price"
+                    className="new-price"
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 200 }}
                   >
-                    {formatUSD(product.price)}
+                    {formatUSD(precioOferta)}
                   </motion.span>
                 </div>
                 {!isLoading && (
                   <div className="ves-price">
-                    Ref: {formatVES(product.price)}
+                    Ref: {formatVES(precioOferta)}
                   </div>
                 )}
               </div>
             ) : (
               <div className="pricing-wrapper">
-                <span className="current-price">{formatUSD(product.price)}</span>
+                <span className="current-price">{formatUSD(precioActual)}</span>
                 {!isLoading && (
                   <div className="ves-price">
-                    Ref: {formatVES(product.price)}
+                    Ref: {formatVES(precioActual)}
                   </div>
                 )}
               </div>
