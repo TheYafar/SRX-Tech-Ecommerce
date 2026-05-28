@@ -11,7 +11,8 @@ export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isProductLiked } = useWishlist();
   const { formatUSD, formatVES, isLoading } = useCurrency();
-  const hasSale = product.salePrice && product.salePrice < product.price;
+  const hasSale = product.compareAtPrice && product.compareAtPrice > product.price;
+  const isOutOfStock = !product.stock || product.stock < 1;
   const [isHovered, setIsHovered] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -46,14 +47,7 @@ export default function ProductCard({ product }) {
       >
         <div className="card-image-container">
           {hasSale && (
-            <motion.div 
-              className="card-sale-circle"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200 }}
-            >
-              <span>¡Oferta!</span>
-            </motion.div>
+            <div className="badge-offer">OFERTA</div>
           )}
           
           {product.rating && (
@@ -119,19 +113,19 @@ export default function ProductCard({ product }) {
             {hasSale ? (
               <div className="pricing-wrapper">
                 <div className="usd-prices">
-                  <span className="original-price">{formatUSD(product.price)}</span>
+                  <span className="original-price">{formatUSD(product.compareAtPrice)}</span>
                   <motion.span 
                     className="current-price sale-price"
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 200 }}
                   >
-                    {formatUSD(product.salePrice)}
+                    {formatUSD(product.price)}
                   </motion.span>
                 </div>
                 {!isLoading && (
                   <div className="ves-price">
-                    Ref: {formatVES(product.salePrice)}
+                    Ref: {formatVES(product.price)}
                   </div>
                 )}
               </div>
@@ -146,16 +140,22 @@ export default function ProductCard({ product }) {
               </div>
             )}
           </div>
+
+          {isOutOfStock && (
+            <p className="backorder-notice">
+              Llegarán nuevas unidades en 7 a 10 días hábiles
+            </p>
+          )}
           
           <motion.button 
-            className={`pill-btn cart-btn ${isAdded ? 'added-to-cart' : ''}`}
+            className={`pill-btn cart-btn ${isOutOfStock ? 'order-btn' : ''} ${isAdded ? 'added-to-cart' : ''}`}
             onClick={handleAddToCart}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             data-product-id={product.id}
           >
             <ShoppingCart size={18} />
-            <span>Añadir al carrito</span>
+            <span>{isOutOfStock ? 'Hacer Encargo' : 'Añadir al carrito'}</span>
             <motion.span 
               className="cart-added-indicator"
               animate={{ scale: isAdded ? 1 : 0 }}

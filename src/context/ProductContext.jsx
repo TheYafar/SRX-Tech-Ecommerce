@@ -29,7 +29,11 @@ export const ProductProvider = ({ children }) => {
         image: p.images_urls?.[0] || 'https://via.placeholder.com/150',
         price: p.price_usd || 0,
         salePrice: p.sale_price_usd || null,
-        tagline: p.description ? p.description.substring(0, 50) + '...' : ''
+        tagline: p.description ? p.description.substring(0, 50) + '...' : '',
+        stock: p.stock || 0,
+        compareAtPrice: p.compare_at_price_usd || null,
+        offerEndsAt: p.offer_ends_at || null,
+        isBestSeller: p.is_best_seller || false
       }));
 
       console.log(`✅ [ProductContext] Productos cargados y mapeados: ${mappedData.length}`);
