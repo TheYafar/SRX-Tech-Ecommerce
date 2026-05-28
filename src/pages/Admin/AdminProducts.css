@@ -1,3 +1,168 @@
+/* ================================================================
+   AdminProducts.css — Fase 4: Catálogo + Modal de Edición
+   Paleta unificada: familia slate | Dark Mode Premium
+   CERO Tailwind — 100% Vanilla CSS
+   ================================================================ */
+
+/* ── Fade-in para la vista ── */
+.admin-products.animate-fade-in {
+  animation: fadeIn 0.35s ease both;
+}
+
+/* ================================================================
+   PAGE HEADER
+   ================================================================ */
+.admin-page-header {
+  margin-bottom: 2rem;
+}
+
+.admin-page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #f1f5f9;            /* slate-100 */
+  margin: 0 0 0.375rem;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.admin-page-subtitle {
+  color: #94a3b8;            /* slate-400 */
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ================================================================
+   TOOLBAR — Búsqueda + Nuevo Producto
+   ================================================================ */
+.admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #1e293b;       /* slate-800 */
+  border: 1px solid #334155; /* slate-700 */
+  border-radius: 10px;
+  padding: 0.625rem 1rem;
+  flex: 1;
+  max-width: 400px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color: #94a3b8;
+}
+
+.admin-search-box:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.admin-search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f1f5f9;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+.admin-search-box input::placeholder {
+  color: #64748b;
+}
+
+/* ── Botón Nuevo Producto ── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #2563eb;       /* blue-600 */
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;       /* blue-700 */
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================================================================
+   TABLE CONTAINER
+   ================================================================ */
+.admin-table-container {
+  background: #020617;       /* slate-950 */
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.admin-table thead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 1rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #94a3b8;            /* slate-400 */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.9375rem;
+  color: #cbd5e1;            /* slate-300 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.admin-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Celda del producto (imagen + nombre) ── */
 .product-cell {
   display: flex;
   align-items: center;
@@ -5,42 +170,533 @@
 }
 
 .product-cell-img {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   object-fit: cover;
-  background: var(--bg-tertiary);
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
+.product-cell span {
+  font-weight: 500;
+  color: #f1f5f9;
+}
+
+/* ── Badge de stock ── */
 .stock-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .stock-badge.in-stock {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
 }
 
-.btn-primary {
+.stock-badge.low-stock {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.stock-badge.out-of-stock {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+/* ── Precio normal vs oferta ── */
+.price-cell {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.price-cell.has-offer {
+  text-decoration: line-through;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.offer-price-cell {
+  font-weight: 700;
+  color: #34d399;
+}
+
+/* ================================================================
+   BOTONES DE ACCIÓN (Editar / Eliminar)
+   ================================================================ */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: var(--primary);
-  color: white;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-md);
-  font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s ease;
+  background: transparent;
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
+.btn-icon.edit {
+  color: #60a5fa;            /* blue-400 */
 }
 
-.btn-icon.edit { color: #0066cc; }
-.btn-icon.delete { color: #dc3545; }
+.btn-icon.edit:hover {
+  background: rgba(96, 165, 250, 0.12);
+  color: #93c5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.18);
+}
+
+.btn-icon.delete {
+  color: #f87171;            /* red-400 */
+}
+
+.btn-icon.delete:hover {
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.18);
+}
+
+.btn-icon:active {
+  transform: translateY(0);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================================================================
+   LOADING OVERLAY — Cubre toda la vista
+   ================================================================ */
+.admin-products-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(2, 6, 23, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.admin-products-loading-overlay .spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ================================================================
+   MODAL DE EDICIÓN — Dark Mode Premium con Glassmorphism
+   ================================================================ */
+.edit-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.edit-modal {
+  background: #0f172a;       /* slate-900 */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Scrollbar del modal */
+.edit-modal::-webkit-scrollbar {
+  width: 5px;
+}
+
+.edit-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.edit-modal::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 99px;
+}
+
+/* ── Header del modal ── */
+.edit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.edit-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.edit-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-modal-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* ── Body del modal (formulario) ── */
+.edit-modal-body {
+  padding: 1.5rem 1.75rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Grupos de campos ── */
+.edit-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-form-group label {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #cbd5e1;            /* slate-300 */
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.edit-form-group input[type="text"],
+.edit-form-group input[type="number"] {
+  background: #1e293b;       /* slate-800 */
+  border: 1px solid #334155; /* slate-700 */
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.edit-form-group input[type="text"]:hover,
+.edit-form-group input[type="number"]:hover {
+  border-color: #475569;
+}
+
+.edit-form-group input[type="text"]:focus,
+.edit-form-group input[type="number"]:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.edit-form-group input[type="text"]::placeholder,
+.edit-form-group input[type="number"]::placeholder {
+  color: #64748b;
+}
+
+/* ── datetime-local adaptado al Dark Mode ── */
+.edit-form-group input[type="datetime-local"] {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #f1f5f9;            /* texto blanco */
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 1.5;
+  width: 100%;
+  /* Adaptar icono del calendario al dark mode */
+  color-scheme: dark;
+}
+
+.edit-form-group input[type="datetime-local"]:hover {
+  border-color: #475569;
+}
+
+.edit-form-group input[type="datetime-local"]:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* Icono del datetime adaptado */
+.edit-form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) brightness(1.2);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.edit-form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ── Fila de 2 columnas en el modal ── */
+.edit-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Checkbox "Más Vendido" — Toggle premium ── */
+.edit-form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.edit-form-checkbox:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.edit-form-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 24px;
+  background: #334155;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+  flex-shrink: 0;
+  border: none;
+}
+
+.edit-form-checkbox input[type="checkbox"]::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #94a3b8;
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edit-form-checkbox input[type="checkbox"]:checked {
+  background: #2563eb;
+}
+
+.edit-form-checkbox input[type="checkbox"]:checked::after {
+  left: 23px;
+  background: #ffffff;
+}
+
+.edit-form-checkbox .checkbox-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.edit-form-checkbox .checkbox-hint {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.125rem;
+}
+
+/* ── Footer del modal (botones) ── */
+.edit-modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 0 1.75rem 1.5rem;
+}
+
+.btn-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: transparent;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+.btn-save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-save:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================================================================
+   EMPTY STATE
+   ================================================================ */
+.admin-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+  text-align: center;
+  gap: 1rem;
+}
+
+.admin-empty-state p {
+  font-size: 1rem;
+  margin: 0;
+  color: #94a3b8;
+}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 640px) {
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-search-box {
+    max-width: 100%;
+  }
+
+  .edit-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-modal {
+    max-width: 100%;
+    border-radius: 16px;
+  }
+
+  .edit-modal-header {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .edit-modal-body {
+    padding: 1.25rem;
+  }
+
+  .edit-modal-footer {
+    padding: 0 1.25rem 1.25rem;
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-save {
+    width: 100%;
+    justify-content: center;
+  }
+}
