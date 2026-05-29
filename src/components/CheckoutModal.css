@@ -153,6 +153,13 @@
   object-fit: contain;
 }
 
+.payment-method-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+}
+
 .payment-option-name {
   font-size: 0.9rem;
 }

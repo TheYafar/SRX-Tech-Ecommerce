@@ -209,10 +209,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
   };
 
   const paymentMethods = [
-    { id: 'zelle', name: 'Zelle', type: 'image', src: '/imagen/zelle.png', color: '#0066cc' },
+    { id: 'zelle', name: 'Zelle', type: 'image', src: '/imagenes/zelle.png', color: '#0066cc' },
     { id: 'pago-movil', name: 'Pago Móvil', type: 'icon', color: '#28a745' },
-    { id: 'binance', name: 'Binance Pay', type: 'image', src: '/imagen/binance.png', color: '#fcd535' },
-    { id: 'paypal', name: 'PayPal', type: 'image', src: '/imagen/paypal.png', color: '#003087' },
+    { id: 'binance', name: 'Binance Pay', type: 'image', src: '/imagenes/binance.png', color: '#fcd535' },
+    { id: 'paypal', name: 'PayPal', type: 'image', src: '/imagenes/paypal.png', color: '#003087' },
     { id: 'tarjeta', name: 'Tarjeta', type: 'icon', color: '#1e225e' }
   ];
 
@@ -400,12 +400,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         onChange={() => setPaymentMethod(method.id)}
                         className="hidden-radio"
                       />
-                      <div className="payment-option-icon text-slate-700">
+                      <div className="payment-option-icon">
                         {method.type === 'image' ? (
                           <img 
                             src={method.src} 
                             alt={method.name}
-                            className="w-12 h-12 object-contain"
+                            className="payment-method-img"
                           />
                         ) : method.id === 'pago-movil' ? (
                           <Smartphone size={32} color={method.color} />
@@ -413,7 +413,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                           <CreditCard size={32} color={method.color} />
                         )}
                       </div>
-                      <span className="payment-option-name text-slate-800 font-bold">{method.name}</span>
+                      <span className="payment-option-name">{method.name}</span>
                       {paymentMethod === method.id && (
                         <motion.div 
                           className="payment-option-check"

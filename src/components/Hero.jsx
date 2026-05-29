@@ -2,7 +2,6 @@ import React from 'react';
 import { products } from '../data/products';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShoppingCart } from 'lucide-react';
-import srxImage from '../../imagen/srx.jpeg';
 import { useCart } from '../context/CartContext';
 import './Hero.css';
 
@@ -38,7 +37,7 @@ export default function Hero() {
         transition={{ duration: 1.1, ease: 'easeOut' }}
       >
         <img
-          src={srxImage}
+          src="/imagen/srx.jpeg"
           alt="DJI Mic Mini — SRX Tech"
           className="hero-bg-image"
         />

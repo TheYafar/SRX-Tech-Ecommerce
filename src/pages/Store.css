@@ -282,6 +282,7 @@
   color: var(--text-secondary);
   border-radius: var(--radius-full);
   white-space: nowrap;
+  flex-shrink: 0;
   z-index: 1;
   transition: color 0.3s ease;
   background: transparent;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Store, Search, ShoppingCart, User } from 'lucide-react';
+import { Home, Store, ShoppingCart, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -13,7 +13,6 @@ export default function BottomNav() {
 
   const handleUserClick = () => {
     if (user) {
-      // Si está logueado, podríamos ir al perfil
       window.location.href = '#/profile'; 
     } else {
       openAuthModal('login');
@@ -23,8 +22,6 @@ export default function BottomNav() {
   const navItems = [
     { id: 'home', icon: Home, label: 'Inicio', path: '/' },
     { id: 'store', icon: Store, label: 'Tienda', path: '/tienda' },
-    // Para Búsqueda podríamos simplemente enfocar un modal o abrir la página, aquí un placeholder de botón.
-    // Lo manejaremos como un Link especial o botón
   ];
 
   return (
@@ -43,18 +40,6 @@ export default function BottomNav() {
             )}
           </Link>
         ))}
-
-        {/* Búsqueda (abre un modal o scroll) - por ahora botón */}
-        <button 
-          className="bottom-nav-item"
-          onClick={() => {
-            // Podríamos emitir un evento o usar un Contexto para abrir búsqueda móvil
-            alert('Función de búsqueda móvil en desarrollo');
-          }}
-        >
-          <Search size={22} className="nav-icon" />
-          <span className="nav-label">Buscar</span>
-        </button>
 
         {/* Carrito */}
         <button 
