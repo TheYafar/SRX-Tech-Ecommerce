@@ -9,15 +9,18 @@
   background: #fff;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+  transition: all 0.3s ease;
   position: relative;
   border: 1px solid var(--border-color);
 }
 
 @media (hover: hover) {
   .product-card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-4px);
+    transform: translateY(-5px);
+    box-shadow:
+      0 18px 44px rgba(0, 0, 0, 0.12),
+      0 6px 16px rgba(30, 34, 94, 0.08);
+    border-color: rgba(30, 34, 94, 0.15);
   }
 }
 
@@ -295,7 +298,7 @@
   color: var(--text-primary);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: all var(--transition-fast);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,9 +313,19 @@
     border-color: var(--navy);
     background: var(--navy);
     color: #fff;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-navy);
+    transform: translateY(-2px);
+    box-shadow:
+      var(--shadow-navy),
+      0 0 0 1px rgba(30, 34, 94, 0.1);
+    filter: brightness(1.1) saturate(1.05);
   }
+}
+
+/* Tactile press feedback */
+.pill-btn:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 8px rgba(30, 34, 94, 0.15);
+  transition-duration: 0.08s;
 }
 
 .cart-btn.added-to-cart {
@@ -348,10 +361,22 @@
   .card-tagline { font-size: 0.78rem; margin-bottom: 0.5rem; }
   .current-price { font-size: 1.1rem; }
   .premium-offer-banner { font-size: 0.62rem; padding: 4px 10px; letter-spacing: 2px; }
-  .quick-action-btn { width: 38px; height: 38px; }
-  .pill-btn { min-height: 44px; /* Better touch target */ }
+  .quick-action-btn { width: 44px; height: 44px; } /* Touch-friendly */
 
-  /* Hide hover overlay on touch devices — show quick actions as static buttons */
+  /* Bigger touch target for add-to-cart */
+  .pill-btn {
+    min-height: 48px;
+    padding: 0.85rem 1.4rem;
+    font-size: 0.9rem;
+  }
+
+  /* Order button also touch-friendly */
+  .pill-btn.order-btn {
+    min-height: 48px;
+    padding: 0.85rem 1.4rem;
+  }
+
+  /* Hide hover overlay on touch devices */
   .card-actions-overlay {
     display: none;
   }

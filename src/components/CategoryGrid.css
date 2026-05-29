@@ -52,7 +52,7 @@
   border-radius: var(--radius-xl);
   overflow: hidden;
   cursor: pointer;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition: all 0.3s ease;
   box-shadow: var(--shadow-md);
 }
 
@@ -151,7 +151,14 @@
     background: rgba(255, 255, 255, 0.22);
     border-color: #fff;
     transform: translateY(-2px);
+    filter: brightness(1.1);
   }
+}
+
+/* Tactile press feedback */
+.pill-btn-outline:active {
+  transform: scale(0.98) translateY(0);
+  transition-duration: 0.08s;
 }
 
 /* ── Responsive ── */
@@ -178,7 +185,8 @@
   .horizontal-card { height: 180px; }
 
   .pill-btn-outline {
-    min-height: 40px;
-    font-size: 0.78rem;
+    min-height: 44px;
+    padding: 0.55rem 1.4rem;
+    font-size: 0.82rem;
   }
 }

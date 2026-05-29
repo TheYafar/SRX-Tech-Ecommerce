@@ -98,13 +98,24 @@
   .best-sellers-header {
     margin-bottom: 2.5rem;
   }
+  .best-sellers-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .btn-view-all {
+    min-height: 48px;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 576px) {
   .best-sellers-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
     max-width: 100%;
+    gap: 1.25rem;
   }
 
   .best-sellers-section {

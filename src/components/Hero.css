@@ -159,6 +159,12 @@
 .hero-btn-discover:hover {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.6);
+  filter: brightness(1.1);
+}
+
+.hero-btn-discover:active {
+  transform: scale(0.98);
+  transition-duration: 0.08s;
 }
 
 /* Secondary CTA — cart */
@@ -181,6 +187,12 @@
 .hero-btn-cart:hover {
   background: #2a2f80;
   box-shadow: 0 12px 32px rgba(30, 34, 94, 0.5);
+  filter: brightness(1.1);
+}
+
+.hero-btn-cart:active {
+  transform: scale(0.98);
+  transition-duration: 0.08s;
 }
 
 /* === Ambient Background Circles === */
@@ -246,6 +258,7 @@
   .hero-btn-cart {
     padding: 0.75rem 1.5rem;
     font-size: 0.9rem;
+    min-height: 48px;
   }
 }
 

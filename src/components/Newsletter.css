@@ -88,6 +88,12 @@
 .newsletter-btn:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.newsletter-btn:active:not(:disabled) {
+  transform: scale(0.98) translateY(0);
+  transition-duration: 0.08s;
 }
 
 .newsletter-btn.success {

@@ -100,7 +100,8 @@
 }
 
 .footer-newsletter-btn:active {
-  transform: translateY(0);
+  transform: scale(0.95) translateY(0);
+  transition-duration: 0.08s;
 }
 
 /* ── Links Columns ── */

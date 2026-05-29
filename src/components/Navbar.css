@@ -344,15 +344,51 @@
 
 /* ── Breakpoints ── */
 @media (max-width: 768px) {
+  /* Hide desktop-only elements */
   .desktop-nav,
   .nav-search-container,
   .user-dropdown-container,
-  .cart-btn,
-  .mobile-menu-toggle { display: none !important; }
+  .cart-btn { display: none !important; }
 
-  /* Center the logo on mobile since other elements are hidden */
-  .navbar-container { justify-content: center; }
+  /* Show the hamburger toggle */
+  .mobile-menu-toggle {
+    display: flex !important;
+    width: 44px;
+    height: 44px;
+  }
 
+  /* Logo left, hamburger right */
+  .navbar-container {
+    justify-content: space-between;
+  }
+
+  /* Mobile menu drawer — smooth slide-in */
+  .mobile-nav-menu {
+    animation: mobileMenuSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes mobileMenuSlideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Bigger touch targets for mobile nav links */
+  .mobile-nav-link {
+    padding: 0.85rem 0.75rem;
+    font-size: 1.05rem;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+
+  .auth-link {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Floating search bar */
   .mobile-floating-search {
     display: block;
     position: absolute;
@@ -373,7 +409,8 @@
     padding: 0.4rem 1rem;
     margin: 0 auto;
     width: 90%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-height: 44px;
   }
 
   .floating-search-input {
@@ -397,7 +434,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-left: 0.5rem;
+    padding: 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
