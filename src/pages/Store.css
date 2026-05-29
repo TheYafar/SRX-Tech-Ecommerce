@@ -274,7 +274,7 @@
   display: none;
 }
 
-.pill-btn {
+.filter-pill-btn {
   position: relative;
   padding: 0.75rem 1.5rem;
   font-size: 0.95rem;
@@ -290,11 +290,11 @@
   cursor: pointer;
 }
 
-.pill-btn:hover {
+.filter-pill-btn:hover {
   color: var(--navy);
 }
 
-.pill-btn.active {
+.filter-pill-btn.active {
   color: white;
 }
 
@@ -460,7 +460,7 @@
     padding: 0.5rem;
   }
 
-  .pill-btn {
+  .filter-pill-btn {
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
   }

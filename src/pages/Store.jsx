@@ -152,7 +152,7 @@ export default function Store() {
             >
               <div className="pill-filter-scroll">
                 <button
-                  className={`pill-btn ${selectedCategory === 'Todos' ? 'active' : ''}`}
+                  className={`filter-pill-btn ${selectedCategory === 'Todos' ? 'active' : ''}`}
                   onClick={() => handleCategoryFilter('Todos')}
                 >
                   Todos
@@ -167,7 +167,7 @@ export default function Store() {
                 {categories.map(cat => (
                   <button
                     key={cat.id}
-                    className={`pill-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                    className={`filter-pill-btn ${selectedCategory === cat.id ? 'active' : ''}`}
                     onClick={() => handleCategoryFilter(cat.id)}
                   >
                     {cat.name}

@@ -110,7 +110,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([{
-          user_id: user.id,
+          user_id: user?.id || null,
           total_amount_usd: finalTotal,
           status: 'pending_payment'
         }])
@@ -208,10 +208,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user || !user.id) {
-      alert('Debes iniciar sesión para comprar');
-      return;
-    }
     console.log("🖱️ [CheckoutModal:handleSubmit] Checkout iniciado por envío de formulario.");
     await processCheckout();
   };
@@ -303,16 +299,16 @@ export default function CheckoutModal({ isOpen, onClose }) {
               className="success-icon-wrapper"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", delay: 0.2, damping: 12, stiffness: 200 }}
+              transition={{ type: "spring", delay: 0.2, damping: 10, stiffness: 160 }}
             >
               <motion.div
                 className="success-icon-ring"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: [0.8, 1.2, 1], opacity: [0, 0.5, 0.2] }}
-                transition={{ duration: 1.5, delay: 0.4, repeat: Infinity, repeatType: "reverse" }}
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: [0.6, 1.3, 1], opacity: [0, 0.6, 0.15] }}
+                transition={{ duration: 2, delay: 0.4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
               />
               <div className="success-icon">
-                <CheckCircle size={56} strokeWidth={2} />
+                <CheckCircle size={48} strokeWidth={2.2} />
               </div>
             </motion.div>
 

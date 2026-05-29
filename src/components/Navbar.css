@@ -348,7 +348,7 @@
   .desktop-nav,
   .nav-search-container,
   .user-dropdown-container,
-  .cart-btn { display: none !important; }
+  .navbar-header .cart-btn { display: none !important; }
 
   /* Show the hamburger toggle */
   .mobile-menu-toggle {
