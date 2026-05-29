@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { useNotifications } from './NotificationContext';
 import { supabase } from '../utils/supabaseClient';
 
@@ -15,9 +15,9 @@ export const useAuth = () => {
 // ============================================================
 // CAVERNICOLA FORMAT USER — SAFE, TOLERANT, NO CRASH
 // Uses maybeSingle() so it no scream if profile row no exist
-// Default role = 'cliente' if anything go wrong
+// Default role = previous role, metadata role, or 'cliente'
 // ============================================================
-const formatUser = async (sessionUser) => {
+const formatUser = async (sessionUser, previousRole = null) => {
   if (!sessionUser) {
     console.log('ℹ️ [AuthContext:formatUser] sessionUser es nulo. Retornando null.');
     return null;
@@ -26,12 +26,15 @@ const formatUser = async (sessionUser) => {
   const metadata = sessionUser.user_metadata || {};
   const name = metadata.full_name || sessionUser.email.split('@')[0];
 
-  // Default role — cavernicola use club, we use 'cliente'
-  let role = 'cliente';
+  // MONO INTELIGENTE: busca rol en orden de prioridad para persistencia/anti-downgrade
+  const fallbackRole = previousRole || metadata.role || sessionUser.app_metadata?.role || 'cliente';
+  let role = fallbackRole;
 
   try {
     console.log(`🔍 [AuthContext:formatUser] Consultando rol para ID: ${sessionUser.id}`);
     
+    // MONO PONE TIMEOUT DE SEGURIDAD (5s) PARA QUE LA APP NUNCA SE QUEDE CARGANDO ETERNAMENTE
+    // Si expira o falla, mantenemos fallbackRole (admin sigue siendo admin). ¡Unga unga!
     const fetchPromise = supabase
       .from('profiles')
       .select('role')
@@ -39,23 +42,24 @@ const formatUser = async (sessionUser) => {
       .maybeSingle(); // maybeSingle = no throw if row no exist. GOOD ROCK!
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout de consulta en Supabase (15s)')), 15000);
+      setTimeout(() => reject(new Error('Timeout de consulta en Supabase (5s)')), 5000);
     });
 
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (error) {
-      console.error("⚠️ [AuthContext:formatUser] Error real de Supabase consultando profiles. Usando rol por defecto 'cliente':", error);
-      // role stays 'cliente' — cavernicola fallback!
+      console.error(`⚠️ [AuthContext:formatUser] Error en consulta de profiles. Manteniendo rol anterior/metadata '${fallbackRole}':`, error);
+      role = fallbackRole;
     } else if (data && data.role) {
       role = data.role;
-      console.log(`✅ [AuthContext:formatUser] Rol obtenido: ${role} para ${sessionUser.email}`);
+      console.log(`✅ [AuthContext:formatUser] Rol obtenido de base de datos: ${role} para ${sessionUser.email}`);
     } else {
-      console.log(`ℹ️ [AuthContext:formatUser] Sin fila de perfil para ID ${sessionUser.id}. Rol por defecto: 'cliente'`);
+      console.log(`ℹ️ [AuthContext:formatUser] Sin fila de perfil para ID ${sessionUser.id}. Manteniendo '${fallbackRole}'`);
+      role = fallbackRole;
     }
   } catch (err) {
-    // Try/catch = cavernicola safety net. App no freeze!
-    console.error('💥 [AuthContext:formatUser] Excepción inesperada (timeout o red). Usando rol por defecto:', err);
+    console.error(`💥 [AuthContext:formatUser] Excepción/Timeout (red u otra). Manteniendo rol anterior/metadata '${fallbackRole}':`, err);
+    role = fallbackRole;
   }
 
   return {
@@ -84,6 +88,12 @@ export const AuthProvider = ({ children }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
 
+  // MONO USAR REF PARA TENER ROL ACTUAL SIEMPRE FRESCO Y EVITAR CORRUPCIÓN POR CLOSURE
+  const userRef = useRef(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   useEffect(() => {
     // Memory safety flag — cavernicola no update dead cave!
     let mounted = true;
@@ -93,21 +103,41 @@ export const AuthProvider = ({ children }) => {
     // THE ONE BOSS LISTENER — handles ALL auth state changes:
     // initial session load, login, register, logout, token refresh
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`🔔 [AuthContext:onAuthStateChange] Evento: ${event}`, session ? `Usuario: ${session.user.email}` : 'Sin sesión');
+      try {
+        console.log(`🔔 [AuthContext:onAuthStateChange] Evento: ${event}`, session ? `Usuario: ${session.user.email}` : 'Sin sesión');
 
-      if (session?.user) {
-        const formattedUser = await formatUser(session.user);
-        // Only update state if component still alive (memory safety!)
-        if (mounted) {
-          setUser(formattedUser);
-          setIsLoading(false);
-          console.log('✅ [AuthContext:onAuthStateChange] Estado de usuario actualizado:', formattedUser);
+        if (session?.user) {
+          const currentUser = userRef.current;
+          const isTokenRefresh = event === 'TOKEN_REFRESHED';
+          const hasMatchingUser = currentUser && currentUser.id === session.user.id;
+
+          // MONO OPTIMIZAR REFRESH: Si es refresco de token y ya hay perfil en local, ¡no molestar a base de datos!
+          if (isTokenRefresh && hasMatchingUser) {
+            console.log('⚡ [AuthContext:onAuthStateChange] Refresco de token. Reusando perfil actual sin consulta redundante.');
+            if (mounted) {
+              setIsLoading(false);
+            }
+            return;
+          }
+
+          const formattedUser = await formatUser(session.user, currentUser?.role);
+          // Only update state if component still alive (memory safety!)
+          if (mounted) {
+            setUser(formattedUser);
+            setIsLoading(false);
+            console.log('✅ [AuthContext:onAuthStateChange] Estado de usuario actualizado:', formattedUser);
+          }
+        } else {
+          if (mounted) {
+            setUser(null);
+            setIsLoading(false);
+            console.log('ℹ️ [AuthContext:onAuthStateChange] Sin sesión activa. user = null.');
+          }
         }
-      } else {
+      } catch (err) {
+        console.error('💥 [AuthContext:onAuthStateChange] Error en listener de auth:', err);
         if (mounted) {
-          setUser(null);
           setIsLoading(false);
-          console.log('ℹ️ [AuthContext:onAuthStateChange] Sin sesión activa. user = null.');
         }
       }
     });
@@ -141,7 +171,8 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: error.message };
       }
 
-      const formattedUser = data?.user ? await formatUser(data.user) : null;
+      // MONO PASAR ROL PREVIO POR SI FALLA CONSULTA
+      const formattedUser = data?.user ? await formatUser(data.user, userRef.current?.role) : null;
 
       // SUCCESS — onAuthStateChange listener will do the rest!
       console.log('✅ [AuthContext:login] Credenciales aceptadas. Listener actualizará el estado.');
@@ -181,7 +212,8 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: error.message };
       }
 
-      const formattedUser = data?.user ? await formatUser(data.user) : null;
+      // MONO PASAR ROL PREVIO POR SI FALLA CONSULTA
+      const formattedUser = data?.user ? await formatUser(data.user, userRef.current?.role) : null;
 
       // SUCCESS — onAuthStateChange listener will do the rest!
       console.log('✅ [AuthContext:register] Registro aceptado. Listener actualizará el estado.');
