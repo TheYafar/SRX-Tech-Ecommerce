@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PackagePlus, CheckCircle, XCircle, Image as ImageIcon, DollarSign, UploadCloud, Loader2 } from 'lucide-react';
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
@@ -6,7 +6,7 @@ import { useProducts } from '../../context/ProductContext';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
-  const { showSuccess, showError, showInfo } = useNotifications();
+  const { showSuccess, showError } = useNotifications();
   const { addProductToState } = useProducts();
   const [activeTab, setActiveTab] = useState('addProduct'); // 'addProduct', 'payments'
   

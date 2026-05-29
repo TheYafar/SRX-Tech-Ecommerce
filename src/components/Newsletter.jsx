@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Send, CheckCircle, Mail } from 'lucide-react';
 import './Newsletter.css';
 

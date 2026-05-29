@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Truck, Headphones } from 'lucide-react';
 import './PremiumFeatures.css';

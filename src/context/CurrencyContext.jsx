@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const CurrencyContext = createContext();
 
@@ -38,7 +39,8 @@ export function CurrencyProvider({ children }) {
         throw new Error(
           networkErr.name === 'AbortError'
             ? 'La petición a dolarapi.com excedió el tiempo de espera (timeout).'
-            : `Error de red al contactar dolarapi.com: ${networkErr.message}`
+            : `Error de red al contactar dolarapi.com: ${networkErr.message}`,
+          { cause: networkErr }
         );
       }
 

@@ -1,6 +1,4 @@
-import React from 'react';
 import { categories } from '../data/products';
-import { ChevronRight } from 'lucide-react';
 import './CategoryGrid.css';
 
 export default function CategoryGrid() {

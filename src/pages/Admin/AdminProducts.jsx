@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Edit2, Trash2, Search, X, Save, Loader } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { supabase } from '../../utils/supabaseClient';

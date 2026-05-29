@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -14,11 +14,6 @@ export default function AdminRoute({ children }) {
   // ProductContext/AuthContext re-renders triggered by addProductToState().
   const wasGrantedAdminAccess = useRef(false);
 
-  // If the user IS admin right now, mark the ref as granted
-  if (!isLoading && user && user.role === 'admin') {
-    wasGrantedAdminAccess.current = true;
-  }
-
   useEffect(() => {
     // 🦴 GRONK SAFETY: If user was already validated as admin in this session,
     // do NOT fire the error toast on transient re-renders (e.g., after product insert).
@@ -31,6 +26,8 @@ export default function AdminRoute({ children }) {
       } else if (user.role !== 'admin') {
         showError('Acceso denegado. No tienes permisos de administrador.', 3000);
         navigate('/', { replace: true });
+      } else {
+        wasGrantedAdminAccess.current = true;
       }
     }
   }, [user, isLoading, showError, navigate]);

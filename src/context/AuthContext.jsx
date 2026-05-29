@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { useNotifications } from './NotificationContext';
 import { supabase } from '../utils/supabaseClient';
 
@@ -27,14 +28,13 @@ const formatUser = async (sessionUser, previousRole = null) => {
   const name = metadata.full_name || sessionUser.email.split('@')[0];
 
   // MONO INTELIGENTE: busca rol en orden de prioridad para persistencia/anti-downgrade
-  const fallbackRole = previousRole || metadata.role || sessionUser.app_metadata?.role || 'cliente';
-  let role = fallbackRole;
+  let role = previousRole || metadata.role || sessionUser.app_metadata?.role || 'cliente';
 
   try {
     console.log(`🔍 [AuthContext:formatUser] Consultando rol para ID: ${sessionUser.id}`);
     
     // MONO PONE TIMEOUT DE SEGURIDAD (5s) PARA QUE LA APP NUNCA SE QUEDE CARGANDO ETERNAMENTE
-    // Si expira o falla, mantenemos fallbackRole (admin sigue siendo admin). ¡Unga unga!
+    // Si expira o falla, mantenemos rol (admin sigue siendo admin). ¡Unga unga!
     const fetchPromise = supabase
       .from('profiles')
       .select('role')
@@ -48,18 +48,15 @@ const formatUser = async (sessionUser, previousRole = null) => {
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (error) {
-      console.error(`⚠️ [AuthContext:formatUser] Error en consulta de profiles. Manteniendo rol anterior/metadata '${fallbackRole}':`, error);
-      role = fallbackRole;
+      console.error(`⚠️ [AuthContext:formatUser] Error en consulta de profiles. Manteniendo rol anterior/metadata '${role}':`, error);
     } else if (data && data.role) {
       role = data.role;
       console.log(`✅ [AuthContext:formatUser] Rol obtenido de base de datos: ${role} para ${sessionUser.email}`);
     } else {
-      console.log(`ℹ️ [AuthContext:formatUser] Sin fila de perfil para ID ${sessionUser.id}. Manteniendo '${fallbackRole}'`);
-      role = fallbackRole;
+      console.log(`ℹ️ [AuthContext:formatUser] Sin fila de perfil para ID ${sessionUser.id}. Manteniendo '${role}'`);
     }
   } catch (err) {
-    console.error(`💥 [AuthContext:formatUser] Excepción/Timeout (red u otra). Manteniendo rol anterior/metadata '${fallbackRole}':`, err);
-    role = fallbackRole;
+    console.error(`💥 [AuthContext:formatUser] Excepción/Timeout (red u otra). Manteniendo rol anterior/metadata '${role}':`, err);
   }
 
   return {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Mail, Send } from 'lucide-react';
 import './Footer.css';
 

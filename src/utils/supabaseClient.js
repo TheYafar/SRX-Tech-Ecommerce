@@ -58,7 +58,7 @@ export async function uploadReceipt(file) {
       stack: error.stack,
       error: error
     });
-    throw new Error(error.message || 'Error inesperado al intentar subir el comprobante de pago.');
+    throw new Error(error.message || 'Error inesperado al intentar subir el comprobante de pago.', { cause: error });
   }
 }
 

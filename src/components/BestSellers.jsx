@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import ProductCard from './ProductCard';
@@ -7,14 +6,9 @@ import './BestSellers.css';
 
 export default function BestSellers() {
   const { products: allProducts, isLoading } = useProducts();
-  const [products, setProducts] = useState([]);
 
-  useEffect(() => {
-    if (allProducts && allProducts.length > 0) {
-      // Simular featured tomándolos por fecha o simplemente los 4 primeros
-      setProducts(allProducts.slice(0, 4));
-    }
-  }, [allProducts]);
+  // Simular featured tomándolos por fecha o simplemente los 4 primeros
+  const products = allProducts && allProducts.length > 0 ? allProducts.slice(0, 4) : [];
 
   const containerVariants = {
     hidden: { opacity: 0 },

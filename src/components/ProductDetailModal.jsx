@@ -1,18 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, CreditCard, Zap, Lock } from 'lucide-react';
+import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock } from 'lucide-react';
 import './ProductDetailModal.css';
 
 export default function ProductDetailModal({ product, isOpen, onClose }) {
   const { addToCart } = useCart();
-  const { user } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
-  const [activeTab, setActiveTab] = useState('description');
   const [isAdding, setIsAdding] = useState(false);
 
   if (!product) return null;
@@ -45,11 +42,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
     }, 1000);
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-    exit: { opacity: 0, transition: { duration: 0.2 } }
-  };
+
 
   const contentVariants = {
     hidden: { y: 20, opacity: 0 },

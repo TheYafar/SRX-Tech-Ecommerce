@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -8,14 +8,9 @@ import {
   User as UserIcon, 
   ShoppingBag, 
   Heart, 
-  Calendar, 
   ChevronDown, 
   ChevronUp, 
-  Trash2, 
-  Mail, 
-  CreditCard,
-  Package,
-  ShoppingCart
+  Trash2
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import './Profile.css';
@@ -23,7 +18,7 @@ import './Profile.css';
 export default function Profile() {
   const { user, logout, openAuthModal } = useAuth();
   const { wishlistItems, toggleWishlist } = useWishlist();
-  const { cartCount, addToCart } = useCart();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
 

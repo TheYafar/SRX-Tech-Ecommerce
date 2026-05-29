@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Upload, CheckCircle, AlertCircle, Loader2, CreditCard, Wallet } from 'lucide-react';
 import { uploadReceipt } from '../utils/supabaseClient';
 import './PaymentCheckout.css';
@@ -63,6 +63,7 @@ export default function PaymentCheckout({ onPaymentSuccess }) {
         }
       }
     } catch (error) {
+      console.error('Error during uploadReceipt:', error);
       setUploadStatus('error');
       setErrorMessage('Ocurrió un error inesperado.');
     } finally {

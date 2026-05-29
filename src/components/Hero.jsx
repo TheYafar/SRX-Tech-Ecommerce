@@ -1,4 +1,3 @@
-import React from 'react';
 import { products } from '../data/products';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShoppingCart } from 'lucide-react';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, CheckCircle, XCircle, Search, Loader, PackageOpen } from 'lucide-react';
 import { supabase } from '../../utils/supabaseClient';
 import './AdminOrders.css';

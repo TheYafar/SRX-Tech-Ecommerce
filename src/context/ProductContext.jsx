@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { supabase } from '../utils/supabaseClient';
 
 const ProductContext = createContext();
@@ -15,7 +16,7 @@ export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
       console.log('🔍 [ProductContext] Consultando productos en Supabase...');
@@ -23,6 +24,8 @@ export const ProductProvider = ({ children }) => {
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (error) throw error;
 
       const mappedData = (data || []).map(p => ({
         ...p,
@@ -43,11 +46,14 @@ export const ProductProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    const timeoutId = setTimeout(() => {
+      fetchProducts();
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [fetchProducts]);
 
   const addProductToState = (newProduct) => {
     // 🦴 GRONK ACTUALIZAR ESTADO LOCAL DIRECTAMENTE

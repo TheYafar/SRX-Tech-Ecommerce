@@ -1,4 +1,3 @@
-import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';

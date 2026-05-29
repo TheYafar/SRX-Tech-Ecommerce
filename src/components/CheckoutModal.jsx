@@ -1,21 +1,35 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { X, CreditCard, Shield, CheckCircle, ChevronRight, Lock, User, Mail, Phone, MapPin, Calendar, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
+import { X, CreditCard, Shield, CheckCircle, Lock, User, Mail, Phone, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import './CheckoutModal.css';
 
+const CONFETTI_PARTICLES = [
+  { y: [0, -110, 150], x: [45], rotate: [0, 180], duration: 2.5, delay: 0.4, width: 11, height: 13 },
+  { y: [0, -95, 175], x: [-60], rotate: [0, 240], duration: 3.1, delay: 0.6, width: 9, height: 9 },
+  { y: [0, -135, 190], x: [85], rotate: [0, 310], duration: 2.1, delay: 0.3, width: 14, height: 10 },
+  { y: [0, -80, 130], x: [-35], rotate: [0, 95], duration: 2.8, delay: 0.5, width: 8, height: 12 },
+  { y: [0, -120, 160], x: [70], rotate: [0, 150], duration: 3.4, delay: 0.7, width: 12, height: 8 },
+  { y: [0, -100, 140], x: [-80], rotate: [0, 290], duration: 2.3, delay: 0.35, width: 10, height: 14 },
+  { y: [0, -140, 200], x: [20], rotate: [0, 350], duration: 3.2, delay: 0.8, width: 13, height: 11 },
+  { y: [0, -90, 165], x: [-50], rotate: [0, 120], duration: 2.6, delay: 0.45, width: 9, height: 13 },
+  { y: [0, -115, 180], x: [95], rotate: [0, 210], duration: 2.9, delay: 0.55, width: 11, height: 9 },
+  { y: [0, -130, 155], x: [-25], rotate: [0, 170], duration: 3.5, delay: 0.9, width: 14, height: 14 },
+  { y: [0, -85, 145], x: [60], rotate: [0, 260], duration: 2.2, delay: 0.38, width: 8, height: 10 },
+  { y: [0, -105, 185], x: [-70], rotate: [0, 330], duration: 3.0, delay: 0.65, width: 12, height: 12 }
+];
+
 export default function CheckoutModal({ isOpen, onClose }) {
-  const { cartItems, cartTotal, clearCart, checkout } = useCart();
+  const { cartItems, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
-  const { formatUSD, formatVES, isLoading } = useCurrency();
+  const { formatVES } = useCurrency();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [orderId, setOrderId] = useState('');
   const [savedTotal, setSavedTotal] = useState(0);
   const [orderRefCode, setOrderRefCode] = useState('');
   const [formData, setFormData] = useState({
@@ -182,7 +196,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
       const refCode = newOrderId.slice(-6).toUpperCase();
       setSavedTotal(totalToSave);
       setOrderRefCode(refCode);
-      setOrderId(newOrderId);
       setIsSuccess(true);
       clearCart();
     } catch (err) {
@@ -216,11 +229,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
     { id: 'tarjeta', name: 'Tarjeta', type: 'icon', color: '#1e225e' }
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-    exit: { opacity: 0, transition: { duration: 0.2 } }
-  };
+
 
   const contentVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -262,27 +271,27 @@ export default function CheckoutModal({ isOpen, onClose }) {
           >
             {/* Confetti particles */}
             <div className="success-confetti">
-              {[...Array(12)].map((_, i) => (
+              {CONFETTI_PARTICLES.map((particle, i) => (
                 <motion.div
                   key={i}
                   className="confetti-particle"
                   initial={{ y: -20, x: 0, opacity: 1, scale: 0 }}
                   animate={{
-                    y: [0, -80 - Math.random() * 60, 120 + Math.random() * 80],
-                    x: [(Math.random() - 0.5) * 200],
+                    y: particle.y,
+                    x: particle.x,
                     opacity: [0, 1, 1, 0],
                     scale: [0, 1, 1, 0.5],
-                    rotate: [0, Math.random() * 360]
+                    rotate: particle.rotate
                   }}
                   transition={{
-                    duration: 2 + Math.random() * 1.5,
-                    delay: 0.3 + Math.random() * 0.5,
+                    duration: particle.duration,
+                    delay: particle.delay,
                     ease: "easeOut"
                   }}
                   style={{
                     background: ['#28a745', '#ffd700', '#1e225e', '#0066cc', '#ff6b6b', '#a855f7'][i % 6],
-                    width: 8 + Math.random() * 6,
-                    height: 8 + Math.random() * 6,
+                    width: particle.width,
+                    height: particle.height,
                     borderRadius: i % 2 === 0 ? '50%' : '2px'
                   }}
                 />
@@ -458,7 +467,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                               });
                             }}
                             onApprove={(data, actions) => {
-                              return actions.order.capture().then((details) => {
+                              return actions.order.capture().then(() => {
                                 processCheckout();
                               });
                             }}

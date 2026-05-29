@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 import './Notification.css';
@@ -105,6 +105,4 @@ export const NotificationManager = () => {
     </div>
   );
 };
-
-// Re-export hook for backward compatibility
-export { useNotifications };
+
