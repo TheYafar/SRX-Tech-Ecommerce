@@ -1,6 +1,6 @@
 /* ================================================================
-   AdminProducts.css — Fase 4: Catálogo + Modal de Edición
-   Paleta unificada: familia slate | Dark Mode Premium
+   AdminProducts.css — Refactor Completo v2
+   Tags SmallRig + CategoryModal + Dark Mode Premium
    CERO Tailwind — 100% Vanilla CSS
    ================================================================ */
 
@@ -19,21 +19,21 @@
 .admin-page-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #f1f5f9;            /* slate-100 */
+  color: #f1f5f9;
   margin: 0 0 0.375rem;
   letter-spacing: -0.03em;
   line-height: 1.2;
 }
 
 .admin-page-subtitle {
-  color: #94a3b8;            /* slate-400 */
+  color: #94a3b8;
   font-size: 1rem;
   font-weight: 400;
   margin: 0;
 }
 
 /* ================================================================
-   TOOLBAR — Búsqueda + Nuevo Producto
+   TOOLBAR
    ================================================================ */
 .admin-toolbar {
   display: flex;
@@ -48,8 +48,8 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #1e293b;       /* slate-800 */
-  border: 1px solid #334155; /* slate-700 */
+  background: #1e293b;
+  border: 1px solid #334155;
   border-radius: 10px;
   padding: 0.625rem 1rem;
   flex: 1;
@@ -82,7 +82,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #2563eb;       /* blue-600 */
+  background: #2563eb;
   color: #ffffff;
   border: none;
   padding: 0.75rem 1.25rem;
@@ -95,7 +95,7 @@
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;       /* blue-700 */
+  background: #1d4ed8;
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
   transform: translateY(-1px);
 }
@@ -114,7 +114,7 @@
    TABLE CONTAINER
    ================================================================ */
 .admin-table-container {
-  background: #020617;       /* slate-950 */
+  background: #020617;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
@@ -136,7 +136,7 @@
   padding: 1rem 1.25rem;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #94a3b8;            /* slate-400 */
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
@@ -145,7 +145,7 @@
 .admin-table td {
   padding: 0.875rem 1.25rem;
   font-size: 0.9375rem;
-  color: #cbd5e1;            /* slate-300 */
+  color: #cbd5e1;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   vertical-align: middle;
 }
@@ -162,7 +162,6 @@
   border-bottom: none;
 }
 
-/* ── Celda del producto (imagen + nombre) ── */
 .product-cell {
   display: flex;
   align-items: center;
@@ -184,7 +183,7 @@
   color: #f1f5f9;
 }
 
-/* ── Badge de stock ── */
+/* ── Badges de stock ── */
 .stock-badge {
   display: inline-flex;
   align-items: center;
@@ -210,7 +209,6 @@
   color: #f87171;
 }
 
-/* ── Precio normal vs oferta ── */
 .price-cell {
   font-weight: 600;
   color: #f1f5f9;
@@ -228,7 +226,7 @@
 }
 
 /* ================================================================
-   BOTONES DE ACCIÓN (Editar / Eliminar)
+   BOTONES DE ACCIÓN
    ================================================================ */
 .action-buttons {
   display: flex;
@@ -248,9 +246,7 @@
   background: transparent;
 }
 
-.btn-icon.edit {
-  color: #60a5fa;            /* blue-400 */
-}
+.btn-icon.edit { color: #60a5fa; }
 
 .btn-icon.edit:hover {
   background: rgba(96, 165, 250, 0.12);
@@ -259,9 +255,7 @@
   box-shadow: 0 2px 8px rgba(96, 165, 250, 0.18);
 }
 
-.btn-icon.delete {
-  color: #f87171;            /* red-400 */
-}
+.btn-icon.delete { color: #f87171; }
 
 .btn-icon.delete:hover {
   background: rgba(248, 113, 113, 0.12);
@@ -270,9 +264,7 @@
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.18);
 }
 
-.btn-icon:active {
-  transform: translateY(0);
-}
+.btn-icon:active { transform: translateY(0); }
 
 .btn-icon:disabled {
   opacity: 0.4;
@@ -281,7 +273,7 @@
 }
 
 /* ================================================================
-   LOADING OVERLAY — Cubre toda la vista
+   LOADING OVERLAY
    ================================================================ */
 .admin-products-loading-overlay {
   position: fixed;
@@ -312,7 +304,7 @@
 }
 
 /* ================================================================
-   MODAL DE EDICIÓN — Dark Mode Premium con Glassmorphism
+   MODAL DE EDICIÓN — Dark Mode Premium
    ================================================================ */
 .edit-modal-backdrop {
   position: fixed;
@@ -337,11 +329,11 @@
 }
 
 .edit-modal {
-  background: #0f172a;       /* slate-900 */
+  background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   width: 100%;
-  max-width: 520px;
+  max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow:
@@ -362,20 +354,14 @@
 }
 
 /* Scrollbar del modal */
-.edit-modal::-webkit-scrollbar {
-  width: 5px;
-}
-
-.edit-modal::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+.edit-modal::-webkit-scrollbar { width: 5px; }
+.edit-modal::-webkit-scrollbar-track { background: transparent; }
 .edit-modal::-webkit-scrollbar-thumb {
   background: #334155;
   border-radius: 99px;
 }
 
-/* ── Header del modal ── */
+/* Header del modal */
 .edit-modal-header {
   display: flex;
   align-items: center;
@@ -411,7 +397,7 @@
   color: #f87171;
 }
 
-/* ── Body del modal (formulario) ── */
+/* Body del modal */
 .edit-modal-body {
   padding: 1.5rem 1.75rem 1.75rem;
   display: flex;
@@ -419,7 +405,7 @@
   gap: 1.25rem;
 }
 
-/* ── Grupos de campos ── */
+/* Grupos de campos */
 .edit-form-group {
   display: flex;
   flex-direction: column;
@@ -429,15 +415,15 @@
 .edit-form-group label {
   font-weight: 600;
   font-size: 0.8125rem;
-  color: #cbd5e1;            /* slate-300 */
+  color: #cbd5e1;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .edit-form-group input[type="text"],
 .edit-form-group input[type="number"] {
-  background: #1e293b;       /* slate-800 */
-  border: 1px solid #334155; /* slate-700 */
+  background: #1e293b;
+  border: 1px solid #334155;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   color: #f1f5f9;
@@ -446,6 +432,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   line-height: 1.5;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .edit-form-group input[type="text"]:hover,
@@ -465,25 +452,23 @@
   color: #64748b;
 }
 
-/* ── datetime-local adaptado al Dark Mode ── */
+/* datetime-local */
 .edit-form-group input[type="datetime-local"] {
   background: #1e293b;
   border: 1px solid #334155;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  color: #f1f5f9;            /* texto blanco */
+  color: #f1f5f9;
   font-family: inherit;
   font-size: 0.9375rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   line-height: 1.5;
   width: 100%;
-  /* Adaptar icono del calendario al dark mode */
   color-scheme: dark;
+  box-sizing: border-box;
 }
 
-.edit-form-group input[type="datetime-local"]:hover {
-  border-color: #475569;
-}
+.edit-form-group input[type="datetime-local"]:hover { border-color: #475569; }
 
 .edit-form-group input[type="datetime-local"]:focus {
   outline: none;
@@ -491,7 +476,6 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
-/* Icono del datetime adaptado */
 .edit-form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(0.7) brightness(1.2);
   cursor: pointer;
@@ -503,14 +487,180 @@
   opacity: 1;
 }
 
-/* ── Fila de 2 columnas en el modal ── */
+/* Fila de 2 columnas */
 .edit-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-/* ── Checkbox "Más Vendido" — Toggle premium ── */
+/* ================================================================
+   SELECTOR DE CATEGORÍA + BOTÓN NUEVA
+   ================================================================ */
+.category-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.category-select {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+.category-select:hover { border-color: #475569; }
+
+.category-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* Botón "+ Nueva" */
+.btn-new-category {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.625rem 0.875rem;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.1);
+  color: #a78bfa;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.btn-new-category:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.7);
+  color: #c4b5fd;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-new-category:active {
+  transform: translateY(0);
+}
+
+/* ================================================================
+   TAG SELECTORS — Secciones de Pastillas SmallRig
+   ================================================================ */
+.tag-selector-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 1rem 1.125rem 1.125rem;
+}
+
+.tag-selector-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+/* Badge contador de seleccionados */
+.tag-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Contenedor de pills */
+.tag-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+/* Pill individual */
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.375rem 0.75rem;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tag-pill:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.08);
+  color: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+/* Estado ACTIVO — Iluminado con acento azul/púrpura */
+.tag-pill--active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(139, 92, 246, 0.25));
+  border-color: rgba(99, 102, 241, 0.7);
+  color: #c7d2fe;
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.3),
+    0 2px 12px rgba(99, 102, 241, 0.2);
+}
+
+.tag-pill--active:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(139, 92, 246, 0.35));
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.5),
+    0 4px 16px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Check icon dentro del pill activo */
+.tag-check {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+/* ================================================================
+   CHECKBOX "MÁS VENDIDO" — Toggle Premium
+   ================================================================ */
 .edit-form-checkbox {
   display: flex;
   align-items: center;
@@ -555,9 +705,7 @@
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.edit-form-checkbox input[type="checkbox"]:checked {
-  background: #2563eb;
-}
+.edit-form-checkbox input[type="checkbox"]:checked { background: #2563eb; }
 
 .edit-form-checkbox input[type="checkbox"]:checked::after {
   left: 23px;
@@ -576,7 +724,7 @@
   margin-top: 0.125rem;
 }
 
-/* ── Footer del modal (botones) ── */
+/* ── Footer del modal ── */
 .edit-modal-footer {
   display: flex;
   gap: 0.75rem;
@@ -598,6 +746,7 @@
   font-size: 0.9375rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .btn-cancel:hover {
@@ -621,6 +770,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  font-family: inherit;
 }
 
 .btn-save:hover:not(:disabled) {
@@ -629,14 +779,149 @@
   transform: translateY(-1px);
 }
 
-.btn-save:active:not(:disabled) {
-  transform: translateY(0);
-}
+.btn-save:active:not(:disabled) { transform: translateY(0); }
 
 .btn-save:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+}
+
+/* ── Animación del Loader ── */
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ================================================================
+   MODAL DE CATEGORÍAS — Posicionamiento Fixed Centrado
+   ================================================================ */
+.cat-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 30000;   /* Encima del modal de edición (z: 10000) */
+  animation: fadeIn 0.15s ease both;
+}
+
+.cat-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0;
+  border-radius: 12px;
+  z-index: 30001;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 400px;
+  animation: catModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes catModalIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Header del modal de categorías */
+.cat-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.125rem 1.375rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.cat-modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+.cat-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.cat-modal-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* Body del modal de categorías */
+.cat-modal-body {
+  padding: 1.25rem 1.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Preview del slug */
+.cat-slug-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+}
+
+.cat-slug-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cat-slug-value {
+  font-size: 0.8125rem;
+  color: #a5b4fc;
+  font-family: 'Courier New', Courier, monospace;
+  word-break: break-all;
+}
+
+/* Error del modal */
+.cat-modal-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Footer del modal de categorías */
+.cat-modal-footer {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
 }
 
 /* ================================================================
@@ -696,6 +981,24 @@
 
   .btn-cancel,
   .btn-save {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cat-modal {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .tag-pill {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .category-select-row {
+    flex-wrap: wrap;
+  }
+
+  .btn-new-category {
     width: 100%;
     justify-content: center;
   }

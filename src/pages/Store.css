@@ -385,6 +385,53 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* ── Active Nav Filter Chip ── */
+.active-nav-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 1.25rem auto 0;
+  padding: 8px 14px 8px 12px;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  width: fit-content;
+  position: relative;
+}
+
+.active-nav-filter-chip svg {
+  color: #00f2fe;
+  flex-shrink: 0;
+}
+
+.active-nav-filter-chip strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.chip-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.chip-clear-btn:hover {
+  background: rgba(231, 76, 94, 0.25);
+  color: #e74c5e;
+}
+
 /* Back Link */
 .premium-back-link {
   padding: 0.75rem 2rem;

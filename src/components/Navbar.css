@@ -85,6 +85,35 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* ── Mega Menu Trigger ── */
+.mega-trigger-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mega-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.mega-chevron {
+  transition: transform 0.25s ease;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.mega-chevron.rotated {
+  transform: rotate(180deg);
+  color: #fff;
+}
+
+.mega-trigger-btn.mega-open {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* ── Action Buttons ── */
 .nav-actions {
   display: flex;
