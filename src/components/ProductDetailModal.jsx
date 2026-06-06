@@ -68,13 +68,13 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
             exit="exit"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
+            {/* Close Button - Universal */}
             <button 
-              className="product-detail-close"
+              className="product-detail-close close-detail-btn"
               onClick={onClose}
               aria-label="Cerrar modal"
             >
-              <X size={24} />
+              &times;
             </button>
 
             <div className="product-detail-content">
@@ -170,13 +170,21 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                         <span className="original-price">{formatUSD(product.price)}</span>
                         <div className="current-price-group">
                           <span className="current-price">{formatUSD(product.salePrice)}</span>
-                          {!isLoading && <span className="current-price-ves">/ {formatVES(product.salePrice)}</span>}
                         </div>
+                        {!isLoading && (
+                          <span className="price-bs current-price-ves">
+                            {formatVES(product.salePrice)}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <div className="modal-price-group">
                         <span className="current-price">{formatUSD(price)}</span>
-                        {!isLoading && <span className="current-price-ves">/ {formatVES(price)}</span>}
+                        {!isLoading && (
+                          <span className="price-bs current-price-ves">
+                            {formatVES(price)}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -228,7 +236,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                     >
                       -
                     </button>
-                    <span>{quantity}</span>
+                    <span className="quantity-display">{quantity}</span>
                     <button 
                       onClick={() => setQuantity(quantity + 1)}
                       aria-label="Aumentar cantidad"

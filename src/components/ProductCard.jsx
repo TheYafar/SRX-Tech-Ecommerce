@@ -15,7 +15,6 @@ export default function ProductCard({ product }) {
   const precioOferta = Number(product.compareAtPrice || product.compare_at_price_usd || 0);
   const tieneOferta = precioOferta > 0 && precioOferta < precioActual;
   const isOutOfStock = !product.stock || product.stock < 1;
-  const [isHovered, setIsHovered] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   
@@ -44,8 +43,6 @@ export default function ProductCard({ product }) {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ y: -8 }}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
       >
         <div className="card-image-container">
           {tieneOferta && (
@@ -68,13 +65,8 @@ export default function ProductCard({ product }) {
             transition={{ duration: 0.3 }}
           />
 
-          {/* Quick Actions Overlay */}
-          <motion.div 
-            className="card-actions-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: isHovered ? 1 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
+          {/* Quick Actions Overlay — desktop: hover | mobile: always visible corner badge */}
+          <div className="card-actions-overlay">
             <motion.button 
               className="quick-action-btn view-btn"
               whileHover={{ scale: 1.1 }}
@@ -94,7 +86,7 @@ export default function ProductCard({ product }) {
             >
               <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
             </motion.button>
-          </motion.div>
+          </div>
         </div>
 
         <div className="card-info">

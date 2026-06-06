@@ -288,20 +288,18 @@ export default function Navbar() {
 
       {/* Floating Mobile Search Bubble */}
       <div className="mobile-floating-search">
-        <div className="container">
-          <form onSubmit={handleSearch} className="floating-search-form">
-            <input
-              type="text"
-              placeholder="Buscar productos, marcas y más..."
-              className="floating-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className="floating-search-submit">
-              <Search size={18} />
-            </button>
-          </form>
-        </div>
+        <form onSubmit={handleSearch} className="floating-search-form">
+          <input
+            type="text"
+            placeholder="Buscar productos, marcas y más..."
+            className="floating-search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="submit" className="floating-search-submit">
+            <Search size={18} />
+          </button>
+        </form>
       </div>
     </header>
   );

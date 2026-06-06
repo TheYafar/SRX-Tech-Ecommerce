@@ -388,39 +388,52 @@
     justify-content: center;
   }
 
-  /* Floating search bar */
+  /* ── Floating search bar — glassmorphism premium ──
+     CRÍTICO: Solo UNA declaración position. Usamos absolute
+     para que quede pegada debajo del navbar fijo, de borde a borde. */
   .mobile-floating-search {
-    display: block;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    padding: 0.5rem 0;
-    background: var(--navy);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: block !important;
+    position: absolute !important;   /* Anclada justo debajo del header fijo */
+    top: 100% !important;            /* Toca el borde inferior del <header>   */
+    left: 0 !important;
+    right: 0 !important;             /* right:0 garantiza ancho completo      */
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.6rem 16px !important;
+    margin: 0 !important;            /* Sin márgenes que la empujen           */
+    background: rgba(15, 23, 42, 0.55) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+    z-index: 999 !important;         /* Justo debajo del navbar (z-index 1000) */
+    overflow: hidden !important;     /* Sin desbordamiento lateral            */
   }
 
   .floating-search-form {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    border-radius: var(--radius-full);
-    padding: 0.4rem 1rem;
-    margin: 0 auto;
-    width: 90%;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-height: 44px;
+    display: flex !important;
+    align-items: center !important;
+    background: #ffffff !important;
+    border-radius: var(--radius-full) !important;
+    padding: 0.35rem 0.75rem 0.35rem 1.1rem !important;
+    margin: 0 auto !important;       /* Centrado horizontal                   */
+    width: 100% !important;          /* Ocupa todo el espacio disponible      */
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+    min-height: 44px !important;
   }
 
   .floating-search-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    padding: 0.2rem 0;
+    flex: 1 1 0% !important;         /* Crece y no desborda                   */
+    min-width: 0 !important;         /* Prevent flex overflow                 */
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    color: var(--text-primary) !important;
+    font-size: 0.95rem !important;
+    padding: 0.2rem 0.5rem 0.2rem 0 !important;
+    font-family: inherit !important;
   }
 
   .floating-search-input::placeholder {
@@ -428,15 +441,17 @@
   }
 
   .floating-search-submit {
-    background: transparent;
-    border: none;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
-    min-width: 44px;
-    min-height: 44px;
+    flex-shrink: 0 !important;       /* No se comprime nunca                  */
+    background: transparent !important;
+    border: none !important;
+    color: var(--primary, #1e225e) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.4rem 0.5rem !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    cursor: pointer !important;
   }
 }
 

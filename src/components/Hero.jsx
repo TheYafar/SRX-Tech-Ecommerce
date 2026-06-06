@@ -1,12 +1,47 @@
+import { useState, useEffect } from 'react';
 import { products } from '../data/products';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './Hero.css';
 
+const banners = [
+  {
+    id: 1,
+    pc: '/SRX-Tech-Ecommerce/imagenes/dji mic mini banner srx tech (2).webp',
+    movil: '/SRX-Tech-Ecommerce/imagenes/dji mic mini banner srx tech (2).webp'
+  },
+  {
+    id: 2,
+    pc: '/SRX-Tech-Ecommerce/imagenes/Osmo Action 4 SRX Tech banner (2).webp',
+    movil: '/SRX-Tech-Ecommerce/imagenes/Osmo Action 4 SRX Tech banner mobile.jpg.webp'
+  },
+  {
+    id: 3,
+    pc: '/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech (1).webp',
+    movil: '/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech mobile.jpg.webp'
+  }
+];
+
 export default function Hero() {
-  const heroProduct = products.find(p => p.isHero) || products[0];
   const { addToCart } = useCart();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const heroProduct = products?.find(p => p.isHero) || products?.[0] || {
+    price: 0,
+    salePrice: 0,
+    rating: 5.0,
+    tagline: 'Lo mejor en tecnología'
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const bannerActual = banners[currentSlide];
 
   const badgeVariants = {
     hidden: { opacity: 0, scale: 0.6 },
@@ -27,24 +62,15 @@ export default function Hero() {
   };
 
   return (
-    <section className="hero-section">
-      {/* Full-bleed background image */}
-      <motion.div
-        className="hero-bg-image-wrapper"
-        initial={{ opacity: 0, scale: 1.04 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.1, ease: 'easeOut' }}
-      >
-        <img
-          src="/imagen/srx.jpeg"
-          alt="DJI Mic Mini — SRX Tech"
-          className="hero-bg-image"
-        />
-        {/* Subtle darkening gradient at the bottom so CTAs are readable */}
+    <section className="hero-wrapper hero-section">
+      <div className="hero-slide-container">
+        <picture>
+          <source media="(max-width: 768px)" srcSet={bannerActual.movil} />
+          <img src={bannerActual.pc} alt="Banner Destacado" className="hero-bg-image" />
+        </picture>
         <div className="hero-bg-overlay" />
-      </motion.div>
+      </div>
 
-      {/* Floating price badge — top left */}
       <motion.div
         className="hero-badge price-badge"
         custom={0.9}
@@ -54,11 +80,10 @@ export default function Hero() {
         whileHover={{ scale: 1.08 }}
       >
         <span className="badge-label">OFERTA</span>
-        <span className="badge-price">${heroProduct.salePrice.toFixed(2)}</span>
-        <span className="badge-original">${heroProduct.price.toFixed(2)}</span>
+        <span className="badge-price">${heroProduct.salePrice?.toFixed(2) ?? '0.00'}</span>
+        <span className="badge-original">${heroProduct.price?.toFixed(2) ?? '0.00'}</span>
       </motion.div>
 
-      {/* Floating rating badge — top right */}
       <motion.div
         className="hero-badge rating-badge"
         custom={1.1}
@@ -72,7 +97,6 @@ export default function Hero() {
         <span className="badge-reviews">/ 5.0</span>
       </motion.div>
 
-      {/* Bottom CTA strip */}
       <motion.div
         className="hero-cta-strip"
         variants={ctaVariants}
@@ -120,7 +144,6 @@ export default function Hero() {
         </div>
       </motion.div>
 
-      {/* Animated background ambient circles */}
       <div className="hero-background-elements" aria-hidden="true">
         <motion.div
           className="bg-circle circle-1"
