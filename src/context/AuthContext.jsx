@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext, useRef } from 'react';
+import { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useNotifications } from './NotificationContext';
 import { supabase } from '../utils/supabaseClient';
 
@@ -84,6 +84,10 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authContextHint, setAuthContextHint] = useState(null); // Mensaje de contexto en la modal
+
+  // REF para la acción pendiente — no dispara re-render, persiste entre renders
+  const pendingActionRef = useRef(null);
 
   // MONO USAR REF PARA TENER ROL ACTUAL SIEMPRE FRESCO Y EVITAR CORRUPCIÓN POR CLOSURE
   const userRef = useRef(null);
@@ -149,6 +153,25 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // ▶️ [AuthContext] Ejecutar la acción pendiente guardada (si existe) y limpiarla
+  const executePendingAction = useCallback(() => {
+    const action = pendingActionRef.current;
+    if (typeof action === 'function') {
+      console.log('▶️ [AuthContext:executePendingAction] Ejecutando acción pendiente post-auth...');
+      pendingActionRef.current = null;
+      setAuthContextHint(null);
+      // Pequeño delay para que el modal se cierre antes de ejecutar
+      setTimeout(() => {
+        action();
+      }, 150);
+    }
+  }, []);
+
+  const clearPendingAction = useCallback(() => {
+    pendingActionRef.current = null;
+    setAuthContextHint(null);
+  }, []);
+
   // ----------------------------------------------------------
   // LOGIN — Only sends credentials. THAT'S IT.
   // Listener above will handle formatUser + setUser automatically.
@@ -175,6 +198,8 @@ export const AuthProvider = ({ children }) => {
       console.log('✅ [AuthContext:login] Credenciales aceptadas. Listener actualizará el estado.');
       setIsAuthModalOpen(false);
       showSuccess('¡Bienvenido de nuevo!', 2000);
+      // 🔗 CONTINUIDAD: ejecutar acción pendiente (si existe) después del login
+      executePendingAction();
       return { success: true, user: formattedUser };
     } catch (error) {
       console.error('💥 [AuthContext:login] Error inesperado en login:', error);
@@ -216,6 +241,8 @@ export const AuthProvider = ({ children }) => {
       console.log('✅ [AuthContext:register] Registro aceptado. Listener actualizará el estado.');
       setIsAuthModalOpen(false);
       showSuccess('¡Cuenta creada exitosamente!', 2000);
+      // 🔗 CONTINUIDAD: ejecutar acción pendiente (si existe) después del registro
+      executePendingAction();
       return { success: true, user: formattedUser };
     } catch (error) {
       console.error('💥 [AuthContext:register] Error inesperado en registro:', error);
@@ -249,8 +276,18 @@ export const AuthProvider = ({ children }) => {
     setIsAuthModalOpen(true);
   };
 
+  // 🔐 [AuthContext] Abrir modal con acción pendiente para continuidad de flujo post-auth
+  const openAuthModalWithAction = useCallback((action, hint = null, mode = 'login') => {
+    console.log('🔐 [AuthContext:openAuthModalWithAction] Guardando acción pendiente para ejecutar post-auth.');
+    pendingActionRef.current = action;
+    setAuthContextHint(hint);
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  }, []);
+
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
+    clearPendingAction();
   };
 
   return (
@@ -260,11 +297,15 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         isAuthModalOpen,
         authMode,
+        authContextHint,
         login,
         register,
         logout,
         openAuthModal,
+        openAuthModalWithAction,
         closeAuthModal,
+        executePendingAction,
+        clearPendingAction,
         setAuthMode,
       }}
     >

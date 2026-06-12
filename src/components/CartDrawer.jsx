@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard, Lock } from 'lucide-react';
 import CheckoutModal from './CheckoutModal';
 import './CartDrawer.css';
 
@@ -15,10 +16,23 @@ export default function CartDrawer() {
     removeFromCart, 
     cartTotal
   } = useCart();
+  const { user, openAuthModalWithAction } = useAuth();
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
+  // 🔐 INTERCEPTOR: Verifica sesión antes de proceder al pago
   const handleOpenCheckout = () => {
+    if (!user) {
+      console.log('🔐 [CartDrawer:handleOpenCheckout] Usuario no autenticado. Interceptando y abriendo AuthModal.');
+      // Guardar la acción pendiente — se ejecutará automáticamente post-auth
+      openAuthModalWithAction(
+        () => setIsCheckoutModalOpen(true),
+        'Para completar tu encargo necesitas una cuenta activa',
+        'login'
+      );
+      return;
+    }
+    console.log('✅ [CartDrawer:handleOpenCheckout] Usuario autenticado. Abriendo checkout.');
     setIsCheckoutModalOpen(true);
   };
 
@@ -125,9 +139,19 @@ export default function CartDrawer() {
             <button 
               className="checkout-submit-btn"
               onClick={handleOpenCheckout}
+              id="cart-proceder-pago-btn"
             >
-              <CreditCard size={18} />
-              <span>Proceder al Pago</span>
+              {user ? (
+                <>
+                  <CreditCard size={18} />
+                  <span>Proceder al Pago</span>
+                </>
+              ) : (
+                <>
+                  <Lock size={18} />
+                  <span>Iniciar Sesión para Pagar</span>
+                </>
+              )}
             </button>
           </div>
         )}

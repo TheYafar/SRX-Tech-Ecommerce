@@ -329,6 +329,55 @@
   flex-shrink: 0;
 }
 
+/* =====================================================
+   BANNER DE CONTINUIDAD — Contexto de acción pendiente
+   ===================================================== */
+
+.auth-context-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0 2rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  animation: slideDownFade 0.35s ease forwards;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-context-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: #60a5fa;
+  margin-top: 0.1rem;
+}
+
+.auth-context-text {
+  font-size: 0.85rem;
+  color: #93c5fd;
+  line-height: 1.5;
+  margin: 0;
+  font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .auth-modal-container {

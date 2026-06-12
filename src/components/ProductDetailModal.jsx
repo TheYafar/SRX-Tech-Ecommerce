@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock } from 'lucide-react';
 import './ProductDetailModal.css';
 
 export default function ProductDetailModal({ product, isOpen, onClose }) {
   const { addToCart } = useCart();
+  const { user, openAuthModalWithAction } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
@@ -29,6 +31,27 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
   };
 
   const handleBuyNow = () => {
+    // 🔐 INTERCEPTOR: Verificar sesión antes de proceder al encargo
+    if (!user) {
+      console.log('🔐 [ProductDetailModal:handleBuyNow] Usuario no autenticado. Interceptando.');
+      openAuthModalWithAction(
+        () => {
+          // Esta función se ejecutará automáticamente post-auth
+          setIsAdding(true);
+          const productWithQuantity = { ...product, quantity };
+          addToCart(productWithQuantity);
+          setTimeout(() => {
+            setIsAdding(false);
+            onClose();
+            const cartEvent = new CustomEvent('open-cart');
+            window.dispatchEvent(cartEvent);
+          }, 1000);
+        },
+        'Inicia sesión para completar tu encargo de "' + product?.name + '"',
+        'login'
+      );
+      return;
+    }
     setIsAdding(true);
     const productWithQuantity = { ...product, quantity };
     addToCart(productWithQuantity);

@@ -1,7 +1,9 @@
-/* ══════════════════════════════════════
-   CATEGORY GRID — Bento-style layout
-   ══════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   CATEGORY GRID — Bento-style layout + Carousel mobile
+   Vanilla CSS only. No Tailwind.
+   ══════════════════════════════════════════════════════════ */
 
+/* ── Section wrapper ── */
 .category-section {
   padding: 6rem 0 5rem;
   background: var(--bg-primary);
@@ -32,37 +34,44 @@
   margin-top: 0.25rem;
 }
 
-.title-divider {
-  width: 48px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--navy) 0%, var(--accent-light) 100%);
-  border-radius: var(--radius-full);
-  margin: 1rem auto 0;
-}
-
-/* ── Grid ── */
+/* ── Bento Grid (2–4 categories) ── */
 .category-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   gap: 1.5rem;
 }
 
+.category-grid--single {
+  grid-template-columns: 1fr;
+}
+
+/* ── Card base ── */
 .category-card {
   position: relative;
   border-radius: var(--radius-xl);
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease,
+              border-color 0.3s ease;
   box-shadow: var(--shadow-md);
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 @media (hover: hover) {
   .category-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-xl);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.12);
   }
 }
 
+.category-card:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 3px;
+}
+
+/* ── Image wrapper ── */
 .category-img-wrapper {
   position: relative;
   width: 100%;
@@ -73,7 +82,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--transition-slow);
+  transition: transform 0.5s ease;
+  display: block;
 }
 
 @media (hover: hover) {
@@ -82,18 +92,20 @@
   }
 }
 
+/* ── Dark gradient overlay ── */
 .category-overlay-dark {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(5, 7, 20, 0.92) 0%,
+    rgba(5, 7, 20, 0.93) 0%,
     rgba(5, 7, 20, 0.35) 55%,
     rgba(5, 7, 20, 0.05) 100%
   );
   z-index: 1;
 }
 
+/* ── Text content ── */
 .category-content {
   position: absolute;
   bottom: 0;
@@ -106,7 +118,8 @@
   align-items: flex-start;
 }
 
-.large-card { height: 500px; }
+/* ── Card size variants ── */
+.large-card         { height: 500px; }
 .large-card .category-img { height: 100%; }
 
 .category-right-col {
@@ -115,15 +128,17 @@
   gap: 1.5rem;
 }
 
-.horizontal-card { height: 233px; }
+.horizontal-card                { height: 233px; }
 .horizontal-card .category-img-wrapper { height: 100%; }
 
+/* ── Typography ── */
 .cat-title {
   font-size: 1.65rem;
   font-weight: 800;
   color: #fff;
   margin-bottom: 0.45rem;
   line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
 }
 
 .cat-description {
@@ -134,6 +149,7 @@
   line-height: 1.55;
 }
 
+/* ── CTA pill button ── */
 .pill-btn-outline {
   padding: 0.45rem 1.25rem;
   border-radius: var(--radius-full);
@@ -142,7 +158,9 @@
   color: #fff;
   font-size: 0.82rem;
   font-weight: 600;
-  transition: all var(--transition-fast);
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease,
+              transform 0.2s ease, filter 0.2s ease;
   backdrop-filter: blur(4px);
 }
 
@@ -155,34 +173,152 @@
   }
 }
 
-/* Tactile press feedback */
 .pill-btn-outline:active {
   transform: scale(0.98) translateY(0);
   transition-duration: 0.08s;
 }
 
-/* ── Responsive ── */
+/* ══════════════════════════════════════════════════════════
+   HORIZONTAL CAROUSEL  (>4 categories or mobile <768px)
+   ══════════════════════════════════════════════════════════ */
+.category-carousel {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1rem;               /* room for scrollbar */
+  /* Hide scrollbar on webkit */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.category-carousel::-webkit-scrollbar {
+  height: 4px;
+}
+.category-carousel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.category-carousel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 2px;
+}
+
+.category-carousel-item {
+  position: relative;
+  flex: 0 0 280px;
+  height: 360px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--shadow-md);
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (hover: hover) {
+  .category-carousel-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  }
+  .category-carousel-item:hover .category-img {
+    transform: scale(1.06);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   SKELETON LOADER — shimmer animation
+   ══════════════════════════════════════════════════════════ */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton-card {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  overflow: hidden;
+}
+
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+/* ── Error / empty ── */
+.category-error {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.95rem;
+  padding: 3rem 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 992px) {
-  .category-grid { grid-template-columns: 1fr; }
-  .large-card { height: 380px; }
-  .horizontal-card { height: 210px; }
+  .category-grid            { grid-template-columns: 1fr; }
+  .large-card               { height: 380px; }
+  .horizontal-card          { height: 210px; }
+}
+
+@media (max-width: 768px) {
+  /* On mobile, switch bento to horizontal carousel */
+  .category-grid {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+  }
+
+  .category-grid::-webkit-scrollbar       { height: 4px; }
+  .category-grid::-webkit-scrollbar-track { background: transparent; }
+  .category-grid::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.18);
+    border-radius: 2px;
+  }
+
+  .category-grid .category-card,
+  .category-grid .large-card,
+  .category-grid .horizontal-card {
+    flex: 0 0 72vw;
+    max-width: 300px;
+    height: 260px !important;
+    scroll-snap-align: start;
+  }
+
+  /* Right column becomes inline in the scroll container */
+  .category-right-col {
+    display: contents;
+  }
+
+  .category-carousel-item {
+    flex: 0 0 72vw;
+    max-width: 300px;
+    height: 260px;
+  }
 }
 
 @media (max-width: 576px) {
-  .category-section {
-    padding: 4rem 0 3rem;
-  }
-
-  .category-content { padding: 1.25rem; }
-  .cat-title { font-size: 1.2rem; }
-
-  /* Hide descriptions on small screens to reduce clutter */
-  .cat-description {
-    display: none;
-  }
-
-  .large-card { height: 220px; }
-  .horizontal-card { height: 180px; }
+  .category-section        { padding: 4rem 0 3rem; }
+  .category-content        { padding: 1.25rem; }
+  .cat-title               { font-size: 1.2rem; }
+  .cat-description         { display: none; }
 
   .pill-btn-outline {
     min-height: 44px;

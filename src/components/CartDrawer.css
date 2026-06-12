@@ -403,6 +403,12 @@
   filter: brightness(1.08);
 }
 
+/* Estado "lock" — Usuario no autenticado: visual sutil diferenciado */
+#cart-proceder-pago-btn:not(:has(svg[data-lucide="credit-card"])) {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d4a8a 100%);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+}
+
 /* ── Success View ── */
 .checkout-success-view {
   display: flex;

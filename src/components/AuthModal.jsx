@@ -9,7 +9,7 @@ import { loginSchema, registerSchema } from '../utils/validation';
 import './AuthModal.css';
 
 export default function AuthModal() {
-  const { isAuthModalOpen, authMode, closeAuthModal, login, register, setAuthMode } = useAuth();
+  const { isAuthModalOpen, authMode, closeAuthModal, login, register, setAuthMode, authContextHint } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -121,6 +121,16 @@ export default function AuthModal() {
               <X size={20} />
             </button>
           </div>
+
+          {/* Banner de Continuidad — se muestra cuando hay un hint de contexto de acción pendiente */}
+          {authContextHint && (
+            <div className="auth-context-banner">
+              <div className="auth-context-icon">
+                <Lock size={16} />
+              </div>
+              <p className="auth-context-text">{authContextHint}</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="auth-form">

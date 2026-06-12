@@ -535,3 +535,351 @@
 .spin {
   animation: spin 0.9s linear infinite;
 }
+
+/* ================================================================
+   CATEGORY MANAGEMENT — "Gestionar Categorías" tab
+   ================================================================ */
+
+/* ── Add category form ── */
+.cat-add-form {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.cat-add-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #cbd5e1;          /* slate-300 */
+  margin: 0 0 1.25rem;
+  letter-spacing: 0.01em;
+}
+
+.cat-add-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .cat-add-fields { grid-template-columns: 1fr; }
+}
+
+/* Inherit existing form-group + input styles */
+.cat-add-form .form-group label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  letter-spacing: 0.01em;
+}
+
+.cat-add-form .form-group input {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cat-add-form .form-group input::placeholder {
+  color: #64748b;
+}
+
+.cat-add-form .form-group input:hover {
+  border-color: #475569;
+}
+
+.cat-add-form .form-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.cat-add-btn {
+  width: auto !important;
+  padding: 0.7rem 1.5rem !important;
+  font-size: 0.9375rem !important;
+}
+
+/* ── Category list ── */
+.cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.cat-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.11);
+}
+
+.cat-row--hidden {
+  opacity: 0.55;
+}
+
+/* ── Thumbnail ── */
+.cat-row-thumb {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cat-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cat-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #475569;
+}
+
+/* ── Row body (name / edit fields) ── */
+.cat-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.cat-row-info {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.cat-row-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #e2e8f0;          /* slate-200 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-hidden-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f59e0b;          /* amber-400 */
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 4px;
+  padding: 0.1rem 0.45rem;
+}
+
+/* ── Inline edit inputs ── */
+.cat-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cat-inline-input {
+  background: #1e293b;
+  border: 1px solid #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.cat-inline-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+.cat-inline-input--url {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.cat-inline-input--url::placeholder {
+  color: #475569;
+}
+
+/* ── Row actions bar ── */
+.cat-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── Icon action buttons ── */
+.cat-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease,
+              box-shadow 0.2s ease;
+}
+
+.cat-action-btn:hover  { transform: translateY(-1px); }
+.cat-action-btn:active { transform: translateY(0); }
+
+.cat-action-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.cat-action-btn--edit {
+  background: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;           /* blue-400 */
+}
+.cat-action-btn--edit:hover {
+  background: rgba(96, 165, 250, 0.2);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.2);
+}
+
+.cat-action-btn--save {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;           /* emerald-400 */
+}
+.cat-action-btn--save:hover:not(:disabled) {
+  background: rgba(52, 211, 153, 0.22);
+}
+.cat-action-btn--save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cat-action-btn--cancel {
+  background: rgba(148, 163, 184, 0.08);
+  color: #94a3b8;           /* slate-400 */
+}
+.cat-action-btn--cancel:hover {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.cat-action-btn--delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;           /* red-400 */
+}
+.cat-action-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.18);
+}
+
+/* ── Visibility toggle (CSS-only switch) ── */
+.cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.cat-toggle:hover       { background: rgba(255,255,255,0.06); }
+.cat-toggle:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.cat-toggle-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: #334155;     /* slate-700 — off state */
+  transition: background-color 0.25s ease;
+  flex-shrink: 0;
+}
+
+.cat-toggle--visible .cat-toggle-track {
+  background: #2563eb;     /* blue-600 — on state */
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.35);
+}
+
+.cat-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #94a3b8;     /* slate-400 — off */
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+.cat-toggle--visible .cat-toggle-thumb {
+  transform: translateX(16px);
+  background: #ffffff;
+}
+
+.cat-toggle-icon {
+  display: flex;
+  align-items: center;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.cat-toggle--visible .cat-toggle-icon {
+  color: #60a5fa;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 576px) {
+  .cat-row {
+    flex-wrap: wrap;
+    padding: 0.75rem;
+  }
+
+  .cat-row-body {
+    width: calc(100% - 68px);
+  }
+
+  .cat-row-actions {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin-top: 0.25rem;
+  }
+}
+
