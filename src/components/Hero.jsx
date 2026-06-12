@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { products } from '../data/products';
 import { motion } from 'framer-motion';
-import { ArrowRight, Star, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Star, ShoppingCart, Search } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './Hero.css';
 
@@ -26,12 +26,14 @@ const banners = [
 export default function Hero() {
   const { addToCart } = useCart();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [heroSearch, setHeroSearch] = useState('');
 
   const heroProduct = products?.find(p => p.isHero) || products?.[0] || {
     price: 0,
     salePrice: 0,
     rating: 5.0,
-    tagline: 'Lo mejor en tecnología'
+    tagline: 'Lo mejor en tecnología',
+    name: 'Producto Destacado'
   };
 
   useEffect(() => {
@@ -61,16 +63,37 @@ export default function Hero() {
     }
   };
 
+  const textVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { delay: 0.3, duration: 0.7, ease: 'easeOut' }
+    }
+  };
+
+  const handleHeroSearch = (e) => {
+    e.preventDefault();
+    if (heroSearch.trim()) {
+      const tienda = document.getElementById('tienda');
+      if (tienda) tienda.scrollIntoView({ behavior: 'smooth' });
+      setHeroSearch('');
+    }
+  };
+
   return (
     <section className="hero-wrapper hero-section">
+      {/* === Background Image === */}
       <div className="hero-slide-container">
         <picture>
           <source media="(max-width: 768px)" srcSet={bannerActual.movil} />
           <img src={bannerActual.pc} alt="Banner Destacado" className="hero-bg-image" />
         </picture>
+        {/* === Cinematic Gradient Overlay === */}
         <div className="hero-bg-overlay" />
       </div>
 
+      {/* === Floating Badges === */}
       <motion.div
         className="hero-badge price-badge"
         custom={0.9}
@@ -97,12 +120,40 @@ export default function Hero() {
         <span className="badge-reviews">/ 5.0</span>
       </motion.div>
 
+      {/* === Real HTML Text Layer (Accessibility + UX) === */}
+      <motion.div
+        className="hero-text-layer"
+        variants={textVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <h1 className="hero-headline">
+          {heroProduct.name || 'Tecnología Premium'}
+        </h1>
+        <p className="hero-subheadline">
+          {heroProduct.tagline || 'Descubre lo último en innovación tecnológica para creadores'}
+        </p>
+      </motion.div>
+
+      {/* === Bottom CTA Strip === */}
       <motion.div
         className="hero-cta-strip"
         variants={ctaVariants}
         initial="hidden"
         animate="visible"
       >
+        {/* Glassmorphism Search Bar */}
+        <form className="hero-search-bar" onSubmit={handleHeroSearch}>
+          <Search size={18} className="hero-search-icon" />
+          <input
+            type="text"
+            className="hero-search-input"
+            placeholder="Buscar productos, accesorios..."
+            value={heroSearch}
+            onChange={(e) => setHeroSearch(e.target.value)}
+          />
+        </form>
+
         <div className="hero-cta-tagline">
           <span>{heroProduct.tagline}</span>
           <motion.div
@@ -144,6 +195,7 @@ export default function Hero() {
         </div>
       </motion.div>
 
+      {/* === Ambient Background Circles === */}
       <div className="hero-background-elements" aria-hidden="true">
         <motion.div
           className="bg-circle circle-1"

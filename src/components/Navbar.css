@@ -442,38 +442,47 @@
   .floating-search-form {
     display: flex !important;
     align-items: center !important;
-    background: #ffffff !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: var(--radius-full) !important;
     padding: 0.35rem 0.75rem 0.35rem 1.1rem !important;
-    margin: 0 auto !important;       /* Centrado horizontal                   */
-    width: 100% !important;          /* Ocupa todo el espacio disponible      */
+    margin: 0 auto !important;
+    width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
     min-height: 44px !important;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+  }
+
+  .floating-search-form:focus-within {
+    border-color: var(--accent, #6366f1) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), 0 4px 20px rgba(0, 0, 0, 0.2) !important;
   }
 
   .floating-search-input {
-    flex: 1 1 0% !important;         /* Crece y no desborda                   */
-    min-width: 0 !important;         /* Prevent flex overflow                 */
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
     border: none !important;
     outline: none !important;
     background: transparent !important;
-    color: var(--text-primary) !important;
+    color: #ffffff !important;
     font-size: 0.95rem !important;
     padding: 0.2rem 0.5rem 0.2rem 0 !important;
     font-family: inherit !important;
   }
 
   .floating-search-input::placeholder {
-    color: var(--text-light);
+    color: rgba(255, 255, 255, 0.4);
   }
 
   .floating-search-submit {
-    flex-shrink: 0 !important;       /* No se comprime nunca                  */
+    flex-shrink: 0 !important;
     background: transparent !important;
     border: none !important;
-    color: var(--primary, #1e225e) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -481,6 +490,11 @@
     min-width: 40px !important;
     min-height: 40px !important;
     cursor: pointer !important;
+    transition: color 0.2s ease !important;
+  }
+
+  .floating-search-submit:hover {
+    color: #ffffff !important;
   }
 }
 
