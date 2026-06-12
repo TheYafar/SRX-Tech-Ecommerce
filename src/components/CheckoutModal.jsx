@@ -25,7 +25,7 @@ const CONFETTI_PARTICLES = [
 
 export default function CheckoutModal({ isOpen, onClose }) {
   const { cartItems, cartTotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, openAuthModalWithAction } = useAuth();
   const { formatVES } = useCurrency();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +52,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
   const finalTotal = Math.max(0, cartTotal - discount);
 
   if (!isOpen) return null;
+
+  // 🔐 GUARDIA NIVEL COMPONENTE — Si no hay sesión activa, cerrar modal inmediatamente.
+  // Esto evita que usuarios manipulen el estado de React directamente desde DevTools.
+  if (!user) {
+    console.warn('🚨 [CheckoutModal] Render bloqueado: sin sesión activa. Cerrando modal.');
+    onClose();
+    return null;
+  }
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -84,11 +92,28 @@ export default function CheckoutModal({ isOpen, onClose }) {
   };
 
   const processCheckout = async () => {
+    // ====================================================================
+    // 🔐 INTERCEPTOR INFRANQUEABLE — Validación de sesión obligatoria
+    // Este bloque es la última línea de defensa antes de tocar Supabase.
+    // Cualquier intento de encargo sin sesión activa es detenido aquí.
+    // ====================================================================
+    if (!user) {
+      console.error('🚨 [CheckoutModal:processCheckout] INTERCEPTADO: Intento de encargo sin sesión activa. Flujo detenido.');
+      // Abrir AuthModal con acción pendiente para retomar el encargo post-login
+      openAuthModalWithAction(
+        () => {}, // No re-ejecutar checkout automáticamente; el usuario debe confirmar de nuevo
+        'Debes iniciar sesión para confirmar tu encargo',
+        'login'
+      );
+      onClose();
+      return; // ⛔ SALIDA OBLIGATORIA — no se ejecuta nada más
+    }
+
     setIsSubmitting(true);
     console.log("🛒 [CheckoutModal:processCheckout] Iniciando procesamiento de pedido...", {
       paymentMethod,
       total: finalTotal,
-      userEmail: user?.email,
+      userEmail: user.email,
       hasReceipt: !!formData.receiptFile
     });
 
@@ -208,6 +233,17 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // 🔐 Doble-check antes de procesar el formulario
+    if (!user) {
+      console.error('🚨 [CheckoutModal:handleSubmit] INTERCEPTADO: Submit sin sesión. Redirigiendo a AuthModal.');
+      openAuthModalWithAction(
+        () => {},
+        'Debes iniciar sesión para confirmar tu encargo',
+        'login'
+      );
+      onClose();
+      return;
+    }
     console.log("🖱️ [CheckoutModal:handleSubmit] Checkout iniciado por envío de formulario.");
     await processCheckout();
   };
@@ -577,13 +613,19 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
                     <button 
                       type="submit"
-                      className="checkout-submit-btn mt-4"
-                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile}
+                      className={`checkout-submit-btn mt-4 ${!user ? 'btn-auth-required' : ''}`}
+                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile || !user}
+                      title={!user ? 'Debes iniciar sesión para confirmar tu encargo' : ''}
                     >
                       {isSubmitting ? (
                         <>
                           <span className="loading-spinner-small"></span>
                           <span>Procesando pago...</span>
+                        </>
+                      ) : !user ? (
+                        <>
+                          <Lock size={20} />
+                          <span>Inicia sesión para confirmar</span>
                         </>
                       ) : (
                         <>
