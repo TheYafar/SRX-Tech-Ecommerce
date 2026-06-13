@@ -80,8 +80,21 @@ const formatUser = async (sessionUser, previousRole = null) => {
 // ============================================================
 export const AuthProvider = ({ children }) => {
   const { showSuccess, showInfo, showError } = useNotifications();
+
+  // MONO SÚPER SEGURO: Detecta si venimos de F5 / recarga de página directo
+  const detectarRecarga = () => {
+    if (typeof window === 'undefined') return false;
+    return (
+      (window.performance && window.performance.navigation && window.performance.navigation.type === 1) ||
+      (window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0] && window.performance.getEntriesByType('navigation')[0].type === 'reload')
+    );
+  };
+
+  const isReloadingRef = useRef(detectarRecarga());
+
+  // Si es recarga, arranca limpio sin cargar nada (user = null, isLoading = false) ¡Uh uh ah ah!
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isReloadingRef.current);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authContextHint, setAuthContextHint] = useState(null); // Mensaje de contexto en la modal
@@ -99,6 +112,26 @@ export const AuthProvider = ({ children }) => {
     // Memory safety flag — cavernicola no update dead cave!
     let mounted = true;
 
+    // 🐒 MONO SEGURO HACE SIGN OUT SI ES RECARGA (F5) ¡PUM CACAO!
+    const limpiarSesionAlRecargar = async () => {
+      if (isReloadingRef.current) {
+        console.log('🐒 [AuthContext] ¡UH UH AH AH! ¡Detectada recarga de página (F5)! Borrando sesión por seguridad...');
+        try {
+          await supabase.auth.signOut();
+        } catch (error) {
+          console.error('❌ [AuthContext] Error al limpiar sesión en recarga:', error);
+        } finally {
+          isReloadingRef.current = false;
+          if (mounted) {
+            setUser(null);
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+
+    limpiarSesionAlRecargar();
+
     console.log('🏔️ [AuthContext] Iniciando listener onAuthStateChange (ÚNICA fuente de verdad)...');
 
     // THE ONE BOSS LISTENER — handles ALL auth state changes:
@@ -106,6 +139,12 @@ export const AuthProvider = ({ children }) => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         console.log(`🔔 [AuthContext:onAuthStateChange] Evento: ${event}`, session ? `Usuario: ${session.user.email}` : 'Sin sesión');
+
+        // MONO SEGURIDAD: Si está limpiando por recarga, ignora sesión activa temporal
+        if (isReloadingRef.current && session) {
+          console.log('🐒 [AuthContext:onAuthStateChange] Ignorando sesión inicial por recarga en progreso...');
+          return;
+        }
 
         if (session?.user) {
           const currentUser = userRef.current;
