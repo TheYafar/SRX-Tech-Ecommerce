@@ -3,10 +3,10 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useScroll } from '../hooks/useScroll';
-import { ShoppingCart, User, Menu, X, Search, LogOut, ChevronDown, Grid, Smartphone, Video } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, LogOut, ChevronDown, Grid, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../utils/supabaseClient';
-import MegaMenu, { DEVICE_OPTIONS, SCENARIO_OPTIONS } from './MegaMenu';
+import MegaMenu, { DEVICE_OPTIONS } from './MegaMenu';
 import './Navbar.css';
 import './MegaMenu.css';
 
@@ -328,11 +328,11 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* ── DIMENSIÓN 2: Por tu Equipo ── */}
+          {/* ── DIMENSIÓN 2: Para tu equipo ── */}
           <div className="mobile-dim-section">
             <div className="mobile-dim-label">
               <Smartphone size={11} />
-              Por tu Equipo
+              Para tu equipo
             </div>
             <div className="mobile-tags-row">
               {DEVICE_OPTIONS.map((opt) => (
@@ -347,24 +347,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* ── DIMENSIÓN 3: Por Escenario ── */}
-          <div className="mobile-dim-section">
-            <div className="mobile-dim-label">
-              <Video size={11} />
-              Por Escenario
-            </div>
-            <div className="mobile-tags-row">
-              {SCENARIO_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  className="mobile-dim-tag"
-                  onClick={() => handleFilter({ type: 'scenario', value: opt.value })}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* User Section */}
           {user ? (

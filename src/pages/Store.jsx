@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, Grid, Smartphone, Video } from 'lucide-react';
+import { X, Grid, Smartphone } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { supabase } from '../utils/supabaseClient';
 import { getNavFilter, clearNavFilter } from '../components/Navbar';
@@ -10,11 +10,10 @@ import './Store.css';
 // ─────────────────────────────────────────────────────────────────────────────
 //  Etiquetas amigables para el tipo de filtro activo
 // ─────────────────────────────────────────────────────────────────────────────
-const FILTER_ICONS = { category: Grid, device: Smartphone, scenario: Video };
+const FILTER_ICONS = { category: Grid, device: Smartphone };
 const FILTER_LABELS = {
   category: 'Categoría',
   device:   'Equipo',
-  scenario: 'Escenario',
 };
 
 export default function Store() {
@@ -84,13 +83,6 @@ export default function Store() {
           Array.isArray(p.compatible_devices) &&
           p.compatible_devices.some(d =>
             d.toLowerCase().includes(navFilter.value.toLowerCase())
-          )
-        );
-      } else if (navFilter.type === 'scenario') {
-        result = result.filter(p =>
-          Array.isArray(p.use_scenarios) &&
-          p.use_scenarios.some(s =>
-            s.toLowerCase().includes(navFilter.value.toLowerCase())
           )
         );
       }

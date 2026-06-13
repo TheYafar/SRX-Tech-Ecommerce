@@ -1,30 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Trash2, Search, X, Save, Loader, Tag } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Save, Loader, Tag, UploadCloud, PackagePlus } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase, uploadProductImage } from '../../utils/supabaseClient';
+import { useNotifications } from '../../context/NotificationContext';
 import './AdminProducts.css';
 
 // ================================================================
-// Opciones predefinidas para los tags de Dimensiones SmallRig
-// ================================================================
-const COMPATIBLE_DEVICES = [
-  'DJI Osmo Action 4',
-  'Osmo Pocket 3',
-  'DJI Mic Mini',
-  'Smartphones / iPhone',
-  'Cámaras Sony Alpha',
-  'Cámaras Canon',
-];
 
-const USE_SCENARIOS = [
-  'Vlogging en Exteriores',
-  'Streaming & Podcast',
-  'Contenido Vertical / Cine Móvil',
-  'Fotografía de Paisaje',
-  'Producción de Video Premium',
-];
-
-// ================================================================
 // Helper: generar slug limpio (sin acentos, minúsculas, guiones)
 // ================================================================
 function generateSlug(text) {
@@ -39,46 +21,76 @@ function generateSlug(text) {
 }
 
 // ================================================================
-// Sub-componente: TagSelector
+// Sub-componente: DynamicTagInput
 // ================================================================
-function TagSelector({ title, options, selected, onChange }) {
-  const toggle = (option) => {
-    if (selected.includes(option)) {
-      onChange(selected.filter((o) => o !== option));
-    } else {
-      onChange([...selected, option]);
+function DynamicTagInput({ title, placeholder, tags = [], onChange }) {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    const trimmed = inputValue.trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      onChange([...tags, trimmed]);
+      setInputValue('');
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAdd(e);
+    }
+  };
+
+  const handleRemove = (tagToRemove) => {
+    onChange(tags.filter((t) => t !== tagToRemove));
+  };
+
   return (
-    <div className="tag-selector-section">
-      <div className="tag-selector-header">
+    <div className="dynamic-tag-section">
+      <div className="dynamic-tag-header">
         <Tag size={14} />
         <span>{title}</span>
-        {selected.length > 0 && (
-          <span className="tag-count-badge">{selected.length}</span>
+        {tags.length > 0 && (
+          <span className="tag-count-badge">{tags.length}</span>
         )}
       </div>
-      <div className="tag-pills-container">
-        {options.map((opt) => {
-          const isActive = selected.includes(opt);
-          return (
+      <div className="dynamic-tag-input-row">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder || "Escribe un item y presiona Añadir"}
+          className="dynamic-tag-input-field"
+        />
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="btn-add-tag"
+        >
+          Añadir
+        </button>
+      </div>
+      <div className="dynamic-tags-list">
+        {tags.map((tag, idx) => (
+          <span key={idx} className="dynamic-tag-badge">
+            <span className="dynamic-tag-text">{tag}</span>
             <button
-              key={opt}
               type="button"
-              className={`tag-pill${isActive ? ' tag-pill--active' : ''}`}
-              onClick={() => toggle(opt)}
-              title={isActive ? 'Clic para deseleccionar' : 'Clic para seleccionar'}
+              onClick={() => handleRemove(tag)}
+              className="btn-remove-tag"
+              title="Eliminar"
             >
-              {isActive && <span className="tag-check">✓</span>}
-              {opt}
+              <X size={12} />
             </button>
-          );
-        })}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
+
 
 // ================================================================
 // Sub-componente: CategoryModal
@@ -209,7 +221,8 @@ function CategoryModal({ onClose, onCreated }) {
 // COMPONENTE PRINCIPAL: AdminProducts
 // ================================================================
 export default function AdminProducts() {
-  const { products, isLoading: contextLoading, setProducts } = useProducts();
+  const { products, isLoading: contextLoading, setProducts, fetchProducts, addProductToState } = useProducts();
+  const { showSuccess, showError } = useNotifications();
 
   // ── Estado de operaciones ──
   const [isLoading, setIsLoading] = useState(false);
@@ -219,6 +232,21 @@ export default function AdminProducts() {
   // ── Categorías ──
   const [categories, setCategories] = useState([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  // ── Estado para el modal de Nuevo Producto ──
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [isSubmittingNew, setIsSubmittingNew] = useState(false);
+  const [newProductData, setNewProductData] = useState({
+    name: '',
+    sku: '',
+    description: '',
+    price_usd: '',
+    stock: '',
+    category_id: '',
+    compatible_devices: [],
+    use_scenarios: [],
+  });
+  const [newProductImage, setNewProductImage] = useState(null);
 
   // ── Formulario de edición ──
   const [formData, setFormData] = useState({
@@ -374,8 +402,94 @@ export default function AdminProducts() {
   // ================================================================
   const handleCategoryCreated = (newCat) => {
     setCategories((prev) => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)));
-    setFormData((prev) => ({ ...prev, categoria: String(newCat.id) }));
+    // Si estamos en edición, seleccionar la nueva categoría ahí
+    if (editingProduct) {
+      setFormData((prev) => ({ ...prev, categoria: String(newCat.id) }));
+    }
+    // Si estamos en creación, seleccionar la nueva categoría ahí
+    if (showProductForm) {
+      setNewProductData((prev) => ({ ...prev, category_id: String(newCat.id) }));
+    }
     setShowCategoryModal(false);
+  };
+
+  // ================================================================
+  // handleAddNewProduct — Inserta producto nuevo en Supabase
+  // ================================================================
+  const handleAddNewProduct = async (e) => {
+    e.preventDefault();
+
+    if (!newProductData.name.trim()) {
+      showError('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (!newProductData.price_usd || parseFloat(newProductData.price_usd) <= 0) {
+      showError('Ingresa un precio válido mayor a 0.');
+      return;
+    }
+    if (!newProductData.category_id) {
+      showError('Selecciona una categoría para el producto.');
+      return;
+    }
+    if (!newProductImage) {
+      showError('Sube una imagen para el producto.');
+      return;
+    }
+
+    setIsSubmittingNew(true);
+    try {
+      // 1. Subir imagen al Storage
+      const imageUrl = await uploadProductImage(newProductImage);
+      if (!imageUrl) throw new Error('Error al subir la imagen del producto.');
+
+      // 2. Insertar en Supabase
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{
+          name: newProductData.name.trim(),
+          sku: newProductData.sku.trim() || null,
+          description: newProductData.description.trim() || null,
+          price_usd: parseFloat(newProductData.price_usd),
+          stock: parseInt(newProductData.stock) || 0,
+          category_id: Number(newProductData.category_id),
+          compatible_devices: newProductData.compatible_devices,
+          use_scenarios: newProductData.use_scenarios,
+          images_urls: [imageUrl],
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 3. Éxito: agregar al estado local y cerrar modal
+      addProductToState({
+        ...data,
+        image: imageUrl,
+        price: parseFloat(newProductData.price_usd),
+        salePrice: null,
+        tagline: newProductData.description ? newProductData.description.substring(0, 50) + '...' : '',
+        stock: parseInt(newProductData.stock) || 0,
+        compareAtPrice: null,
+        offerEndsAt: null,
+        isBestSeller: false,
+      });
+
+      showSuccess('🐵 ¡Producto creado exitosamente!');
+      setShowProductForm(false);
+      setNewProductData({
+        name: '', sku: '', description: '', price_usd: '',
+        stock: '', category_id: '', compatible_devices: [], use_scenarios: [],
+      });
+      setNewProductImage(null);
+
+      // Refrescar la lista completa de fondo
+      fetchProducts();
+    } catch (error) {
+      console.error('❌ [AdminProducts] Error creando producto:', error);
+      showError(error.message || 'No se pudo crear el producto. Intenta de nuevo.');
+    } finally {
+      setIsSubmittingNew(false);
+    }
   };
 
   // ── Helper: Badge de stock ──
@@ -414,7 +528,7 @@ export default function AdminProducts() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="btn-primary">
+        <button className="btn-primary" onClick={() => setShowProductForm(true)}>
           <Plus size={18} />
           <span>Nuevo Producto</span>
         </button>
@@ -631,19 +745,19 @@ export default function AdminProducts() {
                   </div>
                 </div>
 
-                {/* ── TAGS: Equipos Compatibles ── */}
-                <TagSelector
-                  title="Equipos Compatibles"
-                  options={COMPATIBLE_DEVICES}
-                  selected={formData.compatibleDevices}
+                {/* ── TAGS: Para tu equipo (→ compatible_devices) ── */}
+                <DynamicTagInput
+                  title="Para tu equipo"
+                  placeholder="Ej: DJI Osmo Action 4, iPhone..."
+                  tags={formData.compatibleDevices}
                   onChange={(val) => setFormData({ ...formData, compatibleDevices: val })}
                 />
 
-                {/* ── TAGS: Escenarios de Uso ── */}
-                <TagSelector
-                  title="Escenarios de Uso"
-                  options={USE_SCENARIOS}
-                  selected={formData.useScenarios}
+                {/* ── TAGS: Por producto (→ use_scenarios) ── */}
+                <DynamicTagInput
+                  title="Por producto"
+                  placeholder="Ej: Iluminación LED, Monopod..."
+                  tags={formData.useScenarios}
                   onChange={(val) => setFormData({ ...formData, useScenarios: val })}
                 />
 
@@ -684,7 +798,202 @@ export default function AdminProducts() {
         </div>
       )}
 
-      {/* ── Modal de Categorías (flotante encima del modal de edición) ── */}
+      {/* ================================================================
+          MODAL DE CREACIÓN DE NUEVO PRODUCTO
+          ================================================================ */}
+      {showProductForm && (
+        <div
+          className="create-modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget && !isSubmittingNew) setShowProductForm(false); }}
+        >
+          <div className="create-modal" role="dialog" aria-modal="true" aria-label="Nuevo Producto">
+            {/* Header */}
+            <div className="create-modal-header">
+              <div className="create-modal-title-group">
+                <PackagePlus size={22} className="create-modal-icon" />
+                <h2>Nuevo Producto</h2>
+              </div>
+              <button
+                className="create-modal-close"
+                onClick={() => setShowProductForm(false)}
+                disabled={isSubmittingNew}
+                title="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddNewProduct}>
+              <div className="create-modal-body">
+
+                {/* ── Nombre del Producto ── */}
+                <div className="edit-form-group">
+                  <label htmlFor="new-name">Nombre del Producto</label>
+                  <input
+                    id="new-name"
+                    type="text"
+                    value={newProductData.name}
+                    onChange={(e) => setNewProductData({ ...newProductData, name: e.target.value })}
+                    placeholder="Ej: SmallRig Cage para Sony A7S III"
+                    required
+                  />
+                </div>
+
+                {/* ── SKU ── */}
+                <div className="edit-form-group">
+                  <label htmlFor="new-sku">SKU</label>
+                  <input
+                    id="new-sku"
+                    type="text"
+                    value={newProductData.sku}
+                    onChange={(e) => setNewProductData({ ...newProductData, sku: e.target.value })}
+                    placeholder="Ej: SRX-CGE-A7S3"
+                  />
+                </div>
+
+                {/* ── Descripción ── */}
+                <div className="edit-form-group">
+                  <label htmlFor="new-description">Descripción</label>
+                  <textarea
+                    id="new-description"
+                    value={newProductData.description}
+                    onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
+                    placeholder="Descripción detallada del producto..."
+                    rows={3}
+                    className="create-textarea"
+                  />
+                </div>
+
+                {/* ── Precio + Stock ── */}
+                <div className="edit-form-row">
+                  <div className="edit-form-group">
+                    <label htmlFor="new-price">Precio (USD)</label>
+                    <input
+                      id="new-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newProductData.price_usd}
+                      onChange={(e) => setNewProductData({ ...newProductData, price_usd: e.target.value })}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div className="edit-form-group">
+                    <label htmlFor="new-stock">Stock Inicial</label>
+                    <input
+                      id="new-stock"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={newProductData.stock}
+                      onChange={(e) => setNewProductData({ ...newProductData, stock: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                {/* ── Categoría + Botón Nueva ── */}
+                <div className="edit-form-group">
+                  <label htmlFor="new-category">Categoría</label>
+                  <div className="category-select-row">
+                    <select
+                      id="new-category"
+                      value={newProductData.category_id}
+                      onChange={(e) => setNewProductData({ ...newProductData, category_id: e.target.value })}
+                      className="category-select"
+                      required
+                    >
+                      <option value="" disabled>Selecciona una categoría...</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-new-category"
+                      onClick={() => setShowCategoryModal(true)}
+                      title="Crear nueva categoría"
+                    >
+                      <Plus size={14} />
+                      <span>Nueva</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── TAGS: Para tu equipo (→ compatible_devices) ── */}
+                <DynamicTagInput
+                  title="Para tu equipo"
+                  placeholder="Ej: DJI Osmo Action 4, iPhone..."
+                  tags={newProductData.compatible_devices}
+                  onChange={(val) => setNewProductData({ ...newProductData, compatible_devices: val })}
+                />
+
+                {/* ── TAGS: Por producto (→ use_scenarios) ── */}
+                <DynamicTagInput
+                  title="Por producto"
+                  placeholder="Ej: Iluminación LED, Monopod..."
+                  tags={newProductData.use_scenarios}
+                  onChange={(val) => setNewProductData({ ...newProductData, use_scenarios: val })}
+                />
+
+                {/* ── Imagen del Producto ── */}
+                <div className="edit-form-group">
+                  <label>Imagen del Producto</label>
+                  <div className="create-file-upload">
+                    <input
+                      type="file"
+                      id="newProductImage"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setNewProductImage(e.target.files[0]);
+                        }
+                      }}
+                      className="create-file-input"
+                    />
+                    <label htmlFor="newProductImage" className="create-file-label">
+                      <UploadCloud size={28} className="create-upload-icon" />
+                      <span className="create-upload-text">
+                        {newProductImage ? newProductImage.name : 'Haz clic para seleccionar una imagen'}
+                      </span>
+                      {newProductImage && (
+                        <span className="create-upload-hint">
+                          {(newProductImage.size / 1024).toFixed(1)} KB
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Footer */}
+              <div className="create-modal-footer">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setShowProductForm(false)}
+                  disabled={isSubmittingNew}
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-save" disabled={isSubmittingNew}>
+                  {isSubmittingNew ? (
+                    <><Loader size={18} className="spin" /><span>Creando...</span></>
+                  ) : (
+                    <><PackagePlus size={18} /><span>Crear Producto</span></>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Categorías (flotante encima de los modales) ── */}
       {showCategoryModal && (
         <CategoryModal
           onClose={() => setShowCategoryModal(false)}

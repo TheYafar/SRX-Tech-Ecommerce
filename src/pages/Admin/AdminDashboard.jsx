@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   PackagePlus, CheckCircle, XCircle, Image as ImageIcon,
   DollarSign, UploadCloud, Loader2, Layers, Pencil, Check, X,
-  PlusCircle, Eye, EyeOff
+  PlusCircle
 } from 'lucide-react';
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
@@ -32,8 +32,7 @@ export default function AdminDashboard() {
   const [isCatLoading, setIsCatLoading] = useState(false);
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [editingImageUrl, setEditingImageUrl] = useState('');
-  const [newCat, setNewCat] = useState({ name: '', image_url: '' });
+  const [newCatName, setNewCatName] = useState('');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [isSavingCat, setIsSavingCat] = useState(false);
 
@@ -41,7 +40,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data, error } = await supabase.from('categories').select('*');
+        const { data, error } = await supabase.from('categories').select('id, name, slug');
         if (error) throw error;
         if (data) setCategories(data);
       } catch (err) {
@@ -57,8 +56,8 @@ export default function AdminDashboard() {
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
-        .order('created_at', { ascending: true });
+        .select('id, name, slug')
+        .order('name', { ascending: true });
       if (error) throw error;
       setAllCategories(data || []);
     } catch (err) {
@@ -210,39 +209,15 @@ export default function AdminDashboard() {
   };
 
   // ── Category Management handlers ────────────────────────
-  const handleToggleVisibility = async (cat) => {
-    const newValue = !cat.is_visible;
-    // Optimistic UI update
-    setAllCategories(prev =>
-      prev.map(c => c.id === cat.id ? { ...c, is_visible: newValue } : c)
-    );
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .update({ is_visible: newValue })
-        .eq('id', cat.id);
-      if (error) throw error;
-      showSuccess(`Categoría "${cat.name}" ${newValue ? 'mostrada' : 'ocultada'} correctamente.`);
-    } catch (err) {
-      console.error('❌ Error actualizando visibilidad:', err);
-      // Revert on error
-      setAllCategories(prev =>
-        prev.map(c => c.id === cat.id ? { ...c, is_visible: !newValue } : c)
-      );
-      showError('No se pudo actualizar la visibilidad.');
-    }
-  };
 
   const startEditCat = (cat) => {
     setEditingCatId(cat.id);
     setEditingName(cat.name);
-    setEditingImageUrl(cat.image_url || '');
   };
 
   const cancelEditCat = () => {
     setEditingCatId(null);
     setEditingName('');
-    setEditingImageUrl('');
   };
 
   const saveEditCat = async (cat) => {
@@ -254,12 +229,12 @@ export default function AdminDashboard() {
     try {
       const { error } = await supabase
         .from('categories')
-        .update({ name: editingName.trim(), image_url: editingImageUrl.trim() || null })
+        .update({ name: editingName.trim() })
         .eq('id', cat.id);
       if (error) throw error;
       setAllCategories(prev =>
         prev.map(c => c.id === cat.id
-          ? { ...c, name: editingName.trim(), image_url: editingImageUrl.trim() || null }
+          ? { ...c, name: editingName.trim() }
           : c
         )
       );
@@ -275,26 +250,27 @@ export default function AdminDashboard() {
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
-    if (!newCat.name.trim()) {
+    if (!newCatName.trim()) {
       showError('El nombre de la categoría es requerido.');
       return;
     }
     setIsAddingCat(true);
     try {
+      const cleanName = newCatName.trim();
+      const slug = cleanName.toLowerCase().replace(/ /g, '-');
       const { data, error } = await supabase
         .from('categories')
         .insert([{
-          name: newCat.name.trim(),
-          image_url: newCat.image_url.trim() || null,
-          is_visible: true
+          name: cleanName,
+          slug
         }])
-        .select()
+        .select('id, name, slug')
         .single();
       if (error) throw error;
       setAllCategories(prev => [...prev, data]);
       setCategories(prev => [...prev, data]);
       showSuccess(`Categoría "${data.name}" creada correctamente.`);
-      setNewCat({ name: '', image_url: '' });
+      setNewCatName('');
     } catch (err) {
       console.error('❌ Error creando categoría:', err);
       showError('No se pudo crear la categoría. Verifica que el nombre sea único.');
@@ -545,19 +521,10 @@ export default function AdminDashboard() {
                   <label>Nombre</label>
                   <input
                     type="text"
-                    value={newCat.name}
-                    onChange={e => setNewCat(p => ({ ...p, name: e.target.value }))}
+                    value={newCatName}
+                    onChange={e => setNewCatName(e.target.value)}
                     placeholder="Ej: Cámaras, Lentes, Iluminación..."
                     required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>URL de Imagen de Fondo</label>
-                  <input
-                    type="url"
-                    value={newCat.image_url}
-                    onChange={e => setNewCat(p => ({ ...p, image_url: e.target.value }))}
-                    placeholder="https://images.unsplash.com/..."
                   />
                 </div>
               </div>
@@ -585,19 +552,8 @@ export default function AdminDashboard() {
                 {allCategories.map(cat => (
                   <div
                     key={cat.id}
-                    className={`cat-row ${!cat.is_visible ? 'cat-row--hidden' : ''}`}
+                    className="cat-row"
                   >
-                    {/* ── Thumbnail ── */}
-                    <div className="cat-row-thumb">
-                      {cat.image_url ? (
-                        <img src={cat.image_url} alt={cat.name} className="cat-thumb-img" />
-                      ) : (
-                        <div className="cat-thumb-placeholder">
-                          <ImageIcon size={20} />
-                        </div>
-                      )}
-                    </div>
-
                     {/* ── Name / Edit inline ── */}
                     <div className="cat-row-body">
                       {editingCatId === cat.id ? (
@@ -610,20 +566,10 @@ export default function AdminDashboard() {
                             placeholder="Nombre de la categoría"
                             autoFocus
                           />
-                          <input
-                            type="url"
-                            className="cat-inline-input cat-inline-input--url"
-                            value={editingImageUrl}
-                            onChange={e => setEditingImageUrl(e.target.value)}
-                            placeholder="URL de imagen (opcional)"
-                          />
                         </div>
                       ) : (
                         <div className="cat-row-info">
                           <span className="cat-row-name">{cat.name}</span>
-                          {!cat.is_visible && (
-                            <span className="cat-hidden-badge">Oculta</span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -658,20 +604,7 @@ export default function AdminDashboard() {
                             <Pencil size={15} />
                           </button>
 
-                          {/* Toggle visibility switch */}
-                          <button
-                            className={`cat-toggle ${cat.is_visible ? 'cat-toggle--visible' : 'cat-toggle--hidden'}`}
-                            onClick={() => handleToggleVisibility(cat)}
-                            title={cat.is_visible ? 'Ocultar del inicio' : 'Mostrar en el inicio'}
-                            aria-label={cat.is_visible ? 'Ocultar categoría' : 'Mostrar categoría'}
-                          >
-                            <span className="cat-toggle-track">
-                              <span className="cat-toggle-thumb" />
-                            </span>
-                            <span className="cat-toggle-icon">
-                              {cat.is_visible ? <Eye size={14} /> : <EyeOff size={14} />}
-                            </span>
-                          </button>
+
 
                           <button
                             className="cat-action-btn cat-action-btn--delete"

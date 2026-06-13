@@ -562,16 +562,19 @@
 }
 
 /* ================================================================
-   TAG SELECTORS — Secciones de Pastillas SmallRig
+   DYNAMIC TAG INPUTS
    ================================================================ */
-.tag-selector-section {
+.dynamic-tag-section {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   padding: 1rem 1.125rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.tag-selector-header {
+.dynamic-tag-header {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -580,7 +583,6 @@
   color: #94a3b8;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
 }
 
 /* Badge contador de seleccionados */
@@ -599,64 +601,101 @@
   line-height: 1;
 }
 
-/* Contenedor de pills */
-.tag-pills-container {
+.dynamic-tag-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dynamic-tag-input-field {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.625rem 0.875rem;
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dynamic-tag-input-field:hover {
+  border-color: #475569;
+}
+
+.dynamic-tag-input-field:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.btn-add-tag {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-tag:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-add-tag:active {
+  transform: translateY(0);
+}
+
+.dynamic-tags-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 12px 0 0;
+  margin-top: 4px;
 }
 
-/* Pill individual */
-.tag-pill {
+.dynamic-tag-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 0.375rem 0.75rem;
   border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: #94a3b8;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.1);
+  color: #c7d2fe;
   font-size: 0.8125rem;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: inherit;
-  user-select: none;
-  white-space: nowrap;
+  animation: fadeIn 0.2s ease both;
+  transition: all 0.2s ease;
 }
 
-.tag-pill:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(99, 102, 241, 0.08);
-  color: #c7d2fe;
-  transform: translateY(-1px);
-}
-
-/* Estado ACTIVO — Iluminado con acento azul/púrpura */
-.tag-pill--active {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(139, 92, 246, 0.25));
+.dynamic-tag-badge:hover {
   border-color: rgba(99, 102, 241, 0.7);
-  color: #c7d2fe;
-  box-shadow:
-    0 0 0 1px rgba(99, 102, 241, 0.3),
-    0 2px 12px rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.2);
 }
 
-.tag-pill--active:hover {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(139, 92, 246, 0.35));
-  box-shadow:
-    0 0 0 1px rgba(99, 102, 241, 0.5),
-    0 4px 16px rgba(99, 102, 241, 0.3);
-  transform: translateY(-1px);
+.btn-remove-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  transition: all 0.2s ease;
 }
 
-/* Check icon dentro del pill activo */
-.tag-check {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #818cf8;
+.btn-remove-tag:hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
 }
+
 
 /* ================================================================
    CHECKBOX "MÁS VENDIDO" — Toggle Premium
@@ -999,6 +1038,230 @@
   }
 
   .btn-new-category {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ================================================================
+   MODAL DE CREACIÓN DE NUEVO PRODUCTO — Dark Mode Premium
+   ================================================================ */
+.create-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease both;
+}
+
+.create-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Scrollbar */
+.create-modal::-webkit-scrollbar { width: 5px; }
+.create-modal::-webkit-scrollbar-track { background: transparent; }
+.create-modal::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 99px;
+}
+
+/* Header */
+.create-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.create-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.create-modal-icon {
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.create-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.create-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-modal-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* Body */
+.create-modal-body {
+  padding: 1.5rem 1.75rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Footer */
+.create-modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 0 1.75rem 1.5rem;
+}
+
+/* Textarea */
+.create-textarea {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 1.6;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.create-textarea:hover {
+  border-color: #475569;
+}
+
+.create-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.create-textarea::placeholder {
+  color: #64748b;
+}
+
+/* ================================================================
+   FILE UPLOAD ZONE — Zona de arrastre premium
+   ================================================================ */
+.create-file-upload {
+  position: relative;
+}
+
+.create-file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.create-file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.75rem 1.5rem;
+  border: 2px dashed #334155;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.create-file-label:hover {
+  border-color: #818cf8;
+  background: rgba(129, 140, 248, 0.06);
+  box-shadow: 0 0 20px rgba(129, 140, 248, 0.1);
+}
+
+.create-upload-icon {
+  color: #475569;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.create-file-label:hover .create-upload-icon {
+  color: #818cf8;
+  transform: translateY(-2px);
+}
+
+.create-upload-text {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.create-upload-hint {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* ================================================================
+   RESPONSIVE — Modal de Creación
+   ================================================================ */
+@media (max-width: 640px) {
+  .create-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px;
+  }
+
+  .create-modal-header {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .create-modal-body {
+    padding: 1.25rem;
+  }
+
+  .create-modal-footer {
+    padding: 0 1.25rem 1.25rem;
+    flex-direction: column;
+  }
+
+  .create-modal-footer .btn-cancel,
+  .create-modal-footer .btn-save {
     width: 100%;
     justify-content: center;
   }

@@ -2,8 +2,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import './CategoryGrid.css';
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&h=600&fit=crop&q=80';
+/* Gradient palette used as card backgrounds (no image column in DB) */
+const CARD_GRADIENTS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+];
 
 /* ─── Skeleton placeholder ─────────────────────────────── */
 function SkeletonCard({ large }) {
@@ -15,8 +22,8 @@ function SkeletonCard({ large }) {
 }
 
 /* ─── Single category card ─────────────────────────────── */
-function CategoryCard({ category, large, onClick }) {
-  const imageUrl = category.image_url || FALLBACK_IMAGE;
+function CategoryCard({ category, large, onClick, gradientIndex }) {
+  const gradient = CARD_GRADIENTS[gradientIndex % CARD_GRADIENTS.length];
 
   return (
     <div
@@ -27,24 +34,12 @@ function CategoryCard({ category, large, onClick }) {
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       aria-label={`Ver categoría ${category.name}`}
     >
-      <div className="category-img-wrapper">
-        <img
-          src={imageUrl}
-          alt={category.name}
-          className="category-img"
-          loading="lazy"
-          onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE; }}
-        />
+      <div className="category-img-wrapper" style={{ background: gradient }}>
         <div className="category-overlay-dark" />
       </div>
       <div className="category-content">
         <h3 className="cat-title">{category.name}</h3>
-        {category.description && (
-          <p className="cat-description">{category.description}</p>
-        )}
-        <button className="pill-btn-outline" tabIndex={-1}>
-          {category.link_text || 'Ver más'}
-        </button>
+        <button className="pill-btn-outline" tabIndex={-1}>Ver más</button>
       </div>
     </div>
   );
@@ -62,9 +57,8 @@ export default function CategoryGrid() {
         setLoading(true);
         const { data, error: fetchError } = await supabase
           .from('categories')
-          .select('*')
-          .eq('is_visible', true)
-          .order('created_at', { ascending: true });
+          .select('id, name, slug')
+          .order('name', { ascending: true });
 
         if (fetchError) throw fetchError;
         setCategories(data || []);
@@ -135,7 +129,7 @@ export default function CategoryGrid() {
             <h2 className="section-title">Productos SRX</h2>
           </div>
           <div className="category-grid category-grid--single">
-            <CategoryCard category={firstCat} large onClick={scrollToTienda} />
+            <CategoryCard category={firstCat} large onClick={scrollToTienda} gradientIndex={0} />
           </div>
         </div>
       </section>
@@ -152,26 +146,14 @@ export default function CategoryGrid() {
             <h2 className="section-title">Productos SRX</h2>
           </div>
           <div className="category-carousel">
-            {categories.map((cat) => (
+            {categories.map((cat, idx) => (
               <div key={cat.id} className="category-carousel-item" onClick={scrollToTienda}>
-                <div className="category-img-wrapper">
-                  <img
-                    src={cat.image_url || FALLBACK_IMAGE}
-                    alt={cat.name}
-                    className="category-img"
-                    loading="lazy"
-                    onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE; }}
-                  />
+                <div className="category-img-wrapper" style={{ background: CARD_GRADIENTS[idx % CARD_GRADIENTS.length] }}>
                   <div className="category-overlay-dark" />
                 </div>
                 <div className="category-content">
                   <h3 className="cat-title">{cat.name}</h3>
-                  {cat.description && (
-                    <p className="cat-description">{cat.description}</p>
-                  )}
-                  <button className="pill-btn-outline" tabIndex={-1}>
-                    {cat.link_text || 'Ver más'}
-                  </button>
+                  <button className="pill-btn-outline" tabIndex={-1}>Ver más</button>
                 </div>
               </div>
             ))}
@@ -196,16 +178,18 @@ export default function CategoryGrid() {
             category={firstCat}
             large
             onClick={scrollToTienda}
+            gradientIndex={0}
           />
 
           {/* Right Column — remaining categories */}
           <div className="category-right-col">
-            {restCats.map((cat) => (
+            {restCats.map((cat, idx) => (
               <CategoryCard
                 key={cat.id}
                 category={cat}
                 large={false}
                 onClick={scrollToTienda}
+                gradientIndex={idx + 1}
               />
             ))}
           </div>

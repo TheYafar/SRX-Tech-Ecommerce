@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Grid, Smartphone, Video } from 'lucide-react';
+import { Grid, Smartphone } from 'lucide-react';
 import './MegaMenu.css';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -16,14 +16,7 @@ export const DEVICE_OPTIONS = [
   { label: 'Para Cámaras DSLR',        value: 'DSLR' },
 ];
 
-export const SCENARIO_OPTIONS = [
-  { label: 'Vlogging en Exteriores',       value: 'Vlogging' },
-  { label: 'Streaming & Podcast',          value: 'Streaming' },
-  { label: 'Contenido Vertical / Cine Móvil', value: 'Cine Móvil' },
-  { label: 'Fotografía de Producto',       value: 'Fotografía de Producto' },
-  { label: 'Eventos & Bodas',              value: 'Eventos' },
-  { label: 'Viajes & Aventura',            value: 'Viajes' },
-];
+
 
 // ──────────────────────────────────────────────────────────────────────────────
 //  MegaMenu — aparece solo en Desktop al hover/click en "Categorías"
@@ -63,11 +56,7 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
     onClose();
   };
 
-  const handleScenarioClick = (scenarioValue) => {
-    onFilter({ type: 'scenario', value: scenarioValue });
-    navigate('/tienda');
-    onClose();
-  };
+
 
   if (!isOpen) return null;
 
@@ -79,7 +68,7 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
         role="dialog"
         aria-label="Menú de navegación por categorías"
       >
-        {/* ── Col 1: Por Producto ── */}
+        {/* ── Col 1: Por Producto (Categorías) ── */}
         <div className="mega-col">
           <div className="mega-col-header">
             <Grid size={14} className="mega-col-icon" />
@@ -106,11 +95,11 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
         {/* ── Divider ── */}
         <div className="mega-divider" />
 
-        {/* ── Col 2: Por tu Equipo ── */}
+        {/* ── Col 2: Para tu equipo ── */}
         <div className="mega-col">
           <div className="mega-col-header">
             <Smartphone size={14} className="mega-col-icon" />
-            <span>Por tu Equipo</span>
+            <span>Para tu equipo</span>
           </div>
           <ul className="mega-link-list">
             {DEVICE_OPTIONS.map((opt) => (
@@ -126,28 +115,6 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
           </ul>
         </div>
 
-        {/* ── Divider ── */}
-        <div className="mega-divider" />
-
-        {/* ── Col 3: Por Escenario ── */}
-        <div className="mega-col">
-          <div className="mega-col-header">
-            <Video size={14} className="mega-col-icon" />
-            <span>Por Escenario</span>
-          </div>
-          <ul className="mega-link-list">
-            {SCENARIO_OPTIONS.map((opt) => (
-              <li key={opt.value}>
-                <button
-                  className="mega-link"
-                  onClick={() => handleScenarioClick(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </div>
   );
