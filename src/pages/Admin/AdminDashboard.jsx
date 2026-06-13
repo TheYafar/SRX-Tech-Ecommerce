@@ -35,6 +35,9 @@ export default function AdminDashboard() {
   const [newCatName, setNewCatName] = useState('');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [isSavingCat, setIsSavingCat] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState('por-producto'); // 'por-producto' | 'para-tu-equipo'
+  const [editingCategoryGroup, setEditingCategoryGroup] = useState('por-producto'); // grupo activo en edición
+  const [rootCategoryIds, setRootCategoryIds] = useState({ porProducto: null, paraTuEquipo: null });
 
   // ── Fetch categories for Add Product dropdown ───────────
   useEffect(() => {
@@ -54,9 +57,25 @@ export default function AdminDashboard() {
   const fetchAllCategories = useCallback(async () => {
     setIsCatLoading(true);
     try {
+      // Fetch de macro-categorías raíz para mapear UUIDs
+      const { data: rootData, error: rootError } = await supabase
+        .from('categories')
+        .select('id, slug')
+        .in('slug', ['por-producto', 'para-tu-equipo']);
+      if (rootError) throw rootError;
+      if (rootData) {
+        const ids = { porProducto: null, paraTuEquipo: null };
+        rootData.forEach(cat => {
+          if (cat.slug === 'por-producto')    ids.porProducto  = cat.id;
+          if (cat.slug === 'para-tu-equipo') ids.paraTuEquipo = cat.id;
+        });
+        setRootCategoryIds(ids);
+      }
+
+      // Fetch de todas las categorías para la lista
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, slug')
+        .select('id, name, slug, parent_id')
         .order('name', { ascending: true });
       if (error) throw error;
       setAllCategories(data || []);
@@ -213,11 +232,16 @@ export default function AdminDashboard() {
   const startEditCat = (cat) => {
     setEditingCatId(cat.id);
     setEditingName(cat.name);
+    // Detectar a qué macro-categoría raíz pertenece
+    setEditingCategoryGroup(
+      cat.parent_id === rootCategoryIds.porProducto ? 'por-producto' : 'para-tu-equipo'
+    );
   };
 
   const cancelEditCat = () => {
     setEditingCatId(null);
     setEditingName('');
+    setEditingCategoryGroup('por-producto');
   };
 
   const saveEditCat = async (cat) => {
@@ -227,14 +251,25 @@ export default function AdminDashboard() {
     }
     setIsSavingCat(true);
     try {
+      const cleanName = editingName.trim();
+      const newSlug   = cleanName.toLowerCase().replace(/ /g, '-');
+      const newParentId = editingCategoryGroup === 'por-producto'
+        ? rootCategoryIds.porProducto
+        : rootCategoryIds.paraTuEquipo;
+
       const { error } = await supabase
         .from('categories')
-        .update({ name: editingName.trim() })
+        .update({
+          name:      cleanName,
+          slug:      newSlug,
+          parent_id: newParentId
+        })
         .eq('id', cat.id);
       if (error) throw error;
+
       setAllCategories(prev =>
         prev.map(c => c.id === cat.id
-          ? { ...c, name: editingName.trim() }
+          ? { ...c, name: cleanName, slug: newSlug, parent_id: newParentId }
           : c
         )
       );
@@ -258,18 +293,22 @@ export default function AdminDashboard() {
     try {
       const cleanName = newCatName.trim();
       const slug = cleanName.toLowerCase().replace(/ /g, '-');
+      const parentId = selectedGroup === 'por-producto'
+        ? rootCategoryIds.porProducto
+        : rootCategoryIds.paraTuEquipo;
       const { data, error } = await supabase
         .from('categories')
         .insert([{
           name: cleanName,
-          slug
+          slug,
+          parent_id: parentId
         }])
         .select('id, name, slug')
         .single();
       if (error) throw error;
       setAllCategories(prev => [...prev, data]);
       setCategories(prev => [...prev, data]);
-      showSuccess(`Categoría "${data.name}" creada correctamente.`);
+      showSuccess(`Categoría "${data.name}" creada en "${selectedGroup === 'por-producto' ? 'Por Producto' : 'Para tu Equipo'}" correctamente.`);
       setNewCatName('');
     } catch (err) {
       console.error('❌ Error creando categoría:', err);
@@ -280,16 +319,52 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteCategory = async (cat) => {
-    if (!window.confirm(`¿Eliminar la categoría "${cat.name}"? Esta acción no se puede deshacer.`)) return;
+    const categoryId = cat.id;
+
+    // 1. Confirmación previa — evita eliminaciones accidentales
+    if (!window.confirm(
+      '¿Estás seguro de que deseas eliminar esta categoría? Los productos asociados quedarán sin categoría asignada.'
+    )) return;
+
     try {
-      const { error } = await supabase.from('categories').delete().eq('id', cat.id);
+      // 2. Consulta de eliminación estricta — .select() fuerza a Supabase a devolver
+      //    la fila eliminada; si RLS bloquea silenciosamente, data llegará vacío.
+      const { data: deletedRows, error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', categoryId)
+        .select();
+
       if (error) throw error;
-      setAllCategories(prev => prev.filter(c => c.id !== cat.id));
-      setCategories(prev => prev.filter(c => c.id !== cat.id));
-      showSuccess(`Categoría "${cat.name}" eliminada.`);
+
+      // 3. Verificar que la eliminación realmente afectó la fila (RLS check)
+      if (!deletedRows || deletedRows.length === 0) {
+        console.warn('⚠️ [handleDeleteCategory] Supabase no devolvió filas eliminadas.', {
+          categoryId,
+          categoryName: cat.name,
+          probableCause: 'La política RLS de Supabase está bloqueando DELETE para este usuario.',
+          solucion: 'Ir al Dashboard de Supabase → Authentication → Policies → tabla "categories" → añadir política DELETE para rol "authenticated" o "service_role".',
+        });
+        showError('No se pudo eliminar: sin permisos en la base de datos. Revisa las políticas RLS en Supabase.');
+        return; // ← No actualizar la UI si en BD no se borró nada
+      }
+
+      // 4. Actualización inmediata del estado — sin recarga de página
+      setAllCategories(prevCategories => prevCategories.filter(c => c.id !== categoryId));
+      setCategories(prevCategories => prevCategories.filter(c => c.id !== categoryId));
+
+      showSuccess(`Categoría "${cat.name}" eliminada correctamente.`);
     } catch (err) {
-      console.error('❌ Error eliminando categoría:', err);
-      showError('No se pudo eliminar la categoría. Puede que tenga productos asociados.');
+      // 5. Control de errores detallado para auditoría desde DevTools
+      console.error('❌ [handleDeleteCategory] Error al eliminar categoría:', {
+        categoryId,
+        categoryName: cat.name,
+        supabaseError: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+      });
+      showError('No se pudo eliminar la categoría. Revisa la consola para más detalles.');
     }
   };
 
@@ -527,6 +602,27 @@ export default function AdminDashboard() {
                     required
                   />
                 </div>
+
+                {/* ── Botonera de grupo ── */}
+                <div className="form-group">
+                  <label>Clasificar en</label>
+                  <div className="category-group-selector">
+                    <button
+                      type="button"
+                      className={`selector-btn ${selectedGroup === 'por-producto' ? 'active' : ''}`}
+                      onClick={() => setSelectedGroup('por-producto')}
+                    >
+                      Por Producto
+                    </button>
+                    <button
+                      type="button"
+                      className={`selector-btn ${selectedGroup === 'para-tu-equipo' ? 'active' : ''}`}
+                      onClick={() => setSelectedGroup('para-tu-equipo')}
+                    >
+                      Para tu Equipo
+                    </button>
+                  </div>
+                </div>
               </div>
               <button type="submit" className="admin-submit-btn cat-add-btn" disabled={isAddingCat}>
                 {isAddingCat
@@ -566,6 +662,23 @@ export default function AdminDashboard() {
                             placeholder="Nombre de la categoría"
                             autoFocus
                           />
+                          {/* ── Botonera de grupo en edición ── */}
+                          <div className="category-group-selector category-group-selector--edit">
+                            <button
+                              type="button"
+                              className={`selector-btn ${editingCategoryGroup === 'por-producto' ? 'active' : ''}`}
+                              onClick={() => setEditingCategoryGroup('por-producto')}
+                            >
+                              Por Producto
+                            </button>
+                            <button
+                              type="button"
+                              className={`selector-btn ${editingCategoryGroup === 'para-tu-equipo' ? 'active' : ''}`}
+                              onClick={() => setEditingCategoryGroup('para-tu-equipo')}
+                            >
+                              Para tu Equipo
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="cat-row-info">

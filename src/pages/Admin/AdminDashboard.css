@@ -827,6 +827,75 @@
   color: #60a5fa;
 }
 
+/* ================================================================
+   CATEGORY GROUP SELECTOR — Botonera "Por Producto / Para tu Equipo"
+   ================================================================ */
+.category-group-selector {
+  display: flex;
+  gap: 12px;
+  margin: 4px 0;
+}
+
+.selector-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.25rem;
+  background: #1e293b;          /* slate-800 — mismo fondo que inputs */
+  border: 1px solid #334155;    /* slate-700 */
+  border-radius: 10px;
+  color: #94a3b8;               /* slate-400 */
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.selector-btn:hover:not(.active) {
+  background: #263248;          /* slate-700/70 — feedback sutil */
+  border-color: #475569;        /* slate-600 */
+  color: #cbd5e1;               /* slate-300 */
+}
+
+.selector-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Estado activo: azul corporativo — coherente con admin-submit-btn y admin-tab-btn.active */
+.selector-btn.active {
+  background: #2563eb;          /* blue-600 */
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.35);
+}
+
+.selector-btn.active:hover {
+  background: #1d4ed8;          /* blue-700 */
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
+}
+
+.selector-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Edit-mode variant: más compacto dentro de la fila inline ── */
+.category-group-selector--edit {
+  margin: 6px 0 2px;
+}
+
+.category-group-selector--edit .selector-btn {
+  padding: 0.45rem 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: 8px;
+}
+
 /* ── Responsive adjustments ── */
 @media (max-width: 576px) {
   .cat-row {

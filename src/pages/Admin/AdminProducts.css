@@ -859,7 +859,7 @@
   z-index: 30001;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
   width: 100%;
-  max-width: 400px;
+  max-width: 520px;  /* ampliado para los dos campos en fila */
   animation: catModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -917,6 +917,62 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* ================================================================
+   FILA DE CAMPOS EN 2 COLUMNAS (Nombre + Tipo de Agrupación)
+   ================================================================ */
+.cat-fields-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+/* El campo Nombre ocupa 60% del ancho */
+.cat-field-name {
+  flex: 3;
+  min-width: 0;  /* evita overflow en flex */
+}
+
+/* El campo Tipo de Agrupación ocupa el resto */
+.cat-field-group {
+  flex: 2;
+  min-width: 0;
+}
+
+/* Select premium — mismo look que .category-select */
+.cat-group-select {
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.75rem 2.25rem 0.75rem 0.875rem;
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  box-sizing: border-box;
+}
+
+.cat-group-select:hover {
+  border-color: #475569;
+}
+
+.cat-group-select:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25);
+}
+
+.cat-group-select option {
+  background: #1e293b;
+  color: #f1f5f9;
 }
 
 /* Preview del slug */
@@ -1026,6 +1082,17 @@
 
   .cat-modal {
     max-width: calc(100vw - 2rem);
+  }
+
+  .cat-fields-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cat-field-name,
+  .cat-field-group {
+    flex: unset;
+    width: 100%;
   }
 
   .tag-pill {

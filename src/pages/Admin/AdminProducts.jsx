@@ -97,9 +97,36 @@ function DynamicTagInput({ title, placeholder, tags = [], onChange }) {
 // ================================================================
 function CategoryModal({ onClose, onCreated }) {
   const [categoryName, setCategoryName] = useState('');
-  const [slug, setSlug] = useState('');
+  const [slug, setSlug]         = useState('');
+  const [groupType, setGroupType] = useState('por-producto');
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]       = useState('');
+
+  // IDs de las categorías raíz (cargados en el mount)
+  const parentIds = useState({ 'por-producto': null, 'para-tu-equipo': null })[0];
+
+  // ── Precarga de IDs raíz ──────────────────────────────────────────
+  useEffect(() => {
+    const loadParentIds = async () => {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('categories')
+          .select('id, slug')
+          .in('slug', ['por-producto', 'para-tu-equipo']);
+
+        if (fetchError) throw fetchError;
+
+        (data || []).forEach((row) => {
+          if (row.slug === 'por-producto')   parentIds['por-producto']   = row.id;
+          if (row.slug === 'para-tu-equipo') parentIds['para-tu-equipo'] = row.id;
+        });
+      } catch (err) {
+        console.warn('⚠️ [CategoryModal] No se pudieron cargar los IDs raíz:', err);
+      }
+    };
+    loadParentIds();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNameChange = (e) => {
     const val = e.target.value;
@@ -115,10 +142,16 @@ function CategoryModal({ onClose, onCreated }) {
     setIsSaving(true);
     setError('');
 
+    const selectedParentId = parentIds[groupType] ?? null;
+
     try {
       const { data, error: insertError } = await supabase
         .from('categories')
-        .insert([{ name: categoryName.trim(), slug }])
+        .insert([{
+          name:      categoryName.trim(),
+          slug,
+          parent_id: selectedParentId,
+        }])
         .select()
         .single();
 
@@ -165,17 +198,34 @@ function CategoryModal({ onClose, onCreated }) {
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="cat-modal-body">
-          <div className="edit-form-group">
-            <label htmlFor="cat-name">Nombre de la categoría</label>
-            <input
-              id="cat-name"
-              type="text"
-              value={categoryName}
-              onChange={handleNameChange}
-              placeholder="ej: Trípodes Profesionales"
-              autoFocus
-              required
-            />
+
+          {/* ── Fila: Nombre + Tipo de Agrupación ─────────────── */}
+          <div className="cat-fields-row">
+            <div className="edit-form-group cat-field-name">
+              <label htmlFor="cat-name">Nombre de la categoría</label>
+              <input
+                id="cat-name"
+                type="text"
+                value={categoryName}
+                onChange={handleNameChange}
+                placeholder="ej: Trípodes Profesionales"
+                autoFocus
+                required
+              />
+            </div>
+
+            <div className="edit-form-group cat-field-group">
+              <label htmlFor="cat-group-type">Tipo de Agrupación</label>
+              <select
+                id="cat-group-type"
+                className="cat-group-select"
+                value={groupType}
+                onChange={(e) => setGroupType(e.target.value)}
+              >
+                <option value="por-producto">Por Producto</option>
+                <option value="para-tu-equipo">Para tu Equipo</option>
+              </select>
+            </div>
           </div>
 
           {/* Preview del slug */}

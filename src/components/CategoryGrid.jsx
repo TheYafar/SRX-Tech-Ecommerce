@@ -2,15 +2,27 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import './CategoryGrid.css';
 
-/* Gradient palette used as card backgrounds (no image column in DB) */
-const CARD_GRADIENTS = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-];
+const categoryMeta = {
+  'drones-y-sistemas-aereos': {
+    image: '/imagenes/productos-srx.jpg',
+    displayName: 'Productos SRX',
+    description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
+    buttonText: 'Ver más',
+    order: 0
+  },
+  'audio-profesional': {
+    image: '/imagenes/audio-profesional.jpg',
+    description: 'Lentes de marcas reconocidas para ampliar tu creatividad visual.',
+    buttonText: 'Comprar',
+    order: 1
+  },
+  'iluminacion-y-energia': {
+    image: '/imagenes/iluminacion-y-energia.jpg',
+    description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
+    buttonText: 'Explorar',
+    order: 2
+  }
+};
 
 /* ─── Skeleton placeholder ─────────────────────────────── */
 function SkeletonCard({ large }) {
@@ -22,9 +34,8 @@ function SkeletonCard({ large }) {
 }
 
 /* ─── Single category card ─────────────────────────────── */
-function CategoryCard({ category, large, onClick, gradientIndex }) {
-  const gradient = CARD_GRADIENTS[gradientIndex % CARD_GRADIENTS.length];
-
+function CategoryCard({ category, large, onClick }) {
+  const title = category.displayName || category.name;
   return (
     <div
       className={`category-card ${large ? 'large-card' : 'horizontal-card'}`}
@@ -32,14 +43,18 @@ function CategoryCard({ category, large, onClick, gradientIndex }) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      aria-label={`Ver categoría ${category.name}`}
+      aria-label={`Ver categoría ${title}`}
     >
-      <div className="category-img-wrapper" style={{ background: gradient }}>
+      <div className="category-img-wrapper">
+        <img src={category.image} alt={title} className="category-img" />
         <div className="category-overlay-dark" />
       </div>
       <div className="category-content">
-        <h3 className="cat-title">{category.name}</h3>
-        <button className="pill-btn-outline" tabIndex={-1}>Ver más</button>
+        <h3 className="cat-title">{title}</h3>
+        {category.description && <p className="cat-description">{category.description}</p>}
+        <button className="pill-btn-outline" tabIndex={-1}>
+          {category.buttonText || 'Ver más'}
+        </button>
       </div>
     </div>
   );
@@ -99,8 +114,8 @@ export default function CategoryGrid() {
     );
   }
 
-  /* Error or empty state */
-  if (error || categories.length === 0) {
+  /* Error state */
+  if (error) {
     return (
       <section id="categorias" className="category-section">
         <div className="container">
@@ -108,19 +123,27 @@ export default function CategoryGrid() {
             <span className="section-subtitle">CATEGORÍAS CLAVE</span>
             <h2 className="section-title">Productos SRX</h2>
           </div>
-          {error && (
-            <p className="category-error">{error}</p>
-          )}
+          <p className="category-error">{error}</p>
         </div>
       </section>
     );
   }
 
-  /* ── Layout: 1 large left + rest stacked on right ── */
-  const [firstCat, ...restCats] = categories;
+  // Filtrar, mapear y ordenar las categorías que coinciden con los metadatos configurados
+  const filtered = categories.filter(cat => cat.slug in categoryMeta);
+  const mapped = filtered.map(cat => ({
+    ...cat,
+    ...categoryMeta[cat.slug]
+  }));
+  
+  // Ordenar según el orden estático especificado
+  mapped.sort((a, b) => a.order - b.order);
 
-  /* If only 1 category, render full width */
-  if (categories.length === 1) {
+  // Tomar las primeras 3
+  const finalCategories = mapped.slice(0, 3);
+
+  /* Empty state */
+  if (finalCategories.length === 0) {
     return (
       <section id="categorias" className="category-section">
         <div className="container">
@@ -128,42 +151,14 @@ export default function CategoryGrid() {
             <span className="section-subtitle">CATEGORÍAS CLAVE</span>
             <h2 className="section-title">Productos SRX</h2>
           </div>
-          <div className="category-grid category-grid--single">
-            <CategoryCard category={firstCat} large onClick={scrollToTienda} gradientIndex={0} />
-          </div>
+          <p className="category-error">No se encontraron categorías de productos configuradas.</p>
         </div>
       </section>
     );
   }
 
-  /* Many categories → horizontal scroll carousel on mobile */
-  if (categories.length > 4) {
-    return (
-      <section id="categorias" className="category-section">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-subtitle">CATEGORÍAS CLAVE</span>
-            <h2 className="section-title">Productos SRX</h2>
-          </div>
-          <div className="category-carousel">
-            {categories.map((cat, idx) => (
-              <div key={cat.id} className="category-carousel-item" onClick={scrollToTienda}>
-                <div className="category-img-wrapper" style={{ background: CARD_GRADIENTS[idx % CARD_GRADIENTS.length] }}>
-                  <div className="category-overlay-dark" />
-                </div>
-                <div className="category-content">
-                  <h3 className="cat-title">{cat.name}</h3>
-                  <button className="pill-btn-outline" tabIndex={-1}>Ver más</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const [firstCat, ...restCats] = finalCategories;
 
-  /* 2–4 categories → bento layout (large left + right column) */
   return (
     <section id="categorias" className="category-section">
       <div className="container">
@@ -173,26 +168,28 @@ export default function CategoryGrid() {
         </div>
 
         <div className="category-grid">
-          {/* Large Left Card — first category */}
-          <CategoryCard
-            category={firstCat}
-            large
-            onClick={scrollToTienda}
-            gradientIndex={0}
-          />
+          {/* Tarjeta destacada grande a la izquierda */}
+          {firstCat && (
+            <CategoryCard
+              category={firstCat}
+              large={true}
+              onClick={scrollToTienda}
+            />
+          )}
 
-          {/* Right Column — remaining categories */}
-          <div className="category-right-col">
-            {restCats.map((cat, idx) => (
-              <CategoryCard
-                key={cat.id}
-                category={cat}
-                large={false}
-                onClick={scrollToTienda}
-                gradientIndex={idx + 1}
-              />
-            ))}
-          </div>
+          {/* Columna derecha con dos tarjetas horizontales pequeñas */}
+          {restCats.length > 0 && (
+            <div className="category-right-col">
+              {restCats.map((cat) => (
+                <CategoryCard
+                  key={cat.id}
+                  category={cat}
+                  large={false}
+                  onClick={scrollToTienda}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
