@@ -24,10 +24,40 @@ const CONFETTI_PARTICLES = [
   { y: [0, -105, 185], x: [-70], rotate: [0, 330], duration: 3.0, delay: 0.65, width: 12, height: 12 }
 ];
 
+const renderPaymentIcon = (id) => {
+  switch (id) {
+    case 'zelle':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 4H5L19 20H5" />
+        </svg>
+      );
+    case 'binance':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2L2 12l10 10 10-10L12 2z"/>
+          <path d="M12 6l-6 6 6 6 6-6-6-6z"/>
+        </svg>
+      );
+    case 'paypal':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 7h-9M14 21V3M10 21V10M18 21V14"/>
+        </svg>
+      );
+    case 'pago-movil':
+      return <Smartphone size={24} stroke="currentColor" strokeWidth={2} />;
+    case 'tarjeta':
+      return <CreditCard size={24} stroke="currentColor" strokeWidth={2} />;
+    default:
+      return null;
+  }
+};
+
 export default function CheckoutModal({ isOpen, onClose }) {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
-  const { formatVES } = useCurrency();
+  const { formatVES, exchangeRate } = useCurrency();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -255,11 +285,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
   };
 
   const paymentMethods = [
-    { id: 'zelle', name: 'Zelle', type: 'image', src: '/imagenes/zelle.png', color: '#0066cc' },
-    { id: 'pago-movil', name: 'Pago Móvil', type: 'icon', color: '#28a745' },
-    { id: 'binance', name: 'Binance Pay', type: 'image', src: '/imagenes/binance.png', color: '#fcd535' },
-    { id: 'paypal', name: 'PayPal', type: 'image', src: '/imagenes/paypal.png', color: '#003087' },
-    { id: 'tarjeta', name: 'Tarjeta', type: 'icon', color: '#1e225e' }
+    { id: 'zelle', name: 'Zelle' },
+    { id: 'pago-movil', name: 'Pago Móvil' },
+    { id: 'binance', name: 'Binance Pay' },
+    { id: 'paypal', name: 'PayPal' },
+    { id: 'tarjeta', name: 'Tarjeta' }
   ];
 
 
@@ -392,7 +422,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 <div className="success-summary-divider" />
                 <div className="success-summary-row success-total-row">
                   <span className="success-summary-label">Total a transferir</span>
-                  <span className="success-summary-value success-total-amount">${savedTotal.toFixed(2)}</span>
+                  <span className="success-summary-value success-total-amount price-container">
+                    <span className="currency-symbol">$</span>
+                    <span className="price-value">{savedTotal.toFixed(2)}</span>
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -431,7 +464,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   {paymentMethods.map((method) => (
                     <label 
                       key={method.id}
-                      className={`payment-option-card ${paymentMethod === method.id ? 'active' : ''}`}
+                      className={`payment-method-card payment-option-card ${paymentMethod === method.id ? 'active' : ''}`}
                       onClick={() => setPaymentMethod(method.id)}
                     >
                       <input 
@@ -443,17 +476,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         className="hidden-radio"
                       />
                       <div className="payment-option-icon">
-                        {method.type === 'image' ? (
-                          <img 
-                            src={method.src} 
-                            alt={method.name}
-                            className="payment-method-img"
-                          />
-                        ) : method.id === 'pago-movil' ? (
-                          <Smartphone size={32} color={method.color} />
-                        ) : (
-                          <CreditCard size={32} color={method.color} />
-                        )}
+                        {renderPaymentIcon(method.id)}
                       </div>
                       <span className="payment-option-name">{method.name}</span>
                       {paymentMethod === method.id && (
@@ -524,7 +547,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <div className="payment-instructions-box">
                       {paymentMethod === 'pago-movil' && (
                         <div className="ves-amount-instruction mb-4">
-                          <p>Monto a transferir: <strong>{formatVES(finalTotal)}</strong></p>
+                          <p>
+                            Monto a transferir: <strong>
+                              <span className="price-container">
+                                <span className="currency-symbol">Bs.</span>
+                                <span className="price-value">{(finalTotal * exchangeRate).toFixed(2)}</span>
+                              </span>
+                            </strong>
+                          </p>
                         </div>
                       )}
                     </div>
@@ -585,7 +615,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Número de Referencia</label>
+                      <label className="form-label">
+                        {paymentMethod === 'binance' 
+                          ? 'ID de Transacción Binance' 
+                          : paymentMethod === 'pago-movil' 
+                            ? 'Número de Referencia Pago Móvil' 
+                            : 'Número de Referencia'}
+                      </label>
                       <div className="input-with-icon">
                         <Shield size={18} className="input-icon" />
                         <input
@@ -593,7 +629,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
                           name="referenceNumber"
                           value={formData.referenceNumber}
                           onChange={handleInputChange}
-                          placeholder="Ej: 123456789"
+                          placeholder={
+                            paymentMethod === 'binance' 
+                              ? 'Ej: 284719284' 
+                              : paymentMethod === 'pago-movil' 
+                                ? 'Ej: 1234' 
+                                : 'Ej: 123456789'
+                          }
                           className="form-input"
                           required
                         />
@@ -638,7 +680,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
                       ) : (
                         <>
                           <Lock size={20} />
-                          <span>Confirmar Pago por ${finalTotal.toFixed(2)}</span>
+                          <span>Confirmar Pago por </span>
+                          <span className="price-container" style={{ color: 'inherit' }}>
+                            <span className="currency-symbol">$</span>
+                            <span className="price-value">{finalTotal.toFixed(2)}</span>
+                          </span>
                         </>
                       )}
                     </button>
@@ -656,20 +702,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
             >
               <h3 className="summary-title">Resumen del Pedido</h3>
               
-              <div className="coupon-section">
-                <div className="coupon-input-group">
-                  <input 
-                    type="text" 
-                    placeholder="Código de descuento" 
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="coupon-input"
-                  />
-                  <button type="button" onClick={applyCoupon} className="coupon-btn">Aplicar</button>
-                </div>
-                {couponError && <span className="coupon-message error">{couponError}</span>}
-                {couponSuccess && <span className="coupon-message success">{couponSuccess}</span>}
-              </div>
+
 
               <div className="summary-items">
                 {cartItems.map((item) => {
@@ -683,7 +716,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
                           <span className="summary-item-qty">x{item.quantity}</span>
                         </div>
                       </div>
-                      <span className="summary-item-price">${(price * item.quantity).toFixed(2)}</span>
+                      <span className="summary-item-price price-container">
+                        <span className="currency-symbol">$</span>
+                        <span className="price-value">{(price * item.quantity).toFixed(2)}</span>
+                      </span>
                     </div>
                   );
                 })}
@@ -692,21 +728,27 @@ export default function CheckoutModal({ isOpen, onClose }) {
               <div className="summary-totals">
                 <div className="summary-row">
                   <span>Subtotal</span>
-                  <span>${cartTotal.toFixed(2)}</span>
+                  <span className="price-container">
+                    <span className="currency-symbol">$</span>
+                    <span className="price-value">{cartTotal.toFixed(2)}</span>
+                  </span>
                 </div>
                 {discount > 0 && (
                   <div className="summary-row discount-row">
                     <span>Descuento</span>
-                    <span>-${discount.toFixed(2)}</span>
+                    <span className="price-container discount-price">
+                      <span className="currency-symbol">-$</span>
+                      <span className="price-value">{discount.toFixed(2)}</span>
+                    </span>
                   </div>
                 )}
-                <div className="summary-row">
-                  <span>Envío</span>
-                  <span className="free-shipping">Gratis</span>
-                </div>
+
                 <div className="summary-row total">
                   <span>Total</span>
-                  <span>${finalTotal.toFixed(2)}</span>
+                  <span className="price-container total-price">
+                    <span className="currency-symbol">$</span>
+                    <span className="price-value">{finalTotal.toFixed(2)}</span>
+                  </span>
                 </div>
               </div>
 

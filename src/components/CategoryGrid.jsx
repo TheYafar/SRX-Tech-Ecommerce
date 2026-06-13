@@ -3,21 +3,23 @@ import { supabase } from '../utils/supabaseClient';
 import './CategoryGrid.css';
 
 const categoryMeta = {
-  'drones-y-sistemas-aereos': {
-    image: '/imagenes/productos-srx.jpg',
-    displayName: 'Productos SRX',
+  'drones-y-sistemas-aereos': { // Tarjeta grande de la izquierda
+    image: '/SRX-Tech-Ecommerce/imagenes/srx.jpg',
+    titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
-  'audio-profesional': {
-    image: '/imagenes/audio-profesional.jpg',
+  'audio-profesional': { // Tarjeta superior derecha
+    image: '/SRX-Tech-Ecommerce/imagenes/srx2.jpg',
+    titleDisplay: 'Audio Profesional',
     description: 'Lentes de marcas reconocidas para ampliar tu creatividad visual.',
     buttonText: 'Comprar',
     order: 1
   },
-  'iluminacion-y-energia': {
-    image: '/imagenes/iluminacion-y-energia.jpg',
+  'iluminacion-y-energia': { // Tarjeta inferior derecha
+    image: '/SRX-Tech-Ecommerce/imagenes/srx3.jpg',
+    titleDisplay: 'Iluminación y Energía',
     description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
     buttonText: 'Explorar',
     order: 2
@@ -35,7 +37,7 @@ function SkeletonCard({ large }) {
 
 /* ─── Single category card ─────────────────────────────── */
 function CategoryCard({ category, large, onClick }) {
-  const title = category.displayName || category.name;
+  const title = category.titleDisplay || category.name;
   return (
     <div
       className={`category-card ${large ? 'large-card' : 'horizontal-card'}`}
@@ -45,10 +47,10 @@ function CategoryCard({ category, large, onClick }) {
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       aria-label={`Ver categoría ${title}`}
     >
-      <div className="category-img-wrapper">
-        <img src={category.image} alt={title} className="category-img" />
-        <div className="category-overlay-dark" />
-      </div>
+      {category.image && (
+        <img src={category.image} alt={title} className="category-bg-img" />
+      )}
+      <div className="category-overlay-dark" />
       <div className="category-content">
         <h3 className="cat-title">{title}</h3>
         {category.description && <p className="cat-description">{category.description}</p>}

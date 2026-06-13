@@ -35,9 +35,9 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: var(--text-light);
+  background: rgba(0, 0, 0, 0.06); /* Fondo gris claro sutil */
+  border: 1px solid #cbd5e1; /* Borde visible */
+  color: #000000; /* X de color negro sólido */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -47,8 +47,9 @@
 }
 
 .checkout-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.12);
   transform: rotate(90deg);
+  color: #000000;
 }
 
 .checkout-content {
@@ -71,7 +72,7 @@
 
 .checkout-subtitle {
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: #475569; /* Corrección de contraste: gris oscuro */
   margin: 0.5rem 0 0;
 }
 
@@ -112,6 +113,16 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+}
+
+.payment-method-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
 }
 
 .payment-option-card:hover {
@@ -162,6 +173,15 @@
 
 .payment-option-name {
   font-size: 0.9rem;
+  color: #1e293b; /* Texto oscuro de alto contraste */
+  font-weight: 600;
+  transition: color var(--transition-fast) ease;
+  text-transform: uppercase;
+}
+
+.payment-option-card:hover .payment-option-name,
+.payment-option-card.active .payment-option-name {
+  color: var(--navy); /* Cambio dinámico a color corporativo */
 }
 
 .payment-option-check {
@@ -201,7 +221,8 @@
 .form-label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1e293b; /* Fuerte contraste oscuro */
+  text-align: left;
 }
 
 .input-with-icon {
@@ -213,30 +234,35 @@
 .input-icon {
   position: absolute;
   left: 1rem;
-  color: var(--text-secondary);
+  color: #475569; /* Gris oscuro para contraste */
   z-index: 1;
 }
 
 .form-input {
   width: 100%;
-  padding: 0.9rem 1rem 0.9rem 2.8rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
+  padding: 12px 16px; /* Padding uniforme */
+  background: #ffffff; /* Fondo claro bien definido */
+  border: 1px solid #cbd5e1; /* Borde sutil y limpio */
+  border-radius: var(--radius-sm);
+  color: #1e293b; /* Texto oscuro de alto contraste */
   font-size: 0.95rem;
   font-family: inherit;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+  box-sizing: border-box;
+}
+
+.input-with-icon .form-input {
+  padding-left: 2.8rem; /* Espacio para el icono a la izquierda */
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: var(--accent-light); /* Azul corporativo */
+  box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.15); /* Transición suave de resplandor */
 }
 
 .form-input::placeholder {
-  color: var(--text-light);
+  color: #64748b; /* Corrección crítica: color contrastante, no blanco */
 }
 
 .file-upload-container {
@@ -249,22 +275,24 @@
 }
 
 .file-upload-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: rgba(0, 102, 204, 0.05);
-  border: 2px dashed var(--primary);
-  border-radius: var(--radius-md);
-  color: var(--primary);
+  gap: 8px; /* Gap alineado */
+  padding: 12px 16px;
+  background: rgba(30, 34, 94, 0.05); /* Fondo claro con tinte azul */
+  border: 2px dashed var(--navy-light); /* Borde punteado azul corporativo */
+  border-radius: var(--radius-sm);
+  color: var(--navy);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .file-upload-label:hover {
-  background: rgba(0, 102, 204, 0.1);
+  background: rgba(30, 34, 94, 0.1);
+  border-color: var(--accent-light);
+  color: var(--accent-light);
 }
 
 .ves-amount-instruction {
@@ -322,26 +350,44 @@
 
 .instruction-text p {
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: #475569; /* Mejor contraste */
   margin: 0;
   line-height: 1.5;
 }
 
 .checkout-submit-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 12px 16px; /* Padding uniforme */
   background: linear-gradient(135deg, var(--nav-bg) 0%, #2a2f7a 100%);
   color: white;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-normal);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 8px; /* Acompañamiento alineado */
+}
+
+/* ── Contenedor Premium de Precios ── */
+.price-container {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px; /* Espaciado equilibrado de 4px */
+}
+
+.currency-symbol {
+  font-size: 0.9em;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.price-value {
+  font-weight: 800;
 }
 
 .checkout-submit-btn:hover:not(:disabled) {
@@ -410,32 +456,42 @@
 
 .coupon-input {
   flex: 1;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color);
+  padding: 12px 16px; /* Padding uniforme */
+  border: 1px solid #cbd5e1; /* Borde sutil y limpio */
   border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: #ffffff;
+  color: #1e293b;
   font-size: 0.9rem;
   outline: none;
+  transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
 }
 
 .coupon-input:focus {
-  border-color: var(--primary);
+  border-color: var(--accent-light); /* Azul corporativo */
+  box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.15);
+}
+
+.coupon-input::placeholder {
+  color: #64748b;
 }
 
 .coupon-btn {
-  padding: 0.75rem 1.25rem;
-  background: var(--primary);
+  padding: 12px 16px;
+  background: var(--navy); /* Azul marino corporativo */
   color: white;
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Acompañamiento alineado */
 }
 
 .coupon-btn:hover {
-  background: var(--primary-hover);
+  background: var(--navy-light);
 }
 
 .coupon-message {
@@ -765,12 +821,13 @@
 .success-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 1.1rem 2.5rem;
+  justify-content: center;
+  gap: 8px; /* Acompañamiento alineado */
+  padding: 12px 24px;
   background: linear-gradient(135deg, var(--nav-bg) 0%, #2a2f7a 50%, #3d43a5 100%);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
@@ -1084,4 +1141,66 @@
     font-size: 0.95rem;
     border-radius: 12px;
   }
+}
+
+/* ============================================================
+   ACCESSIBILITY BLACK TEXT OVERRIDES
+   Fuerza todas las letras, números y caracteres a negro sólido.
+   ============================================================ */
+.checkout-title,
+.checkout-subtitle,
+.section-title,
+.payment-option-name,
+.form-label,
+.form-input,
+.ves-amount-instruction,
+.ves-amount-instruction p,
+.ves-amount-instruction strong,
+.instruction-text h4,
+.instruction-text p,
+.coupon-input,
+.coupon-message,
+.summary-title,
+.summary-item-name,
+.summary-item-qty,
+.summary-item-price,
+.summary-row,
+.summary-row.total,
+.security-item,
+.security-item span,
+.security-item svg,
+.success-title,
+.success-subtitle,
+.success-summary-label,
+.success-summary-value,
+.success-ref-code,
+.success-total-amount,
+.price-value,
+.currency-symbol {
+  color: #000000 !important;
+  fill: #000000 !important;
+}
+
+/* Color oscuro de contraste para los placeholders */
+.form-input::placeholder,
+.coupon-input::placeholder {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+/* ============================================================
+   MONKEY OVERRIDES FOR ACTIVE/HOVER STATES (OVER ACCESSIBILITY)
+   ============================================================ */
+.payment-method-card.active .payment-option-name {
+  color: var(--nav-bg) !important;
+}
+
+.payment-method-card.active svg {
+  color: var(--nav-bg) !important;
+  stroke: var(--nav-bg) !important;
+}
+
+.payment-method-card svg {
+  color: #475569;
+  transition: color var(--transition-fast) ease, stroke var(--transition-fast) ease;
 }
