@@ -6,6 +6,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { X, CreditCard, Shield, CheckCircle, Lock, User, Mail, Phone, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
+import PaymentInstructions from './PaymentInstructions';
 import './CheckoutModal.css';
 
 const CONFETTI_PARTICLES = [
@@ -527,6 +528,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         </div>
                       )}
                     </div>
+
+                    {/* ── Instrucciones de pago SRX (Binance / Pago Móvil) ── */}
+                    {(paymentMethod === 'binance' || paymentMethod === 'pago-movil') && (
+                      <PaymentInstructions
+                        paymentMethod={paymentMethod}
+                      />
+                    )}
 
                     <div className="form-group">
                       <label className="form-label">Nombre Completo</label>

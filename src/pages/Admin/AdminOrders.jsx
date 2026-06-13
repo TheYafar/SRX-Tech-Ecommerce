@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Eye, CheckCircle, XCircle, Search, Loader, PackageOpen } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, Search, Loader, PackageOpen, PackageCheck } from 'lucide-react';
 import { supabase } from '../../utils/supabaseClient';
+import { enviarCorreoPagoVerificado, enviarCorreoPedidoListo } from '../../services/emailService';
 import './AdminOrders.css';
 
 export default function AdminOrders() {
@@ -63,9 +64,71 @@ export default function AdminOrders() {
         )
       );
       console.log(`✅ [AdminOrders] Orden ${orderId} aprobada exitosamente.`);
+
+      // ── 📧 Disparo de correo de pago verificado ──────────────
+      try {
+        const orderData = orders.find(o => o.id === orderId);
+        const correoCliente = orderData?.profiles?.email;
+        const nombreCliente = orderData?.profiles?.full_name || 'Cliente';
+
+        if (correoCliente) {
+          const res = await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
+          console.log('📧 [AdminOrders] Envío de correo de pago exitoso. ID:', res.id);
+        } else {
+          console.warn('⚠️ [AdminOrders] No se encontró email del cliente para notificación de pago.');
+        }
+      } catch (emailError) {
+        console.error('📧❌ [AdminOrders] Error al enviar correo de pago (no afecta la orden):', emailError);
+      }
     } catch (err) {
       console.error('💥 [AdminOrders] Excepción al aprobar orden:', err);
       alert('Ocurrió un error inesperado al aprobar el pedido.');
+    }
+  };
+
+  // ── 📦 Marcar pedido como LISTO → UPDATE status a 'ready' en Supabase ──
+  const handleMarkReady = async (orderId) => {
+    const confirmed = window.confirm('¿Confirmas que este pedido por encargo está LISTO para entrega?');
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'ready' })
+        .eq('id', orderId);
+
+      if (error) {
+        console.error('❌ [AdminOrders] Error al marcar orden como lista:', error);
+        alert('Error al actualizar el pedido. Intenta de nuevo.');
+        return;
+      }
+
+      // Actualizar estado local sin recargar
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, status: 'ready' } : order
+        )
+      );
+      console.log(`📦 [AdminOrders] Orden ${orderId} marcada como lista exitosamente.`);
+
+      // ── 📧 Disparo de correo de pedido listo ──────────────
+      try {
+        const orderData = orders.find(o => o.id === orderId);
+        const correoCliente = orderData?.profiles?.email;
+        const nombreCliente = orderData?.profiles?.full_name || 'Cliente';
+
+        if (correoCliente) {
+          const res = await enviarCorreoPedidoListo(correoCliente, nombreCliente, orderId);
+          console.log('📧 [AdminOrders] Envío de correo de pedido listo exitoso. ID:', res.id);
+        } else {
+          console.warn('⚠️ [AdminOrders] No se encontró email del cliente para notificación de pedido listo.');
+        }
+      } catch (emailError) {
+        console.error('📧❌ [AdminOrders] Error al enviar correo de pedido listo (no afecta la orden):', emailError);
+      }
+    } catch (err) {
+      console.error('💥 [AdminOrders] Excepción al marcar orden como lista:', err);
+      alert('Ocurrió un error inesperado al actualizar el pedido.');
     }
   };
 
@@ -130,6 +193,7 @@ export default function AdminOrders() {
     pending:         { label: 'Pendiente', className: 'pending' },
     approved:        { label: 'Aprobado',  className: 'approved' },
     paid:            { label: 'Pagado',    className: 'approved' },
+    ready:           { label: 'Listo',     className: 'ready' },
     shipped:         { label: 'Enviado',   className: 'shipped' },
     delivered:       { label: 'Entregado', className: 'shipped' },
     cancelled:       { label: 'Cancelado', className: 'cancelled' },
@@ -225,6 +289,9 @@ export default function AdminOrders() {
                             <button className="btn-icon approve" title="Aprobar Pago" onClick={() => handleApproveOrder(order.id)}><CheckCircle size={18} /></button>
                             <button className="btn-icon reject" title="Rechazar" onClick={() => handleRejectOrder(order.id)}><XCircle size={18} /></button>
                           </>
+                        )}
+                        {order.status === 'paid' && (
+                          <button className="btn-icon ready" title="Marcar como Listo" onClick={() => handleMarkReady(order.id)}><PackageCheck size={18} /></button>
                         )}
                       </div>
                     </td>

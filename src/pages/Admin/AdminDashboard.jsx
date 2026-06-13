@@ -7,6 +7,7 @@ import {
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import { useProducts } from '../../context/ProductContext';
+import { enviarCorreoPagoVerificado } from '../../services/emailService';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -219,6 +220,29 @@ export default function AdminDashboard() {
           return;
         }
       }
+
+      // ── 📧 Disparo de correo de pago verificado ──────────────
+      if (newStatus === 'completed' && orderId) {
+        try {
+          // Extraer datos del cliente desde el pago actual en el estado local
+          const paymentRecord = pendingPayments.find(p => p.id === paymentId);
+          const profile = paymentRecord?.orders?.profiles;
+          const correoCliente = profile?.email;
+          const nombreCliente = profile?.full_name || 'Cliente';
+
+          if (correoCliente) {
+            const res = await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
+            console.log('📧 [AdminDashboard] Envío de correo de pago exitoso. ID:', res.id);
+          } else {
+            console.warn('⚠️ [AdminDashboard] No se encontró email del cliente para enviar notificación de pago.');
+          }
+        } catch (emailError) {
+          // El correo falló, pero la operación de Supabase ya fue exitosa.
+          // No hacemos rollback ni bloqueamos la interfaz.
+          console.error('📧❌ [AdminDashboard] Error al enviar correo de pago verificado (no afecta la orden):', emailError);
+        }
+      }
+
       showSuccess(`Pago ${newStatus === 'completed' ? 'validado' : 'rechazado'} correctamente.`);
       fetchPendingPayments();
     } catch (error) {

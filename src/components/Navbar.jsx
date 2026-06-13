@@ -97,9 +97,11 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      alert(`Buscando: ${searchQuery}`);
+      setNavFilter({ type: 'search', value: searchQuery.trim() });
+      navigate('/tienda');
       setSearchQuery('');
       setIsSearchOpen(false);
+      setIsMobileMenuOpen(false);
     }
   };
 

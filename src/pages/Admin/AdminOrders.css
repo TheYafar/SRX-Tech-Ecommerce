@@ -107,6 +107,7 @@
 .btn-icon.view { color: var(--primary); }
 .btn-icon.approve { color: #28a745; }
 .btn-icon.reject { color: #dc3545; }
+.btn-icon.ready { color: #3b82f6; }
 
 .btn-icon:hover { background: var(--bg-tertiary); transform: scale(1.1); }
 
@@ -136,5 +137,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Extra Status Badge ── */
+/* ── Extra Status Badges ── */
 .status-badge.cancelled { background: #f8d7da; color: #721c24; }
+.status-badge.ready { background: #dbeafe; color: #1e40af; }
+

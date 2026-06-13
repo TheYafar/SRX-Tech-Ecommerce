@@ -1,30 +1,43 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { products } from '../data/products';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Star, ShoppingCart, Search } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { setNavFilter } from './Navbar';
 import './Hero.css';
 
-const banners = [
+/* =============================================
+   SLIDES — Metadatos del Hero Slider
+   Estructura limpia con rutas desktop + mobile
+   ============================================= */
+const slides = [
   {
     id: 1,
-    pc: '/SRX-Tech-Ecommerce/imagenes/dji mic mini banner srx tech (2).webp',
-    movil: '/SRX-Tech-Ecommerce/imagenes/dji mic mini banner srx tech (2).webp'
+    title: "DJI Mic Mini",
+    subtitle: "Audio ultra-compacto, sonido profesional",
+    bgDesktop: "/SRX-Tech-Ecommerce/imagenes/dji mic mini banner srx tech (2).webp",
+    bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile3.jpg"
   },
   {
     id: 2,
-    pc: '/SRX-Tech-Ecommerce/imagenes/Osmo Action 4 SRX Tech banner (2).webp',
-    movil: '/SRX-Tech-Ecommerce/imagenes/Osmo Action 4 SRX Tech banner mobile.jpg.webp'
+    title: "DJI Osmo Action 4",
+    subtitle: "Captura la acción sin límites",
+    bgDesktop: "/SRX-Tech-Ecommerce/imagenes/Osmo Action 4 SRX Tech banner (2).webp",
+    bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile2.jpg"
   },
   {
     id: 3,
-    pc: '/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech (1).webp',
-    movil: '/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech mobile.jpg.webp'
+    title: "DJI Osmo Pocket 3",
+    subtitle: "La cámara más versátil para creadores",
+    bgDesktop: "/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech (1).webp",
+    bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile1.jpg"
   }
 ];
 
 export default function Hero() {
   const { addToCart } = useCart();
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [heroSearch, setHeroSearch] = useState('');
 
@@ -36,15 +49,17 @@ export default function Hero() {
     name: 'Producto Destacado'
   };
 
+  /* Auto-advance slides every 5 seconds */
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % banners.length);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
   }, []);
 
-  const bannerActual = banners[currentSlide];
+  const slide = slides[currentSlide];
 
+  /* === Framer Motion Variants === */
   const badgeVariants = {
     hidden: { opacity: 0, scale: 0.6 },
     visible: (delay) => ({
@@ -75,125 +90,157 @@ export default function Hero() {
   const handleHeroSearch = (e) => {
     e.preventDefault();
     if (heroSearch.trim()) {
-      const tienda = document.getElementById('tienda');
-      if (tienda) tienda.scrollIntoView({ behavior: 'smooth' });
+      setNavFilter({ type: 'search', value: heroSearch.trim() });
+      navigate('/tienda');
       setHeroSearch('');
     }
   };
 
   return (
     <section className="hero-wrapper hero-section">
-      {/* === Background Image === */}
-      <div className="hero-slide-container">
-        <picture>
-          <source media="(max-width: 768px)" srcSet={bannerActual.movil} />
-          <img src={bannerActual.pc} alt="Banner Destacado" className="hero-bg-image" />
-        </picture>
+      {/* === Background Image — <picture> responsivo === */}
+      <div className="hero-background-wrapper">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.id}
+            className="hero-slide-bg-container"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
+          >
+            <picture>
+              {/* En pantallas ≤ 768px carga la variante móvil vertical */}
+              <source media="(max-width: 768px)" srcSet={slide.bgMobile} />
+              {/* Por defecto (desktop), carga la imagen horizontal */}
+              <img
+                src={slide.bgDesktop}
+                alt={slide.title}
+                className="hero-background-img"
+              />
+            </picture>
+          </motion.div>
+        </AnimatePresence>
         {/* === Cinematic Gradient Overlay === */}
         <div className="hero-bg-overlay" />
       </div>
 
-      {/* === Floating Badges === */}
-      <motion.div
-        className="hero-badge price-badge"
-        custom={0.9}
-        variants={badgeVariants}
-        initial="hidden"
-        animate="visible"
-        whileHover={{ scale: 1.08 }}
-      >
-        <span className="badge-label">OFERTA</span>
-        <span className="badge-price">${heroProduct.salePrice?.toFixed(2) ?? '0.00'}</span>
-        <span className="badge-original">${heroProduct.price?.toFixed(2) ?? '0.00'}</span>
-      </motion.div>
+      {/* === Hero Content Layer — z-index: 2 sobre la imagen === */}
+      <div className="hero-content">
+        {/* === Floating Badges === */}
+        <motion.div
+          className="hero-badge price-badge"
+          custom={0.9}
+          variants={badgeVariants}
+          initial="hidden"
+          animate="visible"
+          whileHover={{ scale: 1.08 }}
+        >
+          <span className="badge-label">OFERTA</span>
+          <span className="badge-price">${heroProduct.salePrice?.toFixed(2) ?? '0.00'}</span>
+          <span className="badge-original">${heroProduct.price?.toFixed(2) ?? '0.00'}</span>
+        </motion.div>
 
-      <motion.div
-        className="hero-badge rating-badge"
-        custom={1.1}
-        variants={badgeVariants}
-        initial="hidden"
-        animate="visible"
-        whileHover={{ scale: 1.08 }}
-      >
-        <Star size={14} fill="#ffd700" color="#ffd700" />
-        <span className="badge-rating">{heroProduct.rating}</span>
-        <span className="badge-reviews">/ 5.0</span>
-      </motion.div>
+        <motion.div
+          className="hero-badge rating-badge"
+          custom={1.1}
+          variants={badgeVariants}
+          initial="hidden"
+          animate="visible"
+          whileHover={{ scale: 1.08 }}
+        >
+          <Star size={14} fill="#ffd700" color="#ffd700" />
+          <span className="badge-rating">{heroProduct.rating}</span>
+          <span className="badge-reviews">/ 5.0</span>
+        </motion.div>
 
-      {/* === Real HTML Text Layer (Accessibility + UX) === */}
-      <motion.div
-        className="hero-text-layer"
-        variants={textVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <h1 className="hero-headline">
-          {heroProduct.name || 'Tecnología Premium'}
-        </h1>
-        <p className="hero-subheadline">
-          {heroProduct.tagline || 'Descubre lo último en innovación tecnológica para creadores'}
-        </p>
-      </motion.div>
+        {/* === Real HTML Text Layer (Accessibility + UX) === */}
+        <motion.div
+          className="hero-text-layer"
+          variants={textVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <h1 className="hero-headline">
+            {heroProduct.name || 'Tecnología Premium'}
+          </h1>
+          <p className="hero-subheadline">
+            {heroProduct.tagline || 'Descubre lo último en innovación tecnológica para creadores'}
+          </p>
+        </motion.div>
 
-      {/* === Bottom CTA Strip === */}
-      <motion.div
-        className="hero-cta-strip"
-        variants={ctaVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Glassmorphism Search Bar */}
-        <form className="hero-search-bar" onSubmit={handleHeroSearch}>
-          <Search size={18} className="hero-search-icon" />
-          <input
-            type="text"
-            className="hero-search-input"
-            placeholder="Buscar productos, accesorios..."
-            value={heroSearch}
-            onChange={(e) => setHeroSearch(e.target.value)}
-          />
-        </form>
+        {/* === Bottom CTA Strip === */}
+        <motion.div
+          className="hero-cta-strip"
+          variants={ctaVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Glassmorphism Search Bar */}
+          <form className="hero-search-bar" onSubmit={handleHeroSearch}>
+            <Search size={18} className="hero-search-icon" />
+            <input
+              type="text"
+              className="hero-search-input"
+              placeholder="Buscar productos, accesorios..."
+              value={heroSearch}
+              onChange={(e) => setHeroSearch(e.target.value)}
+            />
+          </form>
 
-        <div className="hero-cta-tagline">
-          <span>{heroProduct.tagline}</span>
-          <motion.div
-            animate={{ x: [0, 6, 0] }}
-            transition={{ duration: 1.6, repeat: Infinity }}
-          >
-            <ArrowRight size={16} />
-          </motion.div>
-        </div>
-
-        <div className="hero-cta-actions">
-          <motion.button
-            className="hero-btn-discover"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              const el = document.getElementById('tienda');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <span>Descubrir Producto</span>
+          <div className="hero-cta-tagline">
+            <span>{heroProduct.tagline}</span>
             <motion.div
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              animate={{ x: [0, 6, 0] }}
+              transition={{ duration: 1.6, repeat: Infinity }}
             >
-              <ArrowRight size={18} />
+              <ArrowRight size={16} />
             </motion.div>
-          </motion.button>
+          </div>
 
-          <motion.button
-            className="hero-btn-cart"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => addToCart(heroProduct)}
-          >
-            <ShoppingCart size={18} />
-            <span>Añadir al carrito</span>
-          </motion.button>
+          <div className="hero-cta-actions">
+            <motion.button
+              className="hero-btn-discover"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                const el = document.getElementById('tienda');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <span>Descubrir Producto</span>
+              <motion.div
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <ArrowRight size={18} />
+              </motion.div>
+            </motion.button>
+
+            <motion.button
+              className="hero-btn-cart"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => addToCart(heroProduct)}
+            >
+              <ShoppingCart size={18} />
+              <span>Añadir al carrito</span>
+            </motion.button>
+          </div>
+        </motion.div>
+
+        {/* === Slide Indicators === */}
+        <div className="hero-slide-indicators">
+          {slides.map((s, idx) => (
+            <button
+              key={s.id}
+              className={`hero-indicator ${idx === currentSlide ? 'active' : ''}`}
+              onClick={() => setCurrentSlide(idx)}
+              aria-label={`Ir a slide ${idx + 1}: ${s.title}`}
+            />
+          ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* === Ambient Background Circles === */}
       <div className="hero-background-elements" aria-hidden="true">

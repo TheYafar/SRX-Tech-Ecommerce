@@ -490,13 +490,29 @@
 
 @media (max-width: 768px) {
   .store-hero {
-    padding: 100px 0 60px;
+    padding: 100px 0 50px;
   }
   .store-hero-content {
-    padding: 2rem 1.5rem;
+    padding: 1.75rem 1.25rem;
   }
-  .store-hero-title { font-size: 2.2rem; }
-  .store-hero-subtitle { font-size: 1rem; }
+  .store-hero-title { font-size: 2rem; }
+  .store-hero-subtitle { font-size: 0.95rem; margin-bottom: 1.75rem; }
+
+  .store-products-section {
+    padding: 50px 0 80px;
+  }
+
+  .store-products-header {
+    margin-bottom: 2.5rem;
+  }
+
+  /* 2-column grid — the key mobile improvement */
+  .products-premium-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+    min-height: 300px;
+  }
 
   .pill-filter-container {
     justify-content: flex-start;
@@ -504,12 +520,55 @@
   
   .pill-filter-scroll {
     border-radius: var(--radius-md);
-    padding: 0.5rem;
+    padding: 0.35rem;
   }
 
   .filter-pill-btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  .hero-cta-btn {
+    padding: 0.75rem 1.75rem;
+    font-size: 0.9rem;
+  }
+
+  .hero-badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.9rem;
+  }
+
+  .back-to-home-wrapper {
+    text-align: center;
+  }
+
+  .premium-back-link {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  /* Empty state card compact */
+  .empty-state-container {
+    min-height: 320px;
+    padding: 2rem 1rem;
+  }
+
+  .empty-state-card {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .empty-state-icon-ring {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 1.5rem;
+  }
+
+  .empty-state-title {
+    font-size: 1.1rem;
+  }
+
+  .empty-state-subtitle {
+    font-size: 0.88rem;
   }
 }
 
@@ -524,10 +583,20 @@
     grid-row: span 1;
   }
 
+  /* Keep 2 columns even on small phones — tighter gap */
   .products-premium-grid {
-    grid-template-columns: 1fr;
-    max-width: 380px;
-    margin-left: auto;
-    margin-right: auto;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.55rem;
   }
+
+  .store-products-section {
+    padding: 40px 0 70px;
+  }
+
+  .store-hero {
+    padding: 90px 0 40px;
+  }
+
+  .store-hero-title { font-size: 1.75rem; }
+  .store-hero-subtitle { font-size: 0.88rem; }
 }
