@@ -303,3 +303,5 @@ export async function sendCouponEmail(userEmail, couponCode, discountPercent) {
     return { success: false, error: error.message || error };
   }
 }
+
+

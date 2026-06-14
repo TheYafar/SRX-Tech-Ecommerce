@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShoppingBag, Package, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, LogOut, Menu, X, Ticket } from 'lucide-react';
 import { NotificationManager } from '../components/Notification';
 import './AdminLayout.css';
 
@@ -16,6 +16,7 @@ export default function AdminLayout() {
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { id: 'orders', icon: ShoppingBag, label: 'Pedidos', path: '/admin/orders' },
     { id: 'products', icon: Package, label: 'Catálogo', path: '/admin/products' },
+    { id: 'coupons', icon: Ticket, label: 'Cupones', path: '/admin/coupons' },
   ];
 
   const getInitials = (name) => {

@@ -14,6 +14,7 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminOrders from './pages/Admin/AdminOrders';
 import AdminProducts from './pages/Admin/AdminProducts';
+import AdminCoupons from './pages/Admin/AdminCoupons';
 import AdminRoute from './components/AdminRoute';
 import './App.css';
 
@@ -37,6 +38,7 @@ export default function App() {
                       <Route index element={<AdminDashboard />} />
                       <Route path="orders" element={<AdminOrders />} />
                       <Route path="products" element={<AdminProducts />} />
+                      <Route path="coupons" element={<AdminCoupons />} />
                     </Route>
                   </Routes>
                 </HashRouter>

@@ -7,7 +7,7 @@ import {
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import { useProducts } from '../../context/ProductContext';
-import { enviarCorreoPagoVerificado, sendCouponEmail } from '../../services/emailService';
+import { enviarCorreoPagoVerificado } from '../../services/emailService';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -21,7 +21,7 @@ export default function AdminDashboard() {
     features: '', category: '', category_id: ''
   });
   const [productImage, setProductImage] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [categories, setCategories] = useState([]);
 
   // ── States for Payments ─────────────────────────────────
@@ -46,7 +46,15 @@ export default function AdminDashboard() {
     code: '',
     discount: '10'
   });
-  const [isSendingIncentive, setIsSendingIncentive] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMassEmail, setIsMassEmail] = useState(false);
+
+  const handleMassEmailToggle = (checked) => {
+    setIsMassEmail(checked);
+    if (checked) {
+      setIncentiveData(prev => ({ ...prev, email: '' }));
+    }
+  };
 
   // ── Fetch categories for Add Product dropdown ───────────
   useEffect(() => {
@@ -147,7 +155,7 @@ export default function AdminDashboard() {
       showError('Por favor completa todos los campos requeridos, incluyendo la categoría y la imagen.');
       return;
     }
-    setIsSubmitting(true);
+    setIsSubmittingProduct(true);
     try {
       const imageUrl = await uploadProductImage(productImage);
       if (!imageUrl) throw new Error('La función de subida de imagen devolvió nulo.');
@@ -205,7 +213,7 @@ export default function AdminDashboard() {
       console.error('Error exacto:', error.message, error.details);
       showError('Ocurrió un error al añadir el producto.');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingProduct(false);
     }
   };
 
@@ -405,11 +413,17 @@ export default function AdminDashboard() {
   const handleSendIncentive = async (e) => {
     e.preventDefault();
     const { email, code, discount } = incentiveData;
-    if (!email || !code || !discount) {
+    
+    if (!isMassEmail && !email) {
+      showError('Por favor introduce el correo electrónico del cliente.');
+      return;
+    }
+    if (!code || !discount) {
       showError('Por favor completa todos los campos para enviar el incentivo.');
       return;
     }
-    setIsSendingIncentive(true);
+    
+    setIsSubmitting(true);
     try {
       const cleanCode = code.trim().toUpperCase();
       const percent = parseInt(discount) || 10;
@@ -431,19 +445,70 @@ export default function AdminDashboard() {
         throw new Error(`Error al registrar el cupón en la BD: ${dbError.message}`);
       }
 
-      console.log(`📧 [AdminDashboard:handleSendIncentive] Enviando correo a ${email} con cupón ${cleanCode}...`);
-      const emailRes = await sendCouponEmail(email.trim(), cleanCode, percent);
-      if (!emailRes.success) {
-        throw new Error(emailRes.error || 'No se pudo enviar el correo vía Resend.');
+      let listaUsuarios = [];
+      if (isMassEmail) {
+        console.log('🔍 [AdminDashboard:handleSendIncentive] Obteniendo correos de todos los usuarios...');
+        const { data: users, error: fetchError } = await supabase
+          .from('profiles')
+          .select('email');
+
+        if (fetchError) {
+          throw new Error(`Error al obtener usuarios de Supabase: ${fetchError.message}`);
+        }
+
+        if (!users || users.length === 0) {
+          throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
+        }
+
+        listaUsuarios = users
+          .map(u => u.email)
+          .filter(email => email && email.trim() !== '');
+
+        if (listaUsuarios.length === 0) {
+          throw new Error('No hay correos válidos en la base de datos.');
+        }
+      } else {
+        if (!email || !email.trim()) {
+          throw new Error('El correo electrónico no puede estar vacío.');
+        }
+        listaUsuarios = [email.trim()];
       }
 
-      showSuccess(`¡Incentivo de compra enviado con éxito a ${email}!`);
+      console.log(`📧 [AdminDashboard:handleSendIncentive] Invocando Edge Function de Supabase para enviar cupón masivo/individual...`);
+      const response = await fetch('https://wcnobggfbmpisahxihfu.supabase.co/functions/v1/send-mass-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ 
+          listaCorreos: listaUsuarios,
+          codigo: cleanCode, 
+          porcentaje: percent 
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error de la Edge Function de Supabase: ${errorText}`);
+      }
+
+      const resData = await response.json();
+      console.log('✅ Response from Edge Function:', resData);
+
+      showSuccess(isMassEmail 
+        ? `¡Campaña masiva enviada con éxito a ${listaUsuarios.length} usuarios!` 
+        : `¡Incentivo de compra enviado con éxito a ${email.trim()}!`
+      );
+
+      // Limpiar campos del formulario
       setIncentiveData({ email: '', code: '', discount: '10' });
+      setIsMassEmail(false);
     } catch (error) {
       console.error('❌ [AdminDashboard:handleSendIncentive] Error:', error);
       showError(`Error al emitir incentivo: ${error.message || error}`);
     } finally {
-      setIsSendingIncentive(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -570,8 +635,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <button type="submit" className="admin-submit-btn" disabled={isSubmitting}>
-                {isSubmitting
+              <button type="submit" className="admin-submit-btn" disabled={isSubmittingProduct}>
+                {isSubmittingProduct
                   ? <><Loader2 size={18} className="spin" /> Guardando...</>
                   : <><PackagePlus size={18} /> Añadir Producto al Catálogo</>
                 }
@@ -831,6 +896,24 @@ export default function AdminDashboard() {
             </p>
             
             <form className="admin-form" onSubmit={handleSendIncentive}>
+              {/* Selector masivo */}
+              <div className="form-group">
+                <div className="switch-container">
+                  <label className="switch-label">
+                    <input
+                      type="checkbox"
+                      className="switch-input"
+                      checked={isMassEmail}
+                      onChange={e => handleMassEmailToggle(e.target.checked)}
+                    />
+                    <div className="switch-track">
+                      <div className="switch-thumb" />
+                    </div>
+                    <span className="switch-label-text">¿Enviar campaña masiva a todos los usuarios?</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label>Correo Electrónico del Cliente</label>
                 <div className="input-with-icon" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
@@ -839,8 +922,9 @@ export default function AdminDashboard() {
                     type="email"
                     value={incentiveData.email}
                     onChange={e => setIncentiveData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="cliente@ejemplo.com"
-                    required
+                    placeholder={isMassEmail ? "Campaña masiva activa (correo individual deshabilitado)" : "cliente@ejemplo.com"}
+                    required={!isMassEmail}
+                    disabled={isMassEmail}
                     style={{ paddingLeft: '2.8rem', width: '100%' }}
                   />
                 </div>
@@ -871,16 +955,27 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <button type="submit" className="admin-submit-btn" disabled={isSendingIncentive} style={{ marginTop: '1rem' }}>
-                {isSendingIncentive ? (
+              <button 
+                type="submit" 
+                className="admin-submit-btn" 
+                disabled={isSubmitting} 
+                style={{ marginTop: '1rem', opacity: isSubmitting ? 0.7 : 1 }}
+              >
+                {isSubmitting ? (
                   <>
                     <Loader2 size={18} className="spin" />
-                    <span>Enviando Incentivo...</span>
+                    <span>{isMassEmail ? '🚀 Enviando campaña masiva...' : 'Enviando cupón...'}</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles size={18} />
-                    <span>Emitir y Enviar Cupón</span>
+                    {isMassEmail ? (
+                      <span>🚀 Emitir y Enviar Campaña Masiva</span>
+                    ) : (
+                      <>
+                        <Sparkles size={18} />
+                        <span>Emitir y Enviar Cupón</span>
+                      </>
+                    )}
                   </>
                 )}
               </button>
