@@ -487,11 +487,25 @@
      - Altura adaptada para retratos móviles
      ---------------------------------------------------------- */
   .hero-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
     min-height: 85vh;
     max-height: 780px;
-    flex-direction: column;
     text-align: center;
     padding: 20px;
+  }
+
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 130px; /* Para que quede debajo del buscador flotante de móvil */
+    width: 100%;
+    height: 100%;
+    position: relative;
   }
 
   /* ----------------------------------------------------------
@@ -501,7 +515,9 @@
      - object-position ajustado para centrar el producto
      ---------------------------------------------------------- */
   .hero-slide-bg-container {
-    padding-top: 0; /* El contenedor se mantiene absolute full */
+    padding-top: 0;
+    top: 120px; /* Baja las fotos para que queden despejadas de la barra de búsqueda */
+    height: calc(100% - 120px);
   }
 
   .hero-slide-bg-container picture {
@@ -514,7 +530,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 40%; /* Centra ligeramente hacia arriba para el producto */
+    object-position: 50% 50%; /* Centra el producto verticalmente en el área visible */
   }
 
   /* ----------------------------------------------------------
@@ -526,12 +542,11 @@
   .hero-bg-overlay {
     background: linear-gradient(
       to bottom,
-      rgba(15, 23, 42, 0.70)   0%,
-      rgba(15, 23, 42, 0.15)  20%,
-      rgba(15, 23, 42, 0.0)   40%,
-      rgba(15, 23, 42, 0.0)   55%,
-      rgba(15, 23, 42, 0.40)  75%,
-      rgba(15, 23, 42, 0.92) 100%
+      rgba(10, 8, 18, 1.0) 0%,
+      rgba(10, 8, 18, 1.0) 22%,
+      rgba(10, 8, 18, 0.0) 50%,
+      rgba(10, 8, 18, 0.40) 75%,
+      rgba(10, 8, 18, 0.95) 100%
     );
   }
 
@@ -543,6 +558,10 @@
     display: none;
   }
 
+  .hero-headline {
+    display: none;
+  }
+
   /* ----------------------------------------------------------
      3.5 ⭐ Rating Badge — Posición fluida en móvil
      - position: absolute con top/right controlados
@@ -551,11 +570,12 @@
      ---------------------------------------------------------- */
   .rating-badge {
     position: absolute;
-    top: 16px;
+    top: 12px;
     right: 16px;
+    margin: 0;
+    z-index: 10;
     padding: 0.4rem 0.75rem;
     font-size: 0.85em;
-    z-index: 5; /* Siempre encima de la imagen */
   }
 
   .price-badge {
@@ -571,12 +591,24 @@
      - Padding compactado para pantallas pequeñas
      ---------------------------------------------------------- */
   .hero-cta-strip {
-    padding: 1rem 1rem 1.75rem;
-    gap: 0.7rem;
-    margin-bottom: 24px;
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
   }
 
   .hero-cta-tagline {
+    display: inline-flex;
+    margin: 16px auto;
+    position: relative;
+    z-index: 10;
     font-size: 0.82rem;
     padding: 0.45rem 1rem;
   }
@@ -612,8 +644,8 @@
      3.9 Slide Indicators — Reposicionar para móvil
      ---------------------------------------------------------- */
   .hero-slide-indicators {
-    bottom: auto;
-    top: calc(var(--nav-height, 70px) + 1rem);
+    bottom: 1.2rem;
+    top: auto;
   }
 }
 
@@ -636,7 +668,7 @@
      controla su tamaño con estos límites
      ---------------------------------------------------------- */
   .hero-background-img {
-    object-position: 50% 42%;
+    object-position: 50% 50%;
   }
 
   /* ----------------------------------------------------------
@@ -660,8 +692,7 @@
   /* ----------------------------------------------------------
      4.3 Badges — Ocultar en pantallas muy pequeñas
      ---------------------------------------------------------- */
-  .price-badge,
-  .rating-badge {
+  .price-badge {
     display: none;
   }
 
@@ -699,7 +730,7 @@
   }
 
   .hero-background-img {
-    object-position: 50% 45%;
+    object-position: 50% 50%;
   }
 
   .hero-cta-strip {

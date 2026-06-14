@@ -26,7 +26,7 @@ const slides = [
   {
     id: 3,
     title: "DJI Osmo Pocket 3",
-    subtitle: "La cámara más versátil para creadores",
+    subtitle: "La cámara más versátil para creadores de la imagen",
     bgDesktop: "/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech (1).webp",
     bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile1.jpg"
   }
