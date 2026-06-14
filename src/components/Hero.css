@@ -92,10 +92,12 @@
    ========================================================================== */
 
 .hero-content {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -259,17 +261,21 @@
 .hero-cta-strip {
   position: absolute;
   z-index: 2;
-  bottom: 2rem;
+  bottom: 0;
+  left: 0;
   width: 100%;
-  padding: 2rem 2.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.4rem;
+  pointer-events: none;
 }
 
 /* Pill Tagline — "Captura la acción sin límites →" */
 .hero-cta-tagline {
+  position: absolute;
+  bottom: 30px; /* Lo baja por completo y lo deja flotando elegantemente al fondo */
+  left: 50%;
+  transform: translateX(-50%); /* Lo mantiene perfectamente centrado horizontalmente */
+  z-index: 20;
+  pointer-events: auto; /* Restaura interactividad */
+
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -458,7 +464,7 @@
 
   /* CTA strip con padding reducido */
   .hero-cta-strip {
-    padding: 1.5rem 1.5rem 2.5rem;
+    padding: 0;
   }
 
   /* Circles decorativos más pequeños */
@@ -498,14 +504,17 @@
   }
 
   .hero-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     padding-top: 130px; /* Para que quede debajo del buscador flotante de móvil */
-    width: 100%;
-    height: 100%;
-    position: relative;
+    z-index: 2;
   }
 
   /* ----------------------------------------------------------
@@ -591,26 +600,24 @@
      - Padding compactado para pantallas pequeñas
      ---------------------------------------------------------- */
   .hero-cta-strip {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     z-index: 10;
+    pointer-events: none;
   }
 
   .hero-cta-tagline {
-    display: inline-flex;
-    margin: 16px auto;
-    position: relative;
-    z-index: 10;
-    font-size: 0.82rem;
-    padding: 0.45rem 1rem;
+    position: absolute;
+    bottom: 20px; /* Ajuste milimétrico para móviles */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-size: 0.85rem; /* Ajusta sutilmente el texto si es muy largo */
+    width: max-content;
+    max-width: 90%;
+    pointer-events: auto;
   }
 
   /* ----------------------------------------------------------
@@ -734,9 +741,8 @@
   }
 
   .hero-cta-strip {
-    padding: 0.75rem 0.75rem 1.5rem;
-    gap: 0.5rem;
-    margin-bottom: 20px;
+    padding: 0;
+    margin: 0;
   }
 
   .hero-cta-tagline {
