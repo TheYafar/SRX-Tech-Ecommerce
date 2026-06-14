@@ -24,9 +24,31 @@
 
 .navbar-container {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 70px;
   width: 100%;
+}
+
+.navbar-left {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.navbar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.navbar-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24px;
 }
 
 /* ── Logo ── */
@@ -64,25 +86,52 @@
   letter-spacing: 0.5px;
 }
 
-/* ── Desktop Nav Links ── */
-.desktop-nav {
+/* ── Desktop Nav Links (Central Menu) ── */
+.nav-menu {
   display: flex;
-  gap: 0.25rem;
+  gap: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
 }
 
-.nav-link {
-  font-size: 0.87rem;
+.nav-menu .nav-link {
+  font-size: 0.9rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
-  padding: 0.5rem 0.9rem;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  padding: 6px 0;
   text-decoration: none;
+  transition: color 0.3s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
-.nav-link:hover {
+.nav-menu .nav-link:hover,
+.nav-menu .nav-link.mega-open {
   color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
+}
+
+/* Underline effect */
+.nav-menu .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #ffffff;
+  transition: width 0.3s ease;
+}
+
+.nav-menu .nav-link:hover::after,
+.nav-menu .nav-link.mega-open::after {
+  width: 100%;
 }
 
 /* ── Mega Menu Trigger ── */
@@ -109,19 +158,8 @@
   color: #fff;
 }
 
-.mega-trigger-btn.mega-open {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-/* ── Action Buttons ── */
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.nav-action-btn {
+/* ── Action Buttons & Icons ── */
+.navbar-right .nav-action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,10 +169,24 @@
   color: rgba(255, 255, 255, 0.88);
   transition: all var(--transition-fast);
   background: transparent;
+  cursor: pointer;
+  border: none;
+  padding: 0;
 }
 
-.nav-action-btn:hover {
+.navbar-right .nav-action-btn:hover {
   background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.navbar-right .nav-action-btn svg {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.3s ease;
+}
+
+.navbar-right .nav-action-btn:hover svg {
   color: #fff;
 }
 
@@ -374,10 +426,10 @@
 /* ── Breakpoints ── */
 @media (max-width: 768px) {
   /* Hide desktop-only elements */
-  .desktop-nav,
-  .nav-search-container,
-  .user-dropdown-container,
-  .navbar-header .cart-btn { display: none !important; }
+  .navbar-center,
+  .navbar-right .nav-search-container,
+  .navbar-right .user-dropdown-container,
+  .navbar-right .cart-btn { display: none !important; }
 
   /* Show the hamburger toggle */
   .mobile-menu-toggle {

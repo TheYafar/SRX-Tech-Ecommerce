@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { products } from '../data/products';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Star, ShoppingCart, Search } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { setNavFilter } from './Navbar';
+import { ArrowRight, Star } from 'lucide-react';
 import './Hero.css';
 
 /* =============================================
@@ -36,10 +33,7 @@ const slides = [
 ];
 
 export default function Hero() {
-  const { addToCart } = useCart();
-  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [heroSearch, setHeroSearch] = useState('');
 
   const heroProduct = products?.find(p => p.isHero) || products?.[0] || {
     price: 0,
@@ -69,15 +63,6 @@ export default function Hero() {
     })
   };
 
-  const ctaVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }
-    }
-  };
-
   const textVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -87,14 +72,7 @@ export default function Hero() {
     }
   };
 
-  const handleHeroSearch = (e) => {
-    e.preventDefault();
-    if (heroSearch.trim()) {
-      setNavFilter({ type: 'search', value: heroSearch.trim() });
-      navigate('/tienda');
-      setHeroSearch('');
-    }
-  };
+
 
   return (
     <section className="hero-wrapper hero-section">
@@ -128,18 +106,7 @@ export default function Hero() {
       {/* === Hero Content Layer — z-index: 2 sobre la imagen === */}
       <div className="hero-content">
         {/* === Floating Badges === */}
-        <motion.div
-          className="hero-badge price-badge"
-          custom={0.9}
-          variants={badgeVariants}
-          initial="hidden"
-          animate="visible"
-          whileHover={{ scale: 1.08 }}
-        >
-          <span className="badge-label">OFERTA</span>
-          <span className="badge-price">${heroProduct.salePrice?.toFixed(2) ?? '0.00'}</span>
-          <span className="badge-original">${heroProduct.price?.toFixed(2) ?? '0.00'}</span>
-        </motion.div>
+
 
         <motion.div
           className="hero-badge rating-badge"
@@ -162,70 +129,28 @@ export default function Hero() {
           animate="visible"
         >
           <h1 className="hero-headline">
-            {heroProduct.name || 'Tecnología Premium'}
+            {slide.title || 'Tecnología Premium'}
           </h1>
           <p className="hero-subheadline">
-            {heroProduct.tagline || 'Descubre lo último en innovación tecnológica para creadores'}
+            {slide.subtitle || 'Descubre lo último en innovación tecnológica para creadores'}
           </p>
         </motion.div>
 
-        {/* === Bottom CTA Strip === */}
+        {/* === Bottom Tagline Pill === */}
         <motion.div
           className="hero-cta-strip"
-          variants={ctaVariants}
-          initial="hidden"
-          animate="visible"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
         >
-          {/* Glassmorphism Search Bar */}
-          <form className="hero-search-bar" onSubmit={handleHeroSearch}>
-            <Search size={18} className="hero-search-icon" />
-            <input
-              type="text"
-              className="hero-search-input"
-              placeholder="Buscar productos, accesorios..."
-              value={heroSearch}
-              onChange={(e) => setHeroSearch(e.target.value)}
-            />
-          </form>
-
           <div className="hero-cta-tagline">
-            <span>{heroProduct.tagline}</span>
+            <span>{slide.subtitle}</span>
             <motion.div
               animate={{ x: [0, 6, 0] }}
               transition={{ duration: 1.6, repeat: Infinity }}
             >
               <ArrowRight size={16} />
             </motion.div>
-          </div>
-
-          <div className="hero-cta-actions">
-            <motion.button
-              className="hero-btn-discover"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                const el = document.getElementById('tienda');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <span>Descubrir Producto</span>
-              <motion.div
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <ArrowRight size={18} />
-              </motion.div>
-            </motion.button>
-
-            <motion.button
-              className="hero-btn-cart"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => addToCart(heroProduct)}
-            >
-              <ShoppingCart size={18} />
-              <span>Añadir al carrito</span>
-            </motion.button>
           </div>
         </motion.div>
 

@@ -262,3 +262,44 @@ export async function enviarCorreoPedidoListo(correoCliente, nombreCliente, orde
     html,
   });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 3️⃣  CORREO: CUPÓN DE DESCUENTO
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Envía un correo con un código de cupón de descuento al usuario.
+ *
+ * @param {string} userEmail        - Email del destinatario
+ * @param {string} couponCode       - Código del cupón (Ej: BIENVENIDA10)
+ * @param {number} discountPercent  - Porcentaje de descuento (Ej: 10)
+ * @returns {Promise<Object>} Respuesta { success: true, data } o { success: false, error }
+ */
+export async function sendCouponEmail(userEmail, couponCode, discountPercent) {
+  try {
+    const html = `
+      <div style="background-color: #0f172a; color: #ffffff; padding: 30px; font-family: sans-serif; border-radius: 8px; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #38bdf8; text-align: center;">¡Gracias por ser parte de SRX Tech!</h2>
+        <p style="font-size: 16px; line-height: 1.6; text-align: center;">Aquí tienes tu cupón exclusivo para que expandas tu set de herramientas audiovisuales.</p>
+        <div style="background-color: #1e293b; border: 2px dashed #38bdf8; padding: 20px; text-align: center; margin: 25px 0; border-radius: 6px;">
+          <span style="font-size: 28px; font-weight: bold; letter-spacing: 2px; color: #fbbf24;">${couponCode}</span>
+          <br/>
+          <span style="font-size: 14px; color: #94a3b8;">Obtén un ${discountPercent}% de descuento en tu próxima compra</span>
+        </div>
+        <p style="font-size: 12px; color: #64748b; text-align: center;">Este cupón es de uso único y temporal. No acumulable con otras promociones.</p>
+      </div>
+    `;
+
+    console.log(`📧 [emailService:sendCouponEmail] Enviando cupón ${couponCode} (${discountPercent}%) a ${userEmail}...`);
+    const data = await enviarCorreo({
+      from: REMITENTE,
+      to: [userEmail],
+      subject: '¡Tu código de descuento exclusivo en SRX Tech está listo!',
+      html,
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error(`📧❌ [emailService:sendCouponEmail] Error al enviar correo de cupón a ${userEmail}:`, error);
+    return { success: false, error: error.message || error };
+  }
+}

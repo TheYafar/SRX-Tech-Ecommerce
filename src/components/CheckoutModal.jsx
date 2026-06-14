@@ -76,11 +76,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
     receiptFile: null
   });
   const [couponCode, setCouponCode] = useState('');
-  const [discount, setDiscount] = useState(0);
+  const [appliedDiscount, setAppliedDiscount] = useState(0); // Porcentaje (Ej: 10 para 10%)
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
 
-  const finalTotal = Math.max(0, cartTotal - discount);
+  const discountAmount = Number((cartTotal * (appliedDiscount / 100)).toFixed(2));
+  const finalTotal = Math.max(0, Number((cartTotal - discountAmount).toFixed(2)));
 
   useEffect(() => {
     if (user) {
@@ -103,24 +104,54 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
   };
 
-  const applyCoupon = () => {
-    if (!couponCode) {
-      setCouponError('Ingresa un código válido');
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Ingresa tu cupón');
+      setAppliedDiscount(0);
+      setCouponSuccess('');
       return;
     }
-    // Lógica simulada de cupones
-    if (couponCode.toUpperCase() === 'DESCUENTO10') {
-      setDiscount(cartTotal * 0.10);
-      setCouponSuccess('¡Cupón del 10% aplicado!');
+    try {
       setCouponError('');
-    } else if (couponCode.toUpperCase() === 'MENOS5') {
-      setDiscount(5);
-      setCouponSuccess('¡Cupón de $5 aplicado!');
-      setCouponError('');
-    } else {
-      setDiscount(0);
-      setCouponError('Cupón inválido o expirado');
       setCouponSuccess('');
+      const cleanCode = couponCode.trim().toUpperCase();
+      console.log(`🔍 [CheckoutModal:validateCoupon] Consultando cupón: ${cleanCode}`);
+
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', cleanCode)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        setCouponError('Cupón inválido o inactivo');
+        setAppliedDiscount(0);
+        return;
+      }
+
+      // Comprobar expiración
+      const now = new Date();
+      if (data.expires_at && now > new Date(data.expires_at)) {
+        setCouponError('El cupón ha expirado');
+        setAppliedDiscount(0);
+        return;
+      }
+
+      const percent = data.discount_percent || data.discount_percentage || data.discount || 0;
+      if (percent <= 0) {
+        setCouponError('Cupón con valor de descuento inválido');
+        setAppliedDiscount(0);
+        return;
+      }
+
+      setAppliedDiscount(percent);
+      setCouponSuccess(`¡Cupón del ${percent}% aplicado!`);
+      setCouponError('');
+    } catch (err) {
+      console.error('💥 [CheckoutModal:validateCoupon] Error al validar cupón:', err);
+      setCouponError('Error al validar cupón');
+      setAppliedDiscount(0);
     }
   };
 
@@ -696,6 +727,36 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 })}
               </div>
 
+              {/* Contenedor minimalista y elegante para el cupón */}
+              <div className="coupon-section">
+                <div className="coupon-input-group">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="Ingresa tu cupón"
+                    className="coupon-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={validateCoupon}
+                    className="coupon-btn"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+                {couponError && (
+                  <span className="coupon-message error" style={{ color: '#dc3545', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', fontWeight: '500' }}>
+                    {couponError}
+                  </span>
+                )}
+                {couponSuccess && (
+                  <span className="coupon-message success" style={{ color: '#28a745', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', fontWeight: '500' }}>
+                    {couponSuccess}
+                  </span>
+                )}
+              </div>
+
               <div className="summary-totals">
                 <div className="summary-row">
                   <span>Subtotal</span>
@@ -704,12 +765,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <span className="price-value">{cartTotal.toFixed(2)}</span>
                   </span>
                 </div>
-                {discount > 0 && (
-                  <div className="summary-row discount-row">
-                    <span>Descuento</span>
-                    <span className="price-container discount-price">
+                {appliedDiscount > 0 && (
+                  <div className="summary-row discount-row" style={{ color: '#28a745', fontWeight: '500' }}>
+                    <span>Descuento ({appliedDiscount}%):</span>
+                    <span className="price-container discount-price" style={{ color: '#28a745' }}>
                       <span className="currency-symbol">-$</span>
-                      <span className="price-value">{discount.toFixed(2)}</span>
+                      <span className="price-value">{discountAmount.toFixed(2)}</span>
                     </span>
                   </div>
                 )}

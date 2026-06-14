@@ -124,99 +124,110 @@ export default function Navbar() {
   return (
     <header className={`navbar-header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="container navbar-container">
-        <Link to="/" className="nav-logo" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-          <span className="logo-srx">SRX</span>
-          <span className="logo-divider">|</span>
-          <span className="logo-tech">Tech</span>
-        </Link>
-
-        {/* ── Desktop Navigation ── */}
-        <nav className="desktop-nav">
-          <Link
-            to="/"
-            onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="nav-link"
-          >
-            Inicio
+        {/* Bloque Izquierdo: Solo el logo */}
+        <div className="navbar-left">
+          <Link to="/" className="nav-logo" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <span className="logo-srx">SRX</span>
+            <span className="logo-divider">|</span>
+            <span className="logo-tech">Tech</span>
           </Link>
-          <Link to="/tienda" className="nav-link">
-            Tienda
-          </Link>
-
-          {/* ── Categorías con Mega Menú ── */}
-          <div className="mega-trigger-wrapper">
-            <button
-              ref={categoriesBtnRef}
-              className={`nav-link mega-trigger-btn ${isMegaMenuOpen ? 'mega-open' : ''}`}
-              onClick={() => setIsMegaMenuOpen((prev) => !prev)}
-              onMouseEnter={() => setIsMegaMenuOpen(true)}
-              aria-haspopup="true"
-              aria-expanded={isMegaMenuOpen}
-            >
-              Explorar
-              <ChevronDown
-                size={14}
-                className={`mega-chevron ${isMegaMenuOpen ? 'rotated' : ''}`}
-              />
-            </button>
-
-            {/* Mega Menú Desktop */}
-            <MegaMenu
-              categories={categories}
-              isOpen={isMegaMenuOpen}
-              onClose={() => setIsMegaMenuOpen(false)}
-              onFilter={handleFilter}
-            />
-          </div>
-
-          {user?.role === 'admin' && (
-            <Link to="/admin" className="nav-link" style={{ color: '#00f2fe', fontWeight: 'bold' }}>
-              Panel de Control
-            </Link>
-          )}
-        </nav>
-
-        {/* ── Search Bar ── */}
-        <div className="nav-search-container" ref={searchRef}>
-          <AnimatePresence>
-            {isSearchOpen && (
-              <motion.form
-                className="nav-search-form"
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 300, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                onSubmit={handleSearch}
-              >
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  className="nav-search-input"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                />
-                <button type="submit" className="nav-search-submit">
-                  <Search size={18} />
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
-
-          {!isSearchOpen && (
-            <button
-              className="nav-action-btn search-toggle"
-              onClick={() => setIsSearchOpen(true)}
-              aria-label="Buscar productos"
-            >
-              <Search size={20} />
-            </button>
-          )}
         </div>
 
-        {/* ── Actions (User, Cart & Menu) ── */}
-        <div className="nav-actions">
-          {/* User Dropdown */}
+        {/* Bloque Central: Menú de navegación (Inicio, Tienda, Explorar) */}
+        <nav className="navbar-center">
+          <ul className="nav-menu">
+            <li>
+              <Link
+                to="/"
+                onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="nav-link"
+              >
+                Inicio
+              </Link>
+            </li>
+            <li>
+              <Link to="/tienda" className="nav-link">
+                Tienda
+              </Link>
+            </li>
+
+            {/* Categorías con Mega Menú */}
+            <li className="mega-trigger-wrapper">
+              <button
+                ref={categoriesBtnRef}
+                className={`nav-link mega-trigger-btn ${isMegaMenuOpen ? 'mega-open' : ''}`}
+                onClick={() => setIsMegaMenuOpen((prev) => !prev)}
+                onMouseEnter={() => setIsMegaMenuOpen(true)}
+                aria-haspopup="true"
+                aria-expanded={isMegaMenuOpen}
+              >
+                Explorar
+                <ChevronDown
+                  size={14}
+                  className={`mega-chevron ${isMegaMenuOpen ? 'rotated' : ''}`}
+                />
+              </button>
+
+              {/* Mega Menú Desktop */}
+              <MegaMenu
+                categories={categories}
+                isOpen={isMegaMenuOpen}
+                onClose={() => setIsMegaMenuOpen(false)}
+                onFilter={handleFilter}
+              />
+            </li>
+
+            {user?.role === 'admin' && (
+              <li>
+                <Link to="/admin" className="nav-link" style={{ color: '#00f2fe', fontWeight: 'bold' }}>
+                  Panel de Control
+                </Link>
+              </li>
+            )}
+          </ul>
+        </nav>
+
+        {/* Bloque Derecho: Buscador, Usuario y Carrito */}
+        <div className="navbar-right">
+          {/* Buscador */}
+          <div className="nav-search-container" ref={searchRef}>
+            <AnimatePresence>
+              {isSearchOpen && (
+                <motion.form
+                  className="nav-search-form"
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 220, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  onSubmit={handleSearch}
+                >
+                  <input
+                    type="text"
+                    placeholder="Buscar productos..."
+                    className="nav-search-input"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  <button type="submit" className="nav-search-submit">
+                    <Search size={20} />
+                  </button>
+                </motion.form>
+              )}
+            </AnimatePresence>
+
+            {!isSearchOpen && (
+              <button
+                className="nav-action-btn search-toggle"
+                onClick={() => setIsSearchOpen(true)}
+                aria-label="Buscar productos"
+              >
+                <Search size={20} />
+              </button>
+            )}
+          </div>
+
+          {/* Perfil de Usuario */}
           <div className="user-dropdown-container" ref={userDropdownRef}>
             <button
               className="nav-action-btn user-btn"
@@ -273,7 +284,7 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* Cart */}
+          {/* Carrito de Compras */}
           <button className="nav-action-btn cart-btn" onClick={() => setIsCartOpen(true)} aria-label="Ver carrito">
             <ShoppingCart size={20} />
             {cartCount > 0 && <span className="cart-badge animate-fade-in">{cartCount}</span>}

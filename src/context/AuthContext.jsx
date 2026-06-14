@@ -2,6 +2,7 @@
 import { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useNotifications } from './NotificationContext';
 import { supabase } from '../utils/supabaseClient';
+import { sendCouponEmail } from '../services/emailService';
 
 const AuthContext = createContext();
 
@@ -275,6 +276,21 @@ export const AuthProvider = ({ children }) => {
 
       // MONO PASAR ROL PREVIO POR SI FALLA CONSULTA
       const formattedUser = data?.user ? await formatUser(data.user, userRef.current?.role) : null;
+
+      // 🐒 MONO DISPARA CUPÓN DE BIENVENIDA A NUEVO CLIENTE (en segundo plano)
+      if (email) {
+        sendCouponEmail(email, 'BIENVENIDA10', 10)
+          .then(res => {
+            if (res.success) {
+              console.log(`📧 [AuthContext:register] ¡Uh uh! Cupón de bienvenida enviado con éxito a: ${email}`);
+            } else {
+              console.warn('⚠️ [AuthContext:register] El correo de bienvenida falló:', res.error);
+            }
+          })
+          .catch(err => {
+            console.error('💥 [AuthContext:register] Excepción de correo de bienvenida:', err);
+          });
+      }
 
       // SUCCESS — onAuthStateChange listener will do the rest!
       console.log('✅ [AuthContext:register] Registro aceptado. Listener actualizará el estado.');

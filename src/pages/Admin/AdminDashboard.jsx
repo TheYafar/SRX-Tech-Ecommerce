@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   PackagePlus, CheckCircle, XCircle, Image as ImageIcon,
   DollarSign, UploadCloud, Loader2, Layers, Pencil, Check, X,
-  PlusCircle
+  PlusCircle, Sparkles, Mail
 } from 'lucide-react';
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import { useProducts } from '../../context/ProductContext';
-import { enviarCorreoPagoVerificado } from '../../services/emailService';
+import { enviarCorreoPagoVerificado, sendCouponEmail } from '../../services/emailService';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -39,6 +39,14 @@ export default function AdminDashboard() {
   const [selectedGroup, setSelectedGroup] = useState('por-producto'); // 'por-producto' | 'para-tu-equipo'
   const [editingCategoryGroup, setEditingCategoryGroup] = useState('por-producto'); // grupo activo en edición
   const [rootCategoryIds, setRootCategoryIds] = useState({ porProducto: null, paraTuEquipo: null });
+
+  // ── States for Coupon Incentive ────────────────────────
+  const [incentiveData, setIncentiveData] = useState({
+    email: '',
+    code: '',
+    discount: '10'
+  });
+  const [isSendingIncentive, setIsSendingIncentive] = useState(false);
 
   // ── Fetch categories for Add Product dropdown ───────────
   useEffect(() => {
@@ -393,6 +401,52 @@ export default function AdminDashboard() {
     }
   };
 
+  // ── Coupon Incentive handler ────────────────────────────
+  const handleSendIncentive = async (e) => {
+    e.preventDefault();
+    const { email, code, discount } = incentiveData;
+    if (!email || !code || !discount) {
+      showError('Por favor completa todos los campos para enviar el incentivo.');
+      return;
+    }
+    setIsSendingIncentive(true);
+    try {
+      const cleanCode = code.trim().toUpperCase();
+      const percent = parseInt(discount) || 10;
+      
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30 días de vigencia
+
+      console.log(`💾 [AdminDashboard:handleSendIncentive] Registrando cupón en Supabase: ${cleanCode} (${percent}%)`);
+      const { error: dbError } = await supabase
+        .from('coupons')
+        .upsert([{
+          code: cleanCode,
+          discount_percent: percent,
+          is_active: true,
+          expires_at: expiresAt.toISOString()
+        }], { onConflict: 'code' });
+
+      if (dbError) {
+        throw new Error(`Error al registrar el cupón en la BD: ${dbError.message}`);
+      }
+
+      console.log(`📧 [AdminDashboard:handleSendIncentive] Enviando correo a ${email} con cupón ${cleanCode}...`);
+      const emailRes = await sendCouponEmail(email.trim(), cleanCode, percent);
+      if (!emailRes.success) {
+        throw new Error(emailRes.error || 'No se pudo enviar el correo vía Resend.');
+      }
+
+      showSuccess(`¡Incentivo de compra enviado con éxito a ${email}!`);
+      setIncentiveData({ email: '', code: '', discount: '10' });
+    } catch (error) {
+      console.error('❌ [AdminDashboard:handleSendIncentive] Error:', error);
+      showError(`Error al emitir incentivo: ${error.message || error}`);
+    } finally {
+      setIsSendingIncentive(false);
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────
   return (
     <div className="admin-dashboard-panel animate-fade-in">
@@ -423,6 +477,13 @@ export default function AdminDashboard() {
         >
           <Layers size={18} />
           <span>Gestionar Categorías</span>
+        </button>
+        <button
+          className={`admin-tab-btn ${activeTab === 'coupons' ? 'active' : ''}`}
+          onClick={() => setActiveTab('coupons')}
+        >
+          <Sparkles size={18} />
+          <span>Incentivos (Cupones)</span>
         </button>
       </div>
 
@@ -758,6 +819,72 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══ TAB: Coupons (Incentives) ════════════════════ */}
+        {activeTab === 'coupons' && (
+          <div className="admin-section">
+            <h2 className="admin-section-title">Emitir Incentivo de Compra (Cupón)</h2>
+            <p className="admin-section-subtitle" style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+              Registra un cupón de descuento en Supabase y envíalo automáticamente al correo electrónico del cliente a través de Resend.
+            </p>
+            
+            <form className="admin-form" onSubmit={handleSendIncentive}>
+              <div className="form-group">
+                <label>Correo Electrónico del Cliente</label>
+                <div className="input-with-icon" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                  <Mail size={18} style={{ position: 'absolute', left: '1rem', color: '#64748b' }} />
+                  <input
+                    type="email"
+                    value={incentiveData.email}
+                    onChange={e => setIncentiveData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="cliente@ejemplo.com"
+                    required
+                    style={{ paddingLeft: '2.8rem', width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Código del Cupón</label>
+                  <input
+                    type="text"
+                    value={incentiveData.code}
+                    onChange={e => setIncentiveData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                    placeholder="Ej: INCENTIVO15"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Porcentaje de Descuento (%)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={incentiveData.discount}
+                    onChange={e => setIncentiveData(prev => ({ ...prev, discount: e.target.value }))}
+                    placeholder="Ej: 15"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="admin-submit-btn" disabled={isSendingIncentive} style={{ marginTop: '1rem' }}>
+                {isSendingIncentive ? (
+                  <>
+                    <Loader2 size={18} className="spin" />
+                    <span>Enviando Incentivo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    <span>Emitir y Enviar Cupón</span>
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         )}
 
