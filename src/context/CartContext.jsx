@@ -18,11 +18,11 @@ export const useCart = () => {
 // autenticados. Los invitados NO tienen clave — punto. 🐒🍌
 // ============================================================
 const getCartStorageKey = (user) => {
-  return user ? `srx_cart_${user.id}` : null;
+  return user ? `srx_cart_${user.id}` : 'srx_cart_guest';
 };
 
 const getOrdersStorageKey = (user) => {
-  return user ? `srx_orders_${user.id}` : null;
+  return user ? `srx_orders_${user.id}` : 'srx_orders_guest';
 };
 
 // ============================================================
@@ -96,8 +96,8 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    // Limpiar basura de versiones anteriores que guardaban carrito de guest
-    cleanGuestCartArtifacts();
+    // No limpiar el carrito del invitado para permitir persistencia
+    // cleanGuestCartArtifacts();
 
     const currentUserId = user?.id || null;
     const prevUserId = prevUserIdRef.current;
@@ -115,9 +115,11 @@ export const CartProvider = ({ children }) => {
     // DECISIÓN CENTRAL: ¿HAY SESIÓN O NO?
     // ============================================================
     if (!user) {
-      // 🐒 INVITADO → carrito vacío, sin excepciones
-      console.log('🐒 [CartContext] Invitado detectado → carrito limpio []');
-      setCartItems([]);
+      // 🐒 INVITADO → cargar carrito de invitado
+      const storageKey = getCartStorageKey(user);
+      const loadedCart = loadCartFromStorage(storageKey);
+      console.log(`🐒 [CartContext] Invitado detectado → cargando carrito desde "${storageKey}" (${loadedCart.length} items)`);
+      setCartItems(loadedCart);
       return;
     }
 
@@ -155,14 +157,8 @@ export const CartProvider = ({ children }) => {
     }
 
     // ============================================================
-    // CONDICIONAL ESTRICTO: solo guardar si hay usuario autenticado
+    // CONDICIONAL ESTRICTO: guardar tanto para usuarios registrados como invitados
     // ============================================================
-    if (!user) {
-      // 🐒 Invitado → NO guardar NADA. Limpiar por si acaso.
-      console.log('🐒 [CartContext] Invitado → NO se persiste el carrito en localStorage');
-      cleanGuestCartArtifacts();
-      return;
-    }
 
     // 🐒 Usuario autenticado → guardar bajo su clave única
     const storageKey = getCartStorageKey(user);

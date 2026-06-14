@@ -226,9 +226,10 @@ export default function AdminDashboard() {
         try {
           // Extraer datos del cliente desde el pago actual en el estado local
           const paymentRecord = pendingPayments.find(p => p.id === paymentId);
-          const profile = paymentRecord?.orders?.profiles;
-          const correoCliente = profile?.email;
-          const nombreCliente = profile?.full_name || 'Cliente';
+          const order = paymentRecord?.orders;
+          const profile = order?.profiles;
+          const correoCliente = profile?.email || order?.user_email;
+          const nombreCliente = profile?.full_name || order?.user_name || 'Cliente';
 
           if (correoCliente) {
             const res = await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
@@ -552,8 +553,8 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="payment-details">
-                        <p><strong>Cliente:</strong> {profile?.full_name || 'Sin nombre'}</p>
-                        <p><strong>Email:</strong> {profile?.email || 'N/A'}</p>
+                        <p><strong>Cliente:</strong> {profile?.full_name || order?.user_name || 'Sin nombre'}</p>
+                        <p><strong>Email:</strong> {profile?.email || order?.user_email || 'N/A'}</p>
                         <p><strong>Fecha:</strong> {new Date(payment.created_at).toLocaleString()}</p>
                         {payment.reference_number && (
                           <p><strong>Nº Referencia:</strong> <span className="reference-badge">{payment.reference_number}</span></p>

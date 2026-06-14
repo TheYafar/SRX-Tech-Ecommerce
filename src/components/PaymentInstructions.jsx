@@ -16,6 +16,7 @@ export default function PaymentInstructions({ paymentMethod }) {
   const [copiedField, setCopiedField] = useState(null);
 
   const isBinance = paymentMethod === 'binance';
+  const isZelle = paymentMethod === 'zelle';
 
   // ── Clipboard helper ──
   const handleCopy = useCallback(async (text, fieldKey) => {
@@ -49,11 +50,13 @@ export default function PaymentInstructions({ paymentMethod }) {
       {/* Header */}
       <div className="pi-header">
         <h4 className="pi-title">
-          {isBinance ? 'Pago con Binance Pay' : 'Pago Móvil & Bancario'}
+          {isBinance ? 'Pago con Binance Pay' : isZelle ? 'Pago con Zelle' : 'Pago Móvil & Bancario'}
         </h4>
         <p className="pi-subtitle">
           {isBinance
             ? 'Transfiere al siguiente correo desde tu app de Binance.'
+            : isZelle
+            ? 'Transfiere al siguiente correo desde tu cuenta de Zelle.'
             : 'Realiza tu transferencia con los siguientes datos bancarios.'}
         </p>
       </div>
@@ -81,8 +84,40 @@ export default function PaymentInstructions({ paymentMethod }) {
         </div>
       )}
 
+      {/* ─── Zelle Panel ─── */}
+      {isZelle && (
+        <div className="pi-panel">
+          <div className="pi-data-row">
+            <div className="pi-data-left">
+              <span className="pi-data-label">Correo Zelle</span>
+              <span className="pi-data-value highlight-blue">
+                olessire@hotmail.com
+              </span>
+            </div>
+            <CopyBtn text="olessire@hotmail.com" fieldKey="zelle-email" />
+          </div>
+
+          <div className="pi-data-row">
+            <div className="pi-data-left">
+              <span className="pi-data-label">Nombre del Beneficiario</span>
+              <span className="pi-data-value highlight-green">
+                Omaira Lessire
+              </span>
+            </div>
+            <CopyBtn text="Omaira Lessire" fieldKey="zelle-name" />
+          </div>
+
+          <div className="pi-note">
+            <span className="pi-note-icon">💡</span>
+            <p className="pi-note-text">
+              Realiza la transferencia e ingresa el número de referencia y comprobante (capture) abajo.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ─── Pago Móvil Panel ─── */}
-      {!isBinance && (
+      {!isBinance && !isZelle && (
         <div className="pi-panel">
           {/* Banco Badge */}
           <div className="pi-bank-badge">

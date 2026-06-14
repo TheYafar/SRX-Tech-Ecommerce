@@ -20,19 +20,9 @@ export default function CartDrawer() {
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
-  // 🔐 INTERCEPTOR: Verifica sesión antes de proceder al pago
+  // Proceder al pago (se permite a invitados y usuarios registrados)
   const handleOpenCheckout = () => {
-    if (!user) {
-      console.log('🔐 [CartDrawer:handleOpenCheckout] Usuario no autenticado. Interceptando y abriendo AuthModal.');
-      // Guardar la acción pendiente — se ejecutará automáticamente post-auth
-      openAuthModalWithAction(
-        () => setIsCheckoutModalOpen(true),
-        'Para completar tu encargo necesitas una cuenta activa',
-        'login'
-      );
-      return;
-    }
-    console.log('✅ [CartDrawer:handleOpenCheckout] Usuario autenticado. Abriendo checkout.');
+    console.log('✅ [CartDrawer:handleOpenCheckout] Abriendo checkout.');
     setIsCheckoutModalOpen(true);
   };
 
@@ -141,17 +131,8 @@ export default function CartDrawer() {
               onClick={handleOpenCheckout}
               id="cart-proceder-pago-btn"
             >
-              {user ? (
-                <>
-                  <CreditCard size={18} />
-                  <span>Proceder al Pago</span>
-                </>
-              ) : (
-                <>
-                  <Lock size={18} />
-                  <span>Iniciar Sesión para Pagar</span>
-                </>
-              )}
+              <CreditCard size={18} />
+              <span>Proceder al Pago</span>
             </button>
           </div>
         )}

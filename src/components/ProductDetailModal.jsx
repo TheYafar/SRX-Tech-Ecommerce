@@ -129,27 +129,6 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
   };
 
   const handleBuyNow = () => {
-    // 🔐 INTERCEPTOR: Verificar sesión antes de proceder al encargo
-    if (!user) {
-      console.log('🔐 [ProductDetailModal:handleBuyNow] Usuario no autenticado. Interceptando.');
-      openAuthModalWithAction(
-        () => {
-          // Esta función se ejecutará automáticamente post-auth
-          setIsAdding(true);
-          const productWithQuantity = { ...product, quantity };
-          addToCart(productWithQuantity);
-          setTimeout(() => {
-            setIsAdding(false);
-            onClose();
-            const cartEvent = new CustomEvent('open-cart');
-            window.dispatchEvent(cartEvent);
-          }, 1000);
-        },
-        'Inicia sesión para completar tu encargo de "' + product?.name + '"',
-        'login'
-      );
-      return;
-    }
     setIsAdding(true);
     const productWithQuantity = { ...product, quantity };
     addToCart(productWithQuantity);

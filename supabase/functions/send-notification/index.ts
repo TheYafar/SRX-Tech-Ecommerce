@@ -404,34 +404,55 @@ serve(async (req: Request) => {
       );
     }
 
-    // ── 4. Fetch customer profile from Supabase ───────────────────────────────
+    // ── 4. Determine customer name and email (with guest fallback) ────────────
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", userId)
-      .single();
+    let customerEmail: string | null = null;
+    let customerName = "Cliente";
 
-    if (profileError || !profileData) {
-      throw new Error(
-        `Failed to fetch customer profile for user_id '${userId}': ${
-          profileError?.message ?? "No data returned"
-        }`
-      );
+    if (userId) {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!profileError && profileData) {
+        customerEmail = profileData.email;
+        customerName = profileData.full_name || "Cliente";
+      }
     }
 
-    const customer = profileData as CustomerProfile;
+    // Si no obtuvimos email del perfil (invitado o profile inexistente), obtener de la orden
+    if (!customerEmail) {
+      if (table === "orders") {
+        customerEmail = record["user_email"] as string | null;
+        customerName = (record["user_name"] as string | null) || "Cliente";
+      } else if (table === "payments") {
+        const orderId = record["order_id"] as string | null;
+        if (orderId) {
+          const { data: orderData } = await supabase
+            .from("orders")
+            .select("user_email, user_name")
+            .eq("id", orderId)
+            .maybeSingle();
+          if (orderData) {
+            customerEmail = orderData.user_email;
+            customerName = orderData.user_name || "Cliente";
+          }
+        }
+      }
+    }
 
-    if (!customer.email) {
+    if (!customerEmail) {
       throw new Error(
-        `Customer profile for user_id '${userId}' has no email address`
+        `Failed to resolve customer email for table '${table}' and user_id '${userId}'`
       );
     }
 
     // ── 5. Build the email payload ─────────────────────────────────────────────
-    const emailPayload = emailBuilder(customer.full_name || "Cliente");
-    emailPayload.to = customer.email;
+    const emailPayload = emailBuilder(customerName);
+    emailPayload.to = customerEmail;
 
     // ── 6. Send via Resend API ─────────────────────────────────────────────────
     const resendResponse = await fetch("https://api.resend.com/emails", {

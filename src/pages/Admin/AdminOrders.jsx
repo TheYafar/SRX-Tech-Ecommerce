@@ -68,8 +68,8 @@ export default function AdminOrders() {
       // ── 📧 Disparo de correo de pago verificado ──────────────
       try {
         const orderData = orders.find(o => o.id === orderId);
-        const correoCliente = orderData?.profiles?.email;
-        const nombreCliente = orderData?.profiles?.full_name || 'Cliente';
+        const correoCliente = orderData?.profiles?.email || orderData?.user_email;
+        const nombreCliente = orderData?.profiles?.full_name || orderData?.user_name || 'Cliente';
 
         if (correoCliente) {
           const res = await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
@@ -114,8 +114,8 @@ export default function AdminOrders() {
       // ── 📧 Disparo de correo de pedido listo ──────────────
       try {
         const orderData = orders.find(o => o.id === orderId);
-        const correoCliente = orderData?.profiles?.email;
-        const nombreCliente = orderData?.profiles?.full_name || 'Cliente';
+        const correoCliente = orderData?.profiles?.email || orderData?.user_email;
+        const nombreCliente = orderData?.profiles?.full_name || orderData?.user_name || 'Cliente';
 
         if (correoCliente) {
           const res = await enviarCorreoPedidoListo(correoCliente, nombreCliente, orderId);
@@ -184,7 +184,7 @@ export default function AdminOrders() {
   };
 
   const getCustomerName = (order) => {
-    return order.profiles?.full_name || order.profiles?.email || 'Cliente Desconocido';
+    return order.profiles?.full_name || order.user_name || order.profiles?.email || order.user_email || 'Cliente Desconocido';
   };
 
   // ── Mapa de estados para badges (preserva tu CSS actual) ──
