@@ -475,26 +475,20 @@ export default function AdminDashboard() {
       }
 
       console.log(`📧 [AdminDashboard:handleSendIncentive] Invocando Edge Function de Supabase para enviar cupón masivo/individual...`);
-      const response = await fetch('https://wcnobggfbmpisahxihfu.supabase.co/functions/v1/send-mass-coupon', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ 
+      // Invocar la función de manera segura con el SDK nativo
+      const { data, error: functionError } = await supabase.functions.invoke('send-mass-coupon', {
+        body: { 
           listaCorreos: listaUsuarios,
           codigo: cleanCode, 
           porcentaje: percent 
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error de la Edge Function de Supabase: ${errorText}`);
+      if (functionError) {
+        throw new Error(`Error de la Edge Function de Supabase: ${functionError.message || functionError}`);
       }
 
-      const resData = await response.json();
-      console.log('✅ Response from Edge Function:', resData);
+      console.log('✅ Response from Edge Function:', data);
 
       showSuccess(isMassEmail 
         ? `¡Campaña masiva enviada con éxito a ${listaUsuarios.length} usuarios!` 
