@@ -19,10 +19,9 @@ export function CurrencyProvider({ children }) {
   const fetchRate = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    console.log("💰 [CurrencyContext] Iniciando obtención de tasa de cambio (paralelo)...");
 
     try {
-      // AbortController para evitar que un fetch colgado bloquee la app
+      // AbortController to prevent a hung fetch from blocking the app
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -33,8 +32,7 @@ export function CurrencyProvider({ children }) {
           { signal: controller.signal }
         );
       } catch (networkErr) {
-        // Capturamos errores de red (DNS, CORS, offline) ANTES de que
-        // el navegador pinte un error rojo en la consola de Network.
+        // Catch network errors before they trigger browser errors in console
         clearTimeout(timeoutId);
         throw new Error(
           networkErr.name === 'AbortError'
@@ -46,7 +44,7 @@ export function CurrencyProvider({ children }) {
 
       clearTimeout(timeoutId);
 
-      // Si la respuesta no es exitosa, generamos un warning limpio
+      // Verify response is successful
       if (!response.ok) {
         throw new Error(
           `API respondió con status ${response.status} (${response.statusText})`
@@ -54,28 +52,23 @@ export function CurrencyProvider({ children }) {
       }
 
       const data = await response.json();
-      console.log("📥 [CurrencyContext] Datos recibidos de dolarapi.com (paralelo):", data);
 
       if (data?.promedio && typeof data.promedio === 'number') {
-        console.log(`✅ [CurrencyContext] Tasa de cambio actualizada con éxito a: ${data.promedio} VES/USD.`);
         setExchangeRate(data.promedio);
       } else {
         throw new Error('La respuesta de la API no contiene un campo "promedio" válido.');
       }
     } catch (err) {
-      // ─── No bloqueamos la app. Solo avisamos con un warn limpio ───
       console.warn(
-        `⚠️ [CurrencyContext] ${err.message}\n` +
+        `[CurrencyContext] ${err.message}\n` +
         `   → Usando tasa de respaldo: ${FALLBACK_RATE} VES/USD.`
       );
 
       setError(err.message);
 
-      // Solo aplicamos fallback si no tenemos ya un valor real previo
+      // Use fallback if we do not have a previously retrieved rate
       setExchangeRate((prev) => prev ?? FALLBACK_RATE);
     } finally {
-      // Garantizamos que el contexto SIEMPRE deje de cargar
-      console.log("🏁 [CurrencyContext] Proceso de obtención de tasa finalizado.");
       setIsLoading(false);
     }
   }, []);

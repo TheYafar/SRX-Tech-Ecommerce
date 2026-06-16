@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   PackagePlus, CheckCircle, XCircle, Image as ImageIcon,
   DollarSign, UploadCloud, Loader2, Layers, Pencil, Check, X,
-  PlusCircle, Sparkles, Mail
+  PlusCircle, Sparkles, Mail, Search
 } from 'lucide-react';
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import { useProducts } from '../../context/ProductContext';
 import { enviarCorreoPagoVerificado } from '../../services/emailService';
+import { getAllUserEmails, createNewCouponInDB, dispatchMassCampaign } from '../../services/couponService';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -97,7 +98,7 @@ export default function AdminDashboard() {
       if (error) throw error;
       setAllCategories(data || []);
     } catch (err) {
-      console.error('❌ [AdminDashboard] Error al cargar todas las categorías:', err);
+      console.error('[AdminDashboard] Error al cargar todas las categorías:', err);
       showError('No se pudieron cargar las categorías.');
     } finally {
       setIsCatLoading(false);
@@ -122,7 +123,7 @@ export default function AdminDashboard() {
       if (error) throw error;
       setPendingPayments(data || []);
     } catch (error) {
-      console.error('❌ [AdminDashboard] Error cargando pagos:', error);
+      console.error('[AdminDashboard] Error cargando pagos:', error);
       showError('No se pudieron cargar los pagos pendientes.');
     } finally {
       setIsLoadingPayments(false);
@@ -236,8 +237,7 @@ export default function AdminDashboard() {
           return;
         }
       }
-
-      // ── 📧 Disparo de correo de pago verificado ──────────────
+      // Send payment verified email
       if (newStatus === 'completed' && orderId) {
         try {
           // Extraer datos del cliente desde el pago actual en el estado local
@@ -248,22 +248,19 @@ export default function AdminDashboard() {
           const nombreCliente = profile?.full_name || order?.user_name || 'Cliente';
 
           if (correoCliente) {
-            const res = await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
-            console.log('📧 [AdminDashboard] Envío de correo de pago exitoso. ID:', res.id);
+            await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
           } else {
-            console.warn('⚠️ [AdminDashboard] No se encontró email del cliente para enviar notificación de pago.');
+            console.warn('[AdminDashboard] No se encontró email del cliente para enviar notificación de pago.');
           }
         } catch (emailError) {
-          // El correo falló, pero la operación de Supabase ya fue exitosa.
-          // No hacemos rollback ni bloqueamos la interfaz.
-          console.error('📧❌ [AdminDashboard] Error al enviar correo de pago verificado (no afecta la orden):', emailError);
+          console.error('[AdminDashboard] Error al enviar correo de pago verificado (no afecta la orden):', emailError);
         }
       }
 
       showSuccess(`Pago ${newStatus === 'completed' ? 'validado' : 'rechazado'} correctamente.`);
       fetchPendingPayments();
     } catch (error) {
-      console.error('❌ Error al actualizar pago:', error);
+      console.error('Error al actualizar pago:', error);
       showError('No se pudo actualizar el estado del pago.');
     }
   };
@@ -317,7 +314,7 @@ export default function AdminDashboard() {
       showSuccess('Categoría actualizada correctamente.');
       cancelEditCat();
     } catch (err) {
-      console.error('❌ Error guardando categoría:', err);
+      console.error('Error guardando categoría:', err);
       showError('No se pudo guardar la categoría.');
     } finally {
       setIsSavingCat(false);
@@ -352,7 +349,7 @@ export default function AdminDashboard() {
       showSuccess(`Categoría "${data.name}" creada en "${selectedGroup === 'por-producto' ? 'Por Producto' : 'Para tu Equipo'}" correctamente.`);
       setNewCatName('');
     } catch (err) {
-      console.error('❌ Error creando categoría:', err);
+      console.error('Error creando categoría:', err);
       showError('No se pudo crear la categoría. Verifica que el nombre sea único.');
     } finally {
       setIsAddingCat(false);
@@ -378,16 +375,13 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      // 3. Verificar que la eliminación realmente afectó la fila (RLS check)
       if (!deletedRows || deletedRows.length === 0) {
-        console.warn('⚠️ [handleDeleteCategory] Supabase no devolvió filas eliminadas.', {
+        console.warn('[handleDeleteCategory] Supabase no devolvió filas eliminadas.', {
           categoryId,
           categoryName: cat.name,
-          probableCause: 'La política RLS de Supabase está bloqueando DELETE para este usuario.',
-          solucion: 'Ir al Dashboard de Supabase → Authentication → Policies → tabla "categories" → añadir política DELETE para rol "authenticated" o "service_role".',
         });
         showError('No se pudo eliminar: sin permisos en la base de datos. Revisa las políticas RLS en Supabase.');
-        return; // ← No actualizar la UI si en BD no se borró nada
+        return; 
       }
 
       // 4. Actualización inmediata del estado — sin recarga de página
@@ -396,15 +390,7 @@ export default function AdminDashboard() {
 
       showSuccess(`Categoría "${cat.name}" eliminada correctamente.`);
     } catch (err) {
-      // 5. Control de errores detallado para auditoría desde DevTools
-      console.error('❌ [handleDeleteCategory] Error al eliminar categoría:', {
-        categoryId,
-        categoryName: cat.name,
-        supabaseError: err?.message,
-        details: err?.details,
-        hint: err?.hint,
-        code: err?.code,
-      });
+      console.error('[handleDeleteCategory] Error al eliminar categoría:', err);
       showError('No se pudo eliminar la categoría. Revisa la consola para más detalles.');
     }
   };
@@ -426,46 +412,17 @@ export default function AdminDashboard() {
     setIsSubmitting(true);
     try {
       const cleanCode = code.trim().toUpperCase();
-      const percent = parseInt(discount) || 10;
+      const percent = parseInt(discount, 10) || 10;
       
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30); // 30 días de vigencia
+      // Registrar el cupón usando el servicio desacoplado
+      await createNewCouponInDB(cleanCode, percent);
 
-      console.log(`💾 [AdminDashboard:handleSendIncentive] Registrando cupón en Supabase: ${cleanCode} (${percent}%)`);
-      const { error: dbError } = await supabase
-        .from('coupons')
-        .upsert([{
-          code: cleanCode,
-          discount_percent: percent,
-          is_active: true,
-          expires_at: expiresAt.toISOString()
-        }], { onConflict: 'code' });
-
-      if (dbError) {
-        throw new Error(`Error al registrar el cupón en la BD: ${dbError.message}`);
-      }
-
+      // Obtener la lista de correos destino
       let listaUsuarios = [];
       if (isMassEmail) {
-        console.log('🔍 [AdminDashboard:handleSendIncentive] Obteniendo correos de todos los usuarios...');
-        const { data: users, error: fetchError } = await supabase
-          .from('profiles')
-          .select('email');
-
-        if (fetchError) {
-          throw new Error(`Error al obtener usuarios de Supabase: ${fetchError.message}`);
-        }
-
-        if (!users || users.length === 0) {
-          throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
-        }
-
-        listaUsuarios = users
-          .map(u => u.email)
-          .filter(email => email && email.trim() !== '');
-
+        listaUsuarios = await getAllUserEmails();
         if (listaUsuarios.length === 0) {
-          throw new Error('No hay correos válidos en la base de datos.');
+          throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
         }
       } else {
         if (!email || !email.trim()) {
@@ -474,21 +431,8 @@ export default function AdminDashboard() {
         listaUsuarios = [email.trim()];
       }
 
-      console.log(`📧 [AdminDashboard:handleSendIncentive] Invocando Edge Function de Supabase para enviar cupón masivo/individual...`);
-      // Invocar la función de manera segura con el SDK nativo
-      const { data, error: functionError } = await supabase.functions.invoke('send-mass-coupon', {
-        body: { 
-          listaCorreos: listaUsuarios,
-          codigo: cleanCode, 
-          porcentaje: percent 
-        }
-      });
-
-      if (functionError) {
-        throw new Error(`Error de la Edge Function de Supabase: ${functionError.message || functionError}`);
-      }
-
-      console.log('✅ Response from Edge Function:', data);
+      // Enviar campaña usando la Edge Function mediante el servicio
+      await dispatchMassCampaign(cleanCode, percent, listaUsuarios);
 
       showSuccess(isMassEmail 
         ? `¡Campaña masiva enviada con éxito a ${listaUsuarios.length} usuarios!` 
@@ -499,7 +443,7 @@ export default function AdminDashboard() {
       setIncentiveData({ email: '', code: '', discount: '10' });
       setIsMassEmail(false);
     } catch (error) {
-      console.error('❌ [AdminDashboard:handleSendIncentive] Error:', error);
+      console.error('[AdminDashboard:handleSendIncentive] Error:', error);
       showError(`Error al emitir incentivo: ${error.message || error}`);
     } finally {
       setIsSubmitting(false);
@@ -692,7 +636,7 @@ export default function AdminDashboard() {
                               style={{ cursor: 'zoom-in' }}
                             />
                             <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="view-full-btn">
-                              🔍 Ver comprobante completo
+                              <Search size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Ver comprobante completo
                             </a>
                           </div>
                         ) : (
@@ -958,12 +902,12 @@ export default function AdminDashboard() {
                 {isSubmitting ? (
                   <>
                     <Loader2 size={18} className="spin" />
-                    <span>{isMassEmail ? '🚀 Enviando campaña masiva...' : 'Enviando cupón...'}</span>
+                    <span>{isMassEmail ? 'Enviando campaña masiva...' : 'Enviando cupón...'}</span>
                   </>
                 ) : (
                   <>
                     {isMassEmail ? (
-                      <span>🚀 Emitir y Enviar Campaña Masiva</span>
+                      <span>Emitir y Enviar Campaña Masiva</span>
                     ) : (
                       <>
                         <Sparkles size={18} />

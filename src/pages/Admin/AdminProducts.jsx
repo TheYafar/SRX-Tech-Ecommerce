@@ -121,7 +121,7 @@ function CategoryModal({ onClose, onCreated }) {
           if (row.slug === 'para-tu-equipo') parentIds['para-tu-equipo'] = row.id;
         });
       } catch (err) {
-        console.warn('⚠️ [CategoryModal] No se pudieron cargar los IDs raíz:', err);
+        console.warn('[CategoryModal] No se pudieron cargar los IDs raíz:', err);
       }
     };
     loadParentIds();
@@ -157,10 +157,10 @@ function CategoryModal({ onClose, onCreated }) {
 
       if (insertError) throw insertError;
 
-      // ✅ Devolver la nueva categoría al padre
+      // Return the new category to the parent component
       onCreated(data);
     } catch (err) {
-      console.error('❌ [CategoryModal] Error creando categoría:', err);
+      console.error('[CategoryModal] Error creando categoría:', err);
       setError(err.message || 'Error al crear la categoría');
     } finally {
       setIsSaving(false);
@@ -323,7 +323,7 @@ export default function AdminProducts() {
         if (error) throw error;
         setCategories(data || []);
       } catch (err) {
-        console.error('❌ [AdminProducts] Error cargando categorías:', err);
+        console.error('[AdminProducts] Error cargando categorías:', err);
       }
     };
     loadCategories();
@@ -339,7 +339,7 @@ export default function AdminProducts() {
   // ================================================================
   const handleDelete = async (id) => {
     const confirmar = window.confirm(
-      '🗑️ ¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.'
+      '¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.'
     );
     if (!confirmar) return;
 
@@ -416,7 +416,7 @@ export default function AdminProducts() {
 
       if (error) throw error;
 
-      // ✅ Actualizar estado local
+      // Update local state
       setProducts((prev) =>
         prev.map((p) =>
           p.id === editingProduct.id
@@ -524,7 +524,7 @@ export default function AdminProducts() {
         isBestSeller: false,
       });
 
-      showSuccess('🐵 ¡Producto creado exitosamente!');
+      showSuccess('¡Producto creado exitosamente!');
       setShowProductForm(false);
       setNewProductData({
         name: '', sku: '', description: '', price_usd: '',
@@ -535,7 +535,7 @@ export default function AdminProducts() {
       // Refrescar la lista completa de fondo
       fetchProducts();
     } catch (error) {
-      console.error('❌ [AdminProducts] Error creando producto:', error);
+      console.error('[AdminProducts] Error creando producto:', error);
       showError(error.message || 'No se pudo crear el producto. Intenta de nuevo.');
     } finally {
       setIsSubmittingNew(false);

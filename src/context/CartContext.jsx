@@ -14,8 +14,7 @@ export const useCart = () => {
 };
 
 // ============================================================
-// HELPER: genera la clave de localStorage SOLO para usuarios
-// autenticados. Los invitados NO tienen clave — punto. 🐒🍌
+// Helper: Generates local storage key for cart persistence
 // ============================================================
 const getCartStorageKey = (user) => {
   return user ? `srx_cart_${user.id}` : 'srx_cart_guest';
@@ -26,8 +25,7 @@ const getOrdersStorageKey = (user) => {
 };
 
 // ============================================================
-// HELPER: carga segura del carrito desde localStorage
-// Si la clave es null (invitado) → devuelve [] sin tocar storage
+// Helper: Safe load from localStorage
 // ============================================================
 const loadCartFromStorage = (key) => {
   if (!key) return [];
@@ -35,147 +33,91 @@ const loadCartFromStorage = (key) => {
     const savedCart = localStorage.getItem(key);
     return savedCart ? JSON.parse(savedCart) : [];
   } catch (err) {
-    console.error(`🐒 [CartContext] Error leyendo localStorage key "${key}":`, err);
+    console.error(`Error reading localStorage key "${key}":`, err);
     return [];
   }
 };
 
 // ============================================================
-// HELPER: limpia cualquier rastro de carrito de invitado viejo
-// Por si quedó basura de una versión anterior del código 🧹🐒
+// Helper: Clean guest cart artifacts
 // ============================================================
 const cleanGuestCartArtifacts = () => {
   try {
     localStorage.removeItem('srx_cart_guest');
     localStorage.removeItem('srx_orders_guest');
   } catch (err) {
-    console.error('🐒 [CartContext] Error limpiando artefactos de invitado:', err);
+    console.error('Error cleaning guest cart storage:', err);
   }
 };
 
 // ============================================================
-// CART PROVIDER — PERSISTENCIA CONDICIONAL 🐒💎
-//
-// REGLAS DE ORO:
-// 1. Invitado (sin sesión) → carrito SIEMPRE vacío al recargar.
-//    NUNCA se guarda ni se lee de localStorage.
-// 2. Usuario autenticado → carrito se persiste bajo su ID único
-//    (srx_cart_{userId}) y se recupera al recargar.
-// 3. Al cerrar sesión → carrito se limpia inmediatamente a [].
-// 4. Al iniciar sesión → carrito se carga desde la clave del user.
+// CART PROVIDER — CONDITIONAL PERSISTENCE
 // ============================================================
 export const CartProvider = ({ children }) => {
   const { showSuccess } = useNotifications();
   const { user, isLoading: isAuthLoading } = useAuth();
 
-  // REF para trackear el userId previo y evitar re-cargas innecesarias
-  const prevUserIdRef = useRef(undefined); // undefined = aún no inicializado
+  const prevUserIdRef = useRef(undefined);
   const isInitialLoadRef = useRef(true);
 
-  // Estado del carrito — arranca vacío, se llena SOLO si hay sesión activa
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // ==============================================================
-  // EFFECT 1: CARGA / SWAP / LIMPIEZA según estado de autenticación
-  //
-  // Se ejecuta cuando:
-  // - Auth termina de cargar (isAuthLoading pasa a false)
-  // - El user cambia (login, logout, switch de cuenta)
-  //
-  // Lógica:
-  // 1. Si auth sigue cargando → no hacer nada, carrito queda en []
-  // 2. Si NO hay usuario → carrito = [] (invitado, sin persistencia)
-  // 3. Si HAY usuario → cargar carrito desde su clave única
-  // 4. Si el userId no cambió → no recargar (optimización)
-  // ==============================================================
+  // Load cart on authentication status change
   useEffect(() => {
-    // 🐒 Esperar a que Supabase resuelva la sesión antes de tocar el carrito
     if (isAuthLoading) {
-      console.log('⏳ [CartContext] Auth todavía cargando. Mono espera pacientemente...');
       return;
     }
-
-    // No limpiar el carrito del invitado para permitir persistencia
-    // cleanGuestCartArtifacts();
 
     const currentUserId = user?.id || null;
     const prevUserId = prevUserIdRef.current;
 
-    // Si el userId no cambió (y no es la carga inicial), no recargar
     if (!isInitialLoadRef.current && currentUserId === prevUserId) {
       return;
     }
 
-    // Marcar que ya no es carga inicial
     isInitialLoadRef.current = false;
     prevUserIdRef.current = currentUserId;
 
-    // ============================================================
-    // DECISIÓN CENTRAL: ¿HAY SESIÓN O NO?
-    // ============================================================
     if (!user) {
-      // 🐒 INVITADO → cargar carrito de invitado
+      // Guest user -> Load guest cart
       const storageKey = getCartStorageKey(user);
       const loadedCart = loadCartFromStorage(storageKey);
-      console.log(`🐒 [CartContext] Invitado detectado → cargando carrito desde "${storageKey}" (${loadedCart.length} items)`);
       setCartItems(loadedCart);
       return;
     }
 
-    // 🐒 USUARIO AUTENTICADO → cargar su carrito personal
+    // Registered user -> Load personal cart
     const storageKey = getCartStorageKey(user);
     const loadedCart = loadCartFromStorage(storageKey);
-
-    console.log(
-      `🐒 [CartContext] Usuario ${currentUserId} → ` +
-      `Cargando carrito desde "${storageKey}" (${loadedCart.length} items)`
-    );
-
     setCartItems(loadedCart);
   }, [user, isAuthLoading]);
 
-  // ==============================================================
-  // EFFECT 2: PERSISTENCIA CONDICIONAL
-  //
-  // Guarda el carrito en localStorage SOLO si hay un usuario
-  // autenticado. Los invitados NUNCA persisten datos.
-  //
-  // IMPORTANTE: NO guardar si auth sigue cargando o si es la
-  // carga inicial (para evitar sobreescribir con array vacío)
-  // ==============================================================
+  // Persist cart items to matching local storage key
   const hasHydratedRef = useRef(false);
 
   useEffect(() => {
-    // No persistir mientras auth resuelve — evita guardar [] encima del carrito real
     if (isAuthLoading) return;
 
-    // No persistir hasta que hayamos hecho al menos una carga desde storage
     if (!hasHydratedRef.current) {
       hasHydratedRef.current = true;
       return;
     }
 
-    // ============================================================
-    // CONDICIONAL ESTRICTO: guardar tanto para usuarios registrados como invitados
-    // ============================================================
-
-    // 🐒 Usuario autenticado → guardar bajo su clave única
     const storageKey = getCartStorageKey(user);
     try {
       localStorage.setItem(storageKey, JSON.stringify(cartItems));
     } catch (err) {
-      console.error(`🐒 [CartContext] Error guardando en localStorage key "${storageKey}":`, err);
+      console.error(`Error saving to localStorage key "${storageKey}":`, err);
     }
   }, [cartItems, user, isAuthLoading]);
 
-  // Resetear hydration flag cuando cambia el usuario (nuevo ciclo de carga)
   useEffect(() => {
     hasHydratedRef.current = false;
   }, [user?.id]);
 
   // ==============================================================
-  // ACCIONES DEL CARRITO — misma API pública, sin cambios 🐒🍌
+  // CART ACTIONS
   // ==============================================================
   const addToCart = useCallback((product) => {
     setCartItems((prevItems) => {
@@ -187,9 +129,8 @@ export const CartProvider = ({ children }) => {
       }
       return [...prevItems, { ...product, quantity: 1 }];
     });
-    // Auto-open cart when adding an item
+    
     setIsCartOpen(true);
-
     showSuccess(`"${product.name || product.title}" añadido al carrito`, 2000);
   }, [showSuccess]);
 
@@ -232,7 +173,6 @@ export const CartProvider = ({ children }) => {
       total: cartTotal
     };
 
-    // Save to order history — SOLO si hay usuario autenticado 🐒
     const ordersKey = getOrdersStorageKey(user);
     if (ordersKey) {
       try {
@@ -241,7 +181,7 @@ export const CartProvider = ({ children }) => {
         ordersList.push(newOrder);
         localStorage.setItem(ordersKey, JSON.stringify(ordersList));
       } catch (err) {
-        console.error(`🐒 [CartContext] Error guardando orden en "${ordersKey}":`, err);
+        console.error(`Error saving order history key "${ordersKey}":`, err);
       }
     }
 

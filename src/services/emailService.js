@@ -17,7 +17,7 @@ const REMITENTE = 'SRX Tech <diego@srxtech.com>';
 async function enviarCorreo(payload) {
   if (!RESEND_API_KEY) {
     throw new Error(
-      '🐒 ¡UH OH! Falta la variable VITE_RESEND_API_KEY en el archivo .env'
+      'Falta la variable VITE_RESEND_API_KEY en el archivo .env'
     );
   }
 
@@ -79,7 +79,9 @@ export async function enviarCorreoPagoVerificado(correoCliente, nombreCliente, o
           <!-- Header con gradiente verde -->
           <tr>
             <td style="background: linear-gradient(135deg, #10b981, #059669); padding:36px 40px; text-align:center;">
-              <div style="font-size:48px; margin-bottom:8px;">✅</div>
+              <div style="margin: 0 auto 16px; width: 64px; height: 64px; line-height: 64px; background-color: #ffffff; border-radius: 50%; display: inline-block; text-align: center;">
+                <span style="color: #10b981; font-size: 32px; font-weight: bold; font-family: sans-serif;">✓</span>
+              </div>
               <h1 style="color:#ffffff; font-size:26px; margin:0; font-weight:700; letter-spacing:-0.5px;">
                 ¡Pago Confirmado, ${nombreCliente}!
               </h1>
@@ -96,7 +98,7 @@ export async function enviarCorreoPagoVerificado(correoCliente, nombreCliente, o
 
               <div style="background-color:#ecfdf5; border-left:4px solid #10b981; border-radius:8px; padding:20px 24px; margin:24px 0;">
                 <p style="color:#065f46; font-size:15px; margin:0; line-height:1.6;">
-                  🚀 <strong>Tu equipo ha entrado en fase de preparación.</strong><br />
+                  <strong>Tu equipo ha entrado en fase de preparación.</strong><br />
                   Nuestro equipo está organizando tu pedido con el mayor cuidado. Te notificaremos cuando esté listo para despacho o retiro.
                 </p>
               </div>
@@ -150,7 +152,7 @@ export async function enviarCorreoPagoVerificado(correoCliente, nombreCliente, o
   return enviarCorreo({
     from: REMITENTE,
     to: [correoCliente],
-    subject: '¡Tu pago ha sido verificado! 🎉 - SRX Tech',
+    subject: '¡Tu pago ha sido verificado! - SRX Tech',
     html,
   });
 }
@@ -186,7 +188,9 @@ export async function enviarCorreoPedidoListo(correoCliente, nombreCliente, orde
           <!-- Header con gradiente azul brillante -->
           <tr>
             <td style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding:36px 40px; text-align:center;">
-              <div style="font-size:48px; margin-bottom:8px;">📦</div>
+              <div style="margin: 0 auto 16px; width: 64px; height: 64px; line-height: 64px; background-color: #ffffff; border-radius: 50%; display: inline-block; text-align: center;">
+                <span style="color: #3b82f6; font-size: 32px; font-weight: bold; font-family: sans-serif;">✓</span>
+              </div>
               <h1 style="color:#ffffff; font-size:26px; margin:0; font-weight:700; letter-spacing:-0.5px;">
                 ¡Buenas noticias, ${nombreCliente}!
               </h1>
@@ -204,7 +208,7 @@ export async function enviarCorreoPedidoListo(correoCliente, nombreCliente, orde
 
               <div style="background-color:#eff6ff; border-left:4px solid #3b82f6; border-radius:8px; padding:20px 24px; margin:24px 0;">
                 <p style="color:#1e40af; font-size:15px; margin:0; line-height:1.6;">
-                  📍 <strong>Tu pedido está disponible para retiro en nuestro punto de entrega en Guacara</strong> o para coordinación de despacho.<br /><br />
+                  <strong>Tu pedido está disponible para retiro en nuestro punto de entrega en Guacara</strong> o para coordinación de despacho.<br /><br />
                   Contáctanos para agendar tu retiro o para coordinar el envío a tu dirección.
                 </p>
               </div>
@@ -221,7 +225,7 @@ export async function enviarCorreoPedidoListo(correoCliente, nombreCliente, orde
                         <td style="color:#111827; font-size:18px; font-weight:700; font-family:monospace;">#${shortId}</td>
                         <td style="text-align:right;">
                           <span style="background-color:#3b82f6; color:#ffffff; font-size:13px; font-weight:600; padding:6px 16px; border-radius:20px;">
-                            📦 Listo para Entrega
+                            Listo para Entrega
                           </span>
                         </td>
                       </tr>
@@ -258,7 +262,7 @@ export async function enviarCorreoPedidoListo(correoCliente, nombreCliente, orde
   return enviarCorreo({
     from: REMITENTE,
     to: [correoCliente],
-    subject: '¡Tu pedido por encargo está listo! 📦 - SRX Tech',
+    subject: '¡Tu pedido por encargo está listo! - SRX Tech',
     html,
   });
 }
@@ -290,7 +294,6 @@ export async function sendCouponEmail(userEmail, couponCode, discountPercent) {
       </div>
     `;
 
-    console.log(`📧 [emailService:sendCouponEmail] Enviando cupón ${couponCode} (${discountPercent}%) a ${userEmail}...`);
     const data = await enviarCorreo({
       from: REMITENTE,
       to: [userEmail],
@@ -299,7 +302,7 @@ export async function sendCouponEmail(userEmail, couponCode, discountPercent) {
     });
     return { success: true, data };
   } catch (error) {
-    console.error(`📧❌ [emailService:sendCouponEmail] Error al enviar correo de cupón a ${userEmail}:`, error);
+    console.error(`[emailService:sendCouponEmail] Error al enviar correo de cupón a ${userEmail}:`, error);
     return { success: false, error: error.message || error };
   }
 }

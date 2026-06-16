@@ -13,7 +13,7 @@ export default function AuthModal() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // 🦴 GRONK RENOMBRA: evita shadow con context isLoading
+  const [isSubmitting, setIsSubmitting] = useState(false); // Avoids shadow with context isLoading state
   const [authError, setAuthError] = useState('');
 
   const isLogin = authMode === 'login';
@@ -24,49 +24,40 @@ export default function AuthModal() {
   });
 
   const onSubmit = async (data) => {
-    setIsSubmitting(true); // 🦴 GRONK START SPINNER
+    setIsSubmitting(true);
     setAuthError('');
-    console.log(`🦴 [AuthModal:onSubmit] Iniciando submit. Modo: ${authMode}`);
 
     try {
       if (isLogin) {
-        console.log(`🔑 [AuthModal:onSubmit] Llamando login() para: ${data.email}`);
         const result = await login(data.email, data.password);
-        console.log(`📊 [AuthModal:onSubmit] Resultado de login():`, result);
 
         if (!result.success) {
-          // 🦴 LOGIN FALLIDO → MOSTRAR ERROR
+          // Login failed -> Show error message
           setAuthError(result.error === 'Invalid login credentials' ? 'Credenciales inválidas' : result.error);
         } else if (result.user?.role === 'admin') {
-          // 🦴 ADMIN → REDIRIGIR
-          console.log(`👑 [AuthModal:onSubmit] Usuario admin detectado. Redirigiendo a /admin...`);
+          // Admin role -> Redirect to admin panel
           closeAuthModal();
           navigate('/admin');
         } else {
-          // 🦴 CLIENTE NORMAL → CERRAR MODAL EXPLÍCITAMENTE (el context ya lo hizo, pero doble seguro)
-          console.log(`✅ [AuthModal:onSubmit] Login exitoso para cliente '${result.user?.role}'. Cerrando modal.`);
+          // Standard customer -> Close modal
           closeAuthModal();
         }
       } else {
-        console.log(`📝 [AuthModal:onSubmit] Llamando register() para: ${data.email}`);
         const result = await register(data.name, data.email, data.password);
-        console.log(`📊 [AuthModal:onSubmit] Resultado de register():`, result);
 
         if (!result.success) {
           setAuthError(result.error || 'Error al registrar usuario');
         } else {
-          // 🦴 REGISTRO EXITOSO → CERRAR MODAL
-          console.log(`✅ [AuthModal:onSubmit] Registro exitoso. Cerrando modal.`);
+          // Registration successful -> Close modal
           closeAuthModal();
         }
       }
     } catch (error) {
-      // 🦴 ERROR INESPERADO → MOSTRAR MENSAJE
-      console.error(`💥 [AuthModal:onSubmit] Excepción inesperada en submit:`, error);
+      // Unexpected exception during authentication flow
+      console.error('Error in onSubmit:', error);
       setAuthError('Error inesperado en la autenticación. Intenta de nuevo.');
     } finally {
-      // 🦴 GRONK GARANTIZA: SPINNER SIEMPRE SE DETIENE. SIEMPRE. PASE LO QUE PASE.
-      console.log(`🏁 [AuthModal:onSubmit] Finally ejecutado → setIsSubmitting(false)`);
+      // Ensure submission state is reset
       setIsSubmitting(false);
     }
   };

@@ -80,7 +80,7 @@ export default function CategoryGrid() {
         if (fetchError) throw fetchError;
         setCategories(data || []);
       } catch (err) {
-        console.error('❌ [CategoryGrid] Error al cargar categorías:', err);
+        console.error('Error loading categories in CategoryGrid:', err);
         setError('No se pudieron cargar las categorías.');
       } finally {
         setLoading(false);

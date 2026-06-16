@@ -22,7 +22,6 @@ export default function CartDrawer() {
 
   // Proceder al pago (se permite a invitados y usuarios registrados)
   const handleOpenCheckout = () => {
-    console.log('✅ [CartDrawer:handleOpenCheckout] Abriendo checkout.');
     setIsCheckoutModalOpen(true);
   };
 

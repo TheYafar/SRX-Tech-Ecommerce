@@ -11,10 +11,9 @@ export default class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
-
   componentDidCatch(error, errorInfo) {
     // Mantener console.error para fallos críticos reales
-    console.error("💥 [ErrorBoundary] Error capturado en subárbol React:", error, errorInfo);
+    console.error("ErrorBoundary caught an error in React tree:", error, errorInfo);
   }
 
   handleRetry = () => {

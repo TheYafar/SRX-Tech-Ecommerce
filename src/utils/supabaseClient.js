@@ -19,7 +19,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
  */
 export async function uploadReceipt(file) {
   if (!file) {
-    console.log("ℹ️ [uploadReceipt] No se proporcionó ningún archivo para subir.");
+    console.warn('[uploadReceipt] No file provided for upload.');
     return null;
   }
 
@@ -29,8 +29,6 @@ export async function uploadReceipt(file) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `receipts/${fileName}`;
-
-    console.log(`🚀 [uploadReceipt] Iniciando subida de comprobante: ${file.name} (Ruta: ${filePath}) en bucket: ${bucketName}`);
 
     const uploadPromise = supabase.storage
       .from(bucketName)
@@ -43,12 +41,7 @@ export async function uploadReceipt(file) {
     const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
 
     if (uploadError) {
-      console.error('❌ [uploadReceipt] Error devuelto por Supabase al subir comprobante:', {
-        message: uploadError.message,
-        status: uploadError.status,
-        name: uploadError.name,
-        details: uploadError
-      });
+      console.error('Error from Supabase when uploading receipt:', uploadError);
       throw new Error(`Error de Supabase: ${uploadError.message || 'Fallo al subir el archivo al storage'}`);
     }
 
@@ -56,14 +49,9 @@ export async function uploadReceipt(file) {
       .from(bucketName)
       .getPublicUrl(filePath);
 
-    console.log('✅ [uploadReceipt] Subida exitosa. URL pública generada:', data.publicUrl);
     return data.publicUrl;
   } catch (error) {
-    console.error('💥 [uploadReceipt] Excepción inesperada atrapada al subir archivo:', {
-      message: error.message,
-      stack: error.stack,
-      error: error
-    });
+    console.error('Unexpected exception when uploading file:', error);
     throw new Error(error.message || 'Error inesperado al intentar subir el comprobante de pago.', { cause: error });
   }
 }
@@ -75,7 +63,7 @@ export async function uploadReceipt(file) {
  */
 export async function uploadProductImage(file) {
   if (!file) {
-    console.log("ℹ️ [uploadProductImage] No se proporcionó ninguna imagen para subir.");
+    console.warn('[uploadProductImage] No image provided for upload.');
     return null;
   }
 
@@ -84,19 +72,12 @@ export async function uploadProductImage(file) {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `products/${fileName}`;
 
-    console.log(`🚀 [uploadProductImage] Iniciando subida de imagen de producto: ${file.name} (Ruta: ${filePath})`);
-
     const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(filePath, file);
 
     if (uploadError) {
-      console.error('❌ [uploadProductImage] Error devuelto por Supabase al subir imagen de producto:', {
-        message: uploadError.message,
-        status: uploadError.status,
-        name: uploadError.name,
-        details: uploadError
-      });
+      console.error('Error from Supabase when uploading product image:', uploadError);
       return null;
     }
 
@@ -104,14 +85,9 @@ export async function uploadProductImage(file) {
       .from('products')
       .getPublicUrl(filePath);
 
-    console.log('✅ [uploadProductImage] Subida exitosa. URL pública generada:', data.publicUrl);
     return data.publicUrl;
   } catch (error) {
-    console.error('💥 [uploadProductImage] Excepción inesperada atrapada al subir archivo de producto:', {
-      message: error.message,
-      stack: error.stack,
-      error: error
-    });
+    console.error('Unexpected exception when uploading product image:', error);
     return null;
   }
 }

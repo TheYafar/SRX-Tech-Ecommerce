@@ -30,7 +30,7 @@ export default function AdminCoupons() {
       if (error) throw error;
       setCoupons(data || []);
     } catch (err) {
-      console.error('❌ [AdminCoupons:fetchCoupons] Error:', err);
+      console.error('Error fetching coupons in AdminCoupons:', err);
       showError('No se pudieron cargar los cupones.');
     } finally {
       setIsLoading(false);
@@ -91,7 +91,7 @@ export default function AdminCoupons() {
       // Refresh list
       await fetchCoupons();
     } catch (err) {
-      console.error('❌ [AdminCoupons:handleSubmit] Error:', err);
+      console.error('Error creating coupon in AdminCoupons:', err);
       showError(err.message || 'Error al crear el cupón.');
     } finally {
       setIsSubmitting(false);
@@ -118,7 +118,7 @@ export default function AdminCoupons() {
         prev.map(c => (c.id === coupon.id ? { ...c, is_active: nextState } : c))
       );
     } catch (err) {
-      console.error('❌ [AdminCoupons:handleToggleActive] Error:', err);
+      console.error('Error toggling coupon state in AdminCoupons:', err);
       showError('No se pudo actualizar el estado del cupón.');
     } finally {
       setActioningId(null);

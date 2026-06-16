@@ -61,7 +61,7 @@
 .hero-background-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   display: block;
 }
@@ -258,22 +258,22 @@
    BOTTOM CTA STRIP — Botón Pill Tagline + Acciones
    ========================================================================== */
 
-.hero-cta-strip {
+.bottom-controls-container {
   position: absolute;
-  z-index: 2;
   bottom: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   pointer-events: none;
 }
 
 /* Pill Tagline — "Captura la acción sin límites →" */
-.hero-cta-tagline {
-  position: absolute;
-  bottom: 30px; /* Lo baja por completo y lo deja flotando elegantemente al fondo */
-  left: 50%;
-  transform: translateX(-50%); /* Lo mantiene perfectamente centrado horizontalmente */
-  z-index: 20;
+.cta-button-pill {
+  margin-bottom: 10px;
   pointer-events: auto; /* Restaura interactividad */
 
   display: flex;
@@ -292,7 +292,7 @@
   transition: background 0.3s ease, transform 0.2s ease;
 }
 
-.hero-cta-tagline:hover {
+.cta-button-pill:hover {
   background: rgba(255, 255, 255, 0.16);
 }
 
@@ -367,15 +367,12 @@
    SLIDE INDICATORS — Dots de navegación
    ========================================================================== */
 
-.hero-slide-indicators {
-  position: absolute;
-  z-index: 3;
-  bottom: 1.2rem;
-  left: 50%;
-  transform: translateX(-50%);
+.pagination-dots {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  margin-bottom: 10px;
+  pointer-events: auto;
 }
 
 .hero-indicator {
@@ -462,10 +459,7 @@
     right: 1.5rem;
   }
 
-  /* CTA strip con padding reducido */
-  .hero-cta-strip {
-    padding: 0;
-  }
+  /* Ajuste de controles inferiores */
 
   /* Circles decorativos más pequeños */
   .circle-1 {
@@ -538,7 +532,7 @@
   .hero-background-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: 50% 50%; /* Centra el producto verticalmente en el área visible */
   }
 
@@ -599,25 +593,10 @@
      - margin-bottom: 24px para accesibilidad del pulgar
      - Padding compactado para pantallas pequeñas
      ---------------------------------------------------------- */
-  .hero-cta-strip {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 10;
-    pointer-events: none;
-  }
-
-  .hero-cta-tagline {
-    position: absolute;
-    bottom: 20px; /* Ajuste milimétrico para móviles */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
+  .cta-button-pill {
     font-size: 0.85rem; /* Ajusta sutilmente el texto si es muy largo */
     width: max-content;
     max-width: 90%;
-    pointer-events: auto;
   }
 
   /* ----------------------------------------------------------
@@ -650,10 +629,6 @@
   /* ----------------------------------------------------------
      3.9 Slide Indicators — Reposicionar para móvil
      ---------------------------------------------------------- */
-  .hero-slide-indicators {
-    bottom: 1.2rem;
-    top: auto;
-  }
 }
 
 
@@ -706,7 +681,7 @@
   /* ----------------------------------------------------------
      4.4 CTA Tagline — Texto más compacto
      ---------------------------------------------------------- */
-  .hero-cta-tagline {
+  .cta-button-pill {
     font-size: 0.76rem;
     padding: 0.35rem 0.8rem;
   }
@@ -740,12 +715,7 @@
     object-position: 50% 50%;
   }
 
-  .hero-cta-strip {
-    padding: 0;
-    margin: 0;
-  }
-
-  .hero-cta-tagline {
+  .cta-button-pill {
     font-size: 0.72rem;
     padding: 0.3rem 0.7rem;
   }
@@ -757,7 +727,7 @@
     min-height: 44px;
   }
 
-  .hero-slide-indicators {
+  .pagination-dots {
     gap: 0.35rem;
   }
 
@@ -786,3 +756,18 @@
   margin: 0 auto;
   display: block;
 }
+
+/* ==========================================================================
+   INTEGRACIÓN VISUAL SUPERIOR E INFERIOR — Hero Slider Container
+   ========================================================================== */
+
+.hero-slider-container {
+  /* Degradado que mezcla el fondo del slider suavemente con los extremos */
+  background: linear-gradient(to bottom, var(--navy, #1e225e) 0%, var(--navy-dark, #161944) 50%, var(--navy, #1e225e) 100%) !important;
+  width: 100%;
+  margin: 0;
+  padding: 40px 0; /* Da un colchón de aire simétrico arriba y abajo */
+  border: none !important;
+  box-shadow: none !important;
+}
+

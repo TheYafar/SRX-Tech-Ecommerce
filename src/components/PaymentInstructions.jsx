@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Lightbulb, Landmark } from 'lucide-react';
 import './PaymentInstructions.css';
 
 /**
@@ -9,8 +9,6 @@ import './PaymentInstructions.css';
  *  - paymentMethod    : 'binance' | 'pago-movil'
  *  - referenceNumber  : string
  *  - onReferenceChange: (value) => {}
- *
- * 🐒 Hecho por un mono senior con amor y bananas.
  */
 export default function PaymentInstructions({ paymentMethod }) {
   const [copiedField, setCopiedField] = useState(null);
@@ -40,7 +38,7 @@ export default function PaymentInstructions({ paymentMethod }) {
         aria-label={`Copiar ${fieldKey}`}
       >
         {isCopied ? <Check /> : <Copy />}
-        <span>{isCopied ? '¡Copiado! 🟢' : 'Copiar'}</span>
+        <span>{isCopied ? '¡Copiado!' : 'Copiar'}</span>
       </button>
     );
   };
@@ -75,7 +73,7 @@ export default function PaymentInstructions({ paymentMethod }) {
           </div>
 
           <div className="pi-note">
-            <span className="pi-note-icon">💡</span>
+            <span className="pi-note-icon"><Lightbulb size={16} /></span>
             <p className="pi-note-text">
               Introduce este correo en tu app de Binance y pega el
               <strong> ID de transacción</strong> generado en el campo de abajo.
@@ -108,7 +106,7 @@ export default function PaymentInstructions({ paymentMethod }) {
           </div>
 
           <div className="pi-note">
-            <span className="pi-note-icon">💡</span>
+            <span className="pi-note-icon"><Lightbulb size={16} /></span>
             <p className="pi-note-text">
               Realiza la transferencia e ingresa el número de referencia y comprobante (capture) abajo.
             </p>
@@ -121,7 +119,7 @@ export default function PaymentInstructions({ paymentMethod }) {
         <div className="pi-panel">
           {/* Banco Badge */}
           <div className="pi-bank-badge">
-            <span className="pi-bank-icon">🏦</span>
+            <span className="pi-bank-icon"><Landmark size={18} /></span>
             <span className="pi-bank-name">Banco Mercantil</span>
             <span className="pi-bank-code">(0105)</span>
           </div>

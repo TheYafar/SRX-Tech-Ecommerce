@@ -10,7 +10,7 @@ export default function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // ── Fetch órdenes reales desde Supabase con JOIN a profiles ──
+  // Load orders from Supabase with JOIN to profiles
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
@@ -21,12 +21,12 @@ export default function AdminOrders() {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('❌ [AdminOrders] Error cargando órdenes:', error);
+          console.error('[AdminOrders] Error loading orders:', error);
         } else {
           setOrders(data || []);
         }
       } catch (err) {
-        console.error('💥 [AdminOrders] Excepción al cargar órdenes:', err);
+        console.error('[AdminOrders] Exception loading orders:', err);
       } finally {
         setLoading(false);
       }
@@ -35,12 +35,12 @@ export default function AdminOrders() {
     fetchOrders();
   }, []);
 
-  // ── 👁️ Ver detalles de la orden (prepara futuro modal) ──
+  // View order details
   const handleViewOrder = (order) => {
-    console.log('👁️ [AdminOrders] Detalle completo de la orden:', order);
+    // Detail viewer placeholder
   };
 
-  // ── ✅ Aprobar orden → UPDATE status a 'paid' en Supabase ──
+  // Approve order -> UPDATE status to 'paid' in Supabase
   const handleApproveOrder = async (orderId) => {
     const confirmed = window.confirm('¿Estás seguro de que deseas APROBAR este pedido?');
     if (!confirmed) return;
@@ -52,41 +52,39 @@ export default function AdminOrders() {
         .eq('id', orderId);
 
       if (error) {
-        console.error('❌ [AdminOrders] Error al aprobar orden:', error);
+        console.error('[AdminOrders] Error approving order:', error);
         alert('Error al aprobar el pedido. Intenta de nuevo.');
         return;
       }
 
-      // Actualizar estado local sin recargar
+      // Update local state
       setOrders(prev =>
         prev.map(order =>
           order.id === orderId ? { ...order, status: 'paid' } : order
         )
       );
-      console.log(`✅ [AdminOrders] Orden ${orderId} aprobada exitosamente.`);
 
-      // ── 📧 Disparo de correo de pago verificado ──────────────
+      // Send payment verified email
       try {
         const orderData = orders.find(o => o.id === orderId);
         const correoCliente = orderData?.profiles?.email || orderData?.user_email;
         const nombreCliente = orderData?.profiles?.full_name || orderData?.user_name || 'Cliente';
 
         if (correoCliente) {
-          const res = await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
-          console.log('📧 [AdminOrders] Envío de correo de pago exitoso. ID:', res.id);
+          await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
         } else {
-          console.warn('⚠️ [AdminOrders] No se encontró email del cliente para notificación de pago.');
+          console.warn('[AdminOrders] Client email not found for payment notification.');
         }
       } catch (emailError) {
-        console.error('📧❌ [AdminOrders] Error al enviar correo de pago (no afecta la orden):', emailError);
+        console.error('[AdminOrders] Error sending payment email:', emailError);
       }
     } catch (err) {
-      console.error('💥 [AdminOrders] Excepción al aprobar orden:', err);
+      console.error('[AdminOrders] Exception approving order:', err);
       alert('Ocurrió un error inesperado al aprobar el pedido.');
     }
   };
 
-  // ── 📦 Marcar pedido como LISTO → UPDATE status a 'ready' en Supabase ──
+  // Mark order ready -> UPDATE status to 'ready' in Supabase
   const handleMarkReady = async (orderId) => {
     const confirmed = window.confirm('¿Confirmas que este pedido por encargo está LISTO para entrega?');
     if (!confirmed) return;
@@ -98,41 +96,39 @@ export default function AdminOrders() {
         .eq('id', orderId);
 
       if (error) {
-        console.error('❌ [AdminOrders] Error al marcar orden como lista:', error);
+        console.error('[AdminOrders] Error marking order as ready:', error);
         alert('Error al actualizar el pedido. Intenta de nuevo.');
         return;
       }
 
-      // Actualizar estado local sin recargar
+      // Update local state
       setOrders(prev =>
         prev.map(order =>
           order.id === orderId ? { ...order, status: 'ready' } : order
         )
       );
-      console.log(`📦 [AdminOrders] Orden ${orderId} marcada como lista exitosamente.`);
 
-      // ── 📧 Disparo de correo de pedido listo ──────────────
+      // Send order ready email
       try {
         const orderData = orders.find(o => o.id === orderId);
         const correoCliente = orderData?.profiles?.email || orderData?.user_email;
         const nombreCliente = orderData?.profiles?.full_name || orderData?.user_name || 'Cliente';
 
         if (correoCliente) {
-          const res = await enviarCorreoPedidoListo(correoCliente, nombreCliente, orderId);
-          console.log('📧 [AdminOrders] Envío de correo de pedido listo exitoso. ID:', res.id);
+          await enviarCorreoPedidoListo(correoCliente, nombreCliente, orderId);
         } else {
-          console.warn('⚠️ [AdminOrders] No se encontró email del cliente para notificación de pedido listo.');
+          console.warn('[AdminOrders] Client email not found for order ready notification.');
         }
       } catch (emailError) {
-        console.error('📧❌ [AdminOrders] Error al enviar correo de pedido listo (no afecta la orden):', emailError);
+        console.error('[AdminOrders] Error sending order ready email:', emailError);
       }
     } catch (err) {
-      console.error('💥 [AdminOrders] Excepción al marcar orden como lista:', err);
+      console.error('[AdminOrders] Exception marking order as ready:', err);
       alert('Ocurrió un error inesperado al actualizar el pedido.');
     }
   };
 
-  // ── ❌ Rechazar orden → UPDATE status a 'cancelled' en Supabase ──
+  // Reject order -> UPDATE status to 'cancelled' in Supabase
   const handleRejectOrder = async (orderId) => {
     const confirmed = window.confirm('¿Estás seguro de que deseas RECHAZAR este pedido? Esta acción no se puede deshacer.');
     if (!confirmed) return;
@@ -144,20 +140,19 @@ export default function AdminOrders() {
         .eq('id', orderId);
 
       if (error) {
-        console.error('❌ [AdminOrders] Error al rechazar orden:', error);
+        console.error('[AdminOrders] Error rejecting order:', error);
         alert('Error al rechazar el pedido. Intenta de nuevo.');
         return;
       }
 
-      // Actualizar estado local sin recargar
+      // Update local state
       setOrders(prev =>
         prev.map(order =>
           order.id === orderId ? { ...order, status: 'cancelled' } : order
         )
       );
-      console.log(`🚫 [AdminOrders] Orden ${orderId} rechazada exitosamente.`);
     } catch (err) {
-      console.error('💥 [AdminOrders] Excepción al rechazar orden:', err);
+      console.error('[AdminOrders] Exception rejecting order:', err);
       alert('Ocurrió un error inesperado al rechazar el pedido.');
     }
   };

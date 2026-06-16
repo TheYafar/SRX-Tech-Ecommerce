@@ -115,7 +115,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
       setCouponError('');
       setCouponSuccess('');
       const cleanCode = couponCode.trim().toUpperCase();
-      console.log(`🔍 [CheckoutModal:validateCoupon] Consultando cupón: ${cleanCode}`);
 
       const { data, error } = await supabase
         .from('coupons')
@@ -149,7 +148,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
       setCouponSuccess(`¡Cupón del ${percent}% aplicado!`);
       setCouponError('');
     } catch (err) {
-      console.error('💥 [CheckoutModal:validateCoupon] Error al validar cupón:', err);
+      console.error('Error validating coupon:', err);
       setCouponError('Error al validar cupón');
       setAppliedDiscount(0);
     }
@@ -157,28 +156,18 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const processCheckout = async () => {
     setIsSubmitting(true);
-    console.log("🛒 [CheckoutModal:processCheckout] Iniciando procesamiento de pedido...", {
-      paymentMethod,
-      total: finalTotal,
-      userEmail: user?.email || formData.email,
-      hasReceipt: !!formData.receiptFile
-    });
-
     let uploadedReceiptUrl = null;
 
     try {
       // Paso 1: Subir el comprobante a Supabase Storage
       if (formData.receiptFile) {
-        console.log('🚀 [CheckoutModal:processCheckout] Subiendo comprobante a Supabase Storage...', formData.receiptFile);
         uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
         if (!uploadedReceiptUrl) {
           throw new Error('No se pudo subir la imagen del comprobante o no se generó una dirección pública.');
         }
-        console.log('✅ [CheckoutModal:processCheckout] Comprobante subido exitosamente. URL:', uploadedReceiptUrl);
       }
 
       // Paso 2: Insertar en orders
-      console.log('📦 [CheckoutModal:processCheckout] Creando orden en tabla orders...');
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([{
@@ -195,14 +184,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
       if (orderError) throw new Error(`Fallo al crear la orden: ${orderError.message}`);
       
       const newOrderId = orderData.id;
-      console.log(`✅ [CheckoutModal:processCheckout] Orden creada con ID: ${newOrderId}`);
 
       // Paso 3: Insertar en order_items
       if (cartItems && cartItems.length > 0) {
-        console.log('🛍️ [CheckoutModal:processCheckout] Insertando items de la orden...');
         const orderItemsToInsert = cartItems.map(item => {
-          // 1. Mapeo estricto: Obtener el UUID real (priorizamos product_id, luego id)
-          // Verificamos que sea un UUID válido y no un slug.
           const isUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
           
           let realProductId = null;
@@ -214,7 +199,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
             throw new Error('Producto sin ID detectado');
           }
 
-          // 3. Limpieza: Solo enviamos las columnas que existen en la tabla order_items
           return {
             order_id: newOrderId,
             product_id: realProductId,
@@ -223,21 +207,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
           };
         });
 
-        // 2. Debug de seguridad: Imprimir datos antes del insert
-        console.log('Datos a insertar:', orderItemsToInsert);
-
         const { error: itemsError } = await supabase
           .from('order_items')
           .insert(orderItemsToInsert);
 
         if (itemsError) throw new Error(`Fallo al insertar los productos de la orden: ${itemsError.message}`);
-        console.log('✅ [CheckoutModal:processCheckout] Items de la orden insertados correctamente.');
       }
 
       // Paso 4: Insertar en payments
-      console.log(`✍️ [CheckoutModal:processCheckout] Insertando registro en tabla payments...`);
-      
-      // Intentar obtener payment_method_id por nombre, si no, se va como null y se asume fallback
       let defaultPaymentMethodId = null;
       try {
         const { data: pmData } = await supabase
@@ -247,14 +224,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
           .maybeSingle();
         if (pmData) defaultPaymentMethodId = pmData.id;
       } catch (e) {
-        console.warn('⚠️ No se pudo obtener un payment_method_id.', e);
+        console.warn('Could not retrieve payment_method_id:', e);
       }
 
       const { error: paymentError } = await supabase
         .from('payments')
         .insert([{
           order_id: newOrderId,
-          payment_method_id: defaultPaymentMethodId, // En el esquema debe estar o null funciona si no lo requieren forzoso
+          payment_method_id: defaultPaymentMethodId,
           amount_paid: finalTotal,
           currency: 'USD',
           reference_number: formData.referenceNumber || 'N/A',
@@ -264,8 +241,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
       if (paymentError) throw new Error(`Fallo al registrar el pago: ${paymentError.message}`);
 
-      console.log('✅ [CheckoutModal:processCheckout] Pago registrado exitosamente en la base de datos.');
-
       // 5. Guardar datos ANTES de limpiar carrito (para la pantalla de éxito)
       const totalToSave = finalTotal;
       const refCode = newOrderId.slice(-6).toUpperCase();
@@ -274,7 +249,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
       setIsSuccess(true);
       clearCart();
     } catch (err) {
-      console.error('💥 [CheckoutModal:processCheckout] Excepción en el flujo de checkout:', err);
+      console.error('Error in processCheckout:', err);
       alert(`Fallo en el proceso de compra: ${err.message || err}`);
     } finally {
       setIsSubmitting(false);
@@ -283,7 +258,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🖱️ [CheckoutModal:handleSubmit] Checkout iniciado por envío de formulario.");
     await processCheckout();
   };
 

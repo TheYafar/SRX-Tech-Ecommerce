@@ -19,7 +19,6 @@ export const ProductProvider = ({ children }) => {
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('🔍 [ProductContext] Consultando productos en Supabase...');
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -39,10 +38,9 @@ export const ProductProvider = ({ children }) => {
         isBestSeller: p.is_best_seller || false
       }));
 
-      console.log(`✅ [ProductContext] Productos cargados y mapeados: ${mappedData.length}`);
       setProducts(mappedData);
     } catch (error) {
-      console.error('❌ [ProductContext] Error cargando productos:', error);
+      console.error('Error loading products from Supabase:', error);
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +54,7 @@ export const ProductProvider = ({ children }) => {
   }, [fetchProducts]);
 
   const addProductToState = (newProduct) => {
-    // 🦴 GRONK ACTUALIZAR ESTADO LOCAL DIRECTAMENTE
+    // Update local state directly with newly created product
     setProducts((prev) => [newProduct, ...prev]);
   };
 

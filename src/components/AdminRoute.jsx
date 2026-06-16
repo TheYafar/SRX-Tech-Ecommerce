@@ -8,14 +8,14 @@ export default function AdminRoute({ children }) {
   const { showError } = useNotifications();
   const navigate = useNavigate();
 
-  // 🦴 GRONK USE REF! Once user is admin, no fire error on re-renders!
-  // This ref tracks if the user already passed the admin gate.
-  // It prevents the "Acceso denegado" ghost toast that fires after
-  // ProductContext/AuthContext re-renders triggered by addProductToState().
+  // Tracks if the user already passed the admin gate in the current session.
+  // This prevents the "Acceso denegado" toast that could fire after
+  // transient re-renders triggered by state/context updates.
   const wasGrantedAdminAccess = useRef(false);
 
   useEffect(() => {
-    // 🦴 GRONK SAFETY: If user was already validated as admin in this session,
+    // Safety check: If user was already validated as admin, do not trigger
+    // error toasts on transient re-renders.
     // do NOT fire the error toast on transient re-renders (e.g., after product insert).
     if (wasGrantedAdminAccess.current) return;
 
