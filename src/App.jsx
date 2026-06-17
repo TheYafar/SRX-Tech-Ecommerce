@@ -35,10 +35,13 @@ export default function App() {
                       <Route path="*" element={<NotFound />} />
                     </Route>
                     <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                      <Route index element={<AdminDashboard />} />
+                      <Route index element={<AdminDashboard activeSection="addProduct" />} />
                       <Route path="orders" element={<AdminOrders />} />
                       <Route path="products" element={<AdminProducts />} />
                       <Route path="coupons" element={<AdminCoupons />} />
+                      <Route path="payments" element={<AdminDashboard activeSection="payments" />} />
+                      <Route path="categories" element={<AdminDashboard activeSection="categories" />} />
+                      <Route path="banners" element={<AdminDashboard activeSection="banners" />} />
                     </Route>
                   </Routes>
                 </HashRouter>

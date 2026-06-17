@@ -261,6 +261,17 @@
   text-align: center;
 }
 
+.file-upload-tip {
+  display: block;
+  font-size: 0.775rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+  text-align: center;
+  max-width: 480px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
 /* ── Submit button ── */
 .admin-submit-btn {
   display: flex;

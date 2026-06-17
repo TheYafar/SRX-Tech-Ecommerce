@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
-import { Ticket, Percent, Calendar, Loader2, Power, AlertTriangle } from 'lucide-react';
+import { Ticket, Percent, Calendar, Loader2, Power, AlertTriangle, Mail, Send, Rocket } from 'lucide-react';
+import { getAllUserEmails, dispatchMassCampaign } from '../../services/couponService';
 import './AdminCoupons.css';
 
 export default function AdminCoupons() {
@@ -12,6 +13,11 @@ export default function AdminCoupons() {
   const [discountPercent, setDiscountPercent] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Automation / Email states
+  const [sendEmail, setSendEmail] = useState(false);
+  const [isMassEmail, setIsMassEmail] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState('');
 
   // List states
   const [coupons, setCoupons] = useState([]);
@@ -41,7 +47,7 @@ export default function AdminCoupons() {
     fetchCoupons();
   }, []);
 
-  // Form submit (create coupon)
+  // Form submit (create coupon & send emails if activated)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -58,10 +64,16 @@ export default function AdminCoupons() {
       return;
     }
 
+    if (sendEmail && !isMassEmail && (!customerEmail || !customerEmail.trim())) {
+      showError('Por favor introduce el correo electrónico del cliente.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const expiresIso = expiresAt ? new Date(expiresAt + 'T23:59:59').toISOString() : null;
 
+      // 1. Insert in database
       const { data, error } = await supabase
         .from('coupons')
         .insert([
@@ -81,18 +93,44 @@ export default function AdminCoupons() {
         throw error;
       }
 
-      showSuccess(`Cupón "${cleanCode}" creado exitosamente.`);
+      // 2. Send emails if option is active
+      if (sendEmail) {
+        let emailsList = [];
+        if (isMassEmail) {
+          emailsList = await getAllUserEmails();
+          if (emailsList.length === 0) {
+            throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
+          }
+        } else {
+          emailsList = [customerEmail.trim()];
+        }
+
+        await dispatchMassCampaign(cleanCode, percent, emailsList);
+      }
+
+      // 3. Show success notifications
+      if (sendEmail) {
+        showSuccess(isMassEmail
+          ? `Cupón "${cleanCode}" registrado y campaña masiva enviada a todos los usuarios.`
+          : `Cupón "${cleanCode}" registrado y enviado a ${customerEmail.trim()}.`
+        );
+      } else {
+        showSuccess(`Cupón "${cleanCode}" creado exitosamente.`);
+      }
       
       // Reset form
       setCode('');
       setDiscountPercent('');
       setExpiresAt('');
+      setSendEmail(false);
+      setIsMassEmail(false);
+      setCustomerEmail('');
 
       // Refresh list
       await fetchCoupons();
     } catch (err) {
-      console.error('Error creating coupon in AdminCoupons:', err);
-      showError(err.message || 'Error al crear el cupón.');
+      console.error('Error creating/sending coupon in AdminCoupons:', err);
+      showError(err.message || 'Error al procesar el cupón.');
     } finally {
       setIsSubmitting(false);
     }
@@ -152,6 +190,7 @@ export default function AdminCoupons() {
 
       {/* ── Formulario de Alta (Crear Cupones) ── */}
       <section className="admin-coupons-form-section">
+        <h2 className="section-title">Gestión y Emisión de Cupones</h2>
         <form onSubmit={handleSubmit} className="admin-coupons-form">
           <div className="form-grid">
             <div className="form-group">
@@ -201,16 +240,94 @@ export default function AdminCoupons() {
             </div>
           </div>
 
+          {/* Interruptor de Automatización */}
+          <div className="automation-switch-group">
+            <div className="switch-container">
+              <label className="switch-label">
+                <input
+                  type="checkbox"
+                  className="switch-input"
+                  checked={sendEmail}
+                  onChange={(e) => {
+                    setSendEmail(e.target.checked);
+                    if (!e.target.checked) {
+                      setIsMassEmail(false);
+                      setCustomerEmail('');
+                    }
+                  }}
+                />
+                <div className="switch-track">
+                  <div className="switch-thumb" />
+                </div>
+                <span className="switch-label-text">¿Deseas enviar este cupón por correo electrónico?</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Campos Condicionales con Despliegue Suave */}
+          <div className={`conditional-fields ${sendEmail ? 'expanded' : ''}`}>
+            {sendEmail && (
+              <div className="conditional-fields-content animate-slide-down">
+                {/* Switch de campaña masiva */}
+                <div className="form-group mass-email-switch-group">
+                  <div className="switch-container">
+                    <label className="switch-label">
+                      <input
+                        type="checkbox"
+                        className="switch-input"
+                        checked={isMassEmail}
+                        onChange={(e) => {
+                          setIsMassEmail(e.target.checked);
+                          if (e.target.checked) {
+                            setCustomerEmail('');
+                          }
+                        }}
+                      />
+                      <div className="switch-track">
+                        <div className="switch-thumb" />
+                      </div>
+                      <span className="switch-label-text">¿Enviar campaña masiva a todos los usuarios?</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Input de correo cliente (se oculta automáticamente si es masivo) */}
+                {!isMassEmail && (
+                  <div className="form-group email-input-group">
+                    <label htmlFor="customer-email">Correo Electrónico del Cliente</label>
+                    <div className="input-icon-wrapper">
+                      <Mail className="input-icon" size={18} />
+                      <input
+                        id="customer-email"
+                        type="email"
+                        placeholder="cliente@ejemplo.com"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        required={sendEmail && !isMassEmail}
+                        className="coupon-text-input-email"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="form-submit-row">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="generate-coupon-btn"
+              className={`generate-coupon-btn ${sendEmail ? 'btn-send-email' : ''}`}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="spin" size={18} />
                   <span>Procesando...</span>
+                </>
+              ) : sendEmail ? (
+                <>
+                  <Rocket size={18} />
+                  <span>Generar y Enviar Cupón</span>
                 </>
               ) : (
                 <>

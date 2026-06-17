@@ -8,13 +8,17 @@ import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import { useProducts } from '../../context/ProductContext';
 import { enviarCorreoPagoVerificado } from '../../services/emailService';
-import { getAllUserEmails, createNewCouponInDB, dispatchMassCampaign } from '../../services/couponService';
+
 import './AdminDashboard.css';
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const { showSuccess, showError } = useNotifications();
   const { addProductToState } = useProducts();
-  const [activeTab, setActiveTab] = useState('addProduct'); // 'addProduct' | 'payments' | 'categories'
+  const [activeTab, setActiveTab] = useState(activeSection);
+
+  useEffect(() => {
+    setActiveTab(activeSection);
+  }, [activeSection]);
 
   // ── States for Add Product ──────────────────────────────
   const [productData, setProductData] = useState({
@@ -41,21 +45,21 @@ export default function AdminDashboard() {
   const [editingCategoryGroup, setEditingCategoryGroup] = useState('por-producto'); // grupo activo en edición
   const [rootCategoryIds, setRootCategoryIds] = useState({ porProducto: null, paraTuEquipo: null });
 
-  // ── States for Coupon Incentive ────────────────────────
-  const [incentiveData, setIncentiveData] = useState({
-    email: '',
-    code: '',
-    discount: '10'
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isMassEmail, setIsMassEmail] = useState(false);
 
-  const handleMassEmailToggle = (checked) => {
-    setIsMassEmail(checked);
-    if (checked) {
-      setIncentiveData(prev => ({ ...prev, email: '' }));
-    }
-  };
+
+  // ── States for Banners ─────────────────────────────────
+  const [bannerData, setBannerData] = useState({
+    title: '',
+    subtitle: '',
+    link_url: '/tienda',
+    order_index: 0
+  });
+  const [bannerImage, setBannerImage] = useState(null);
+  const [isSubmittingBanner, setIsSubmittingBanner] = useState(false);
+  const [existingBanners, setExistingBanners] = useState([]);
+  const [isLoadingBanners, setIsLoadingBanners] = useState(false);
+
+
 
   // ── Fetch categories for Add Product dropdown ───────────
   useEffect(() => {
@@ -137,6 +141,29 @@ export default function AdminDashboard() {
     }
     return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, [activeTab, fetchPendingPayments]);
+
+  const fetchBanners = useCallback(async () => {
+    setIsLoadingBanners(true);
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      setExistingBanners(data || []);
+    } catch (err) {
+      console.error('Error al cargar banners:', err);
+      showError('No se pudieron cargar los banners.');
+    } finally {
+      setIsLoadingBanners(false);
+    }
+  }, [showError]);
+
+  useEffect(() => {
+    if (activeTab === 'banners') {
+      fetchBanners();
+    }
+  }, [activeTab, fetchBanners]);
 
   // ── Product handlers ────────────────────────────────────
   const handleProductInputChange = (e) => {
@@ -395,58 +422,110 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Coupon Incentive handler ────────────────────────────
-  const handleSendIncentive = async (e) => {
-    e.preventDefault();
-    const { email, code, discount } = incentiveData;
-    
-    if (!isMassEmail && !email) {
-      showError('Por favor introduce el correo electrónico del cliente.');
-      return;
-    }
-    if (!code || !discount) {
-      showError('Por favor completa todos los campos para enviar el incentivo.');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-      const cleanCode = code.trim().toUpperCase();
-      const percent = parseInt(discount, 10) || 10;
-      
-      // Registrar el cupón usando el servicio desacoplado
-      await createNewCouponInDB(cleanCode, percent);
 
-      // Obtener la lista de correos destino
-      let listaUsuarios = [];
-      if (isMassEmail) {
-        listaUsuarios = await getAllUserEmails();
-        if (listaUsuarios.length === 0) {
-          throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
-        }
-      } else {
-        if (!email || !email.trim()) {
-          throw new Error('El correo electrónico no puede estar vacío.');
-        }
-        listaUsuarios = [email.trim()];
+  // ── Banner Management handlers ──────────────────────────
+  const handleBannerInputChange = (e) => {
+    const { name, value } = e.target;
+    setBannerData(prev => ({
+      ...prev,
+      [name]: name === 'order_index' ? parseInt(value) || 0 : value
+    }));
+  };
+
+  const handleBannerImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setBannerImage(e.target.files[0]);
+    }
+  };
+
+  const handleAddBanner = async (e) => {
+    e.preventDefault();
+    if (!bannerImage) {
+      showError('Por favor selecciona una imagen para el banner.');
+      return;
+    }
+
+    setIsSubmittingBanner(true);
+    try {
+      const fileExt = bannerImage.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `banners/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('hero-banners')
+        .upload(filePath, bannerImage);
+
+      if (uploadError) {
+        throw new Error(`Error al subir la imagen al Storage: ${uploadError.message}`);
       }
 
-      // Enviar campaña usando la Edge Function mediante el servicio
-      await dispatchMassCampaign(cleanCode, percent, listaUsuarios);
+      const { data: publicUrlData } = supabase.storage
+        .from('hero-banners')
+        .getPublicUrl(filePath);
 
-      showSuccess(isMassEmail 
-        ? `¡Campaña masiva enviada con éxito a ${listaUsuarios.length} usuarios!` 
-        : `¡Incentivo de compra enviado con éxito a ${email.trim()}!`
-      );
+      const publicUrl = publicUrlData?.publicUrl;
+      if (!publicUrl) {
+        throw new Error('No se pudo recuperar la URL pública del banner.');
+      }
 
-      // Limpiar campos del formulario
-      setIncentiveData({ email: '', code: '', discount: '10' });
-      setIsMassEmail(false);
-    } catch (error) {
-      console.error('[AdminDashboard:handleSendIncentive] Error:', error);
-      showError(`Error al emitir incentivo: ${error.message || error}`);
+      const { error: insertError } = await supabase
+        .from('banners')
+        .insert([{
+          title: bannerData.title,
+          subtitle: bannerData.subtitle,
+          image_url: publicUrl,
+          link_url: bannerData.link_url || '/tienda',
+          order_index: bannerData.order_index
+        }]);
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      showSuccess('¡Banner añadido exitosamente, uhhh uhhh!');
+      
+      setBannerData({
+        title: '',
+        subtitle: '',
+        link_url: '/tienda',
+        order_index: 0
+      });
+      setBannerImage(null);
+      if (e.target) e.target.reset();
+
+      fetchBanners();
+    } catch (err) {
+      console.error('[AdminDashboard] Error al crear banner:', err);
+      showError(`Error al crear el banner: ${err.message || err}`);
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingBanner(false);
+    }
+  };
+
+  const handleDeleteBanner = async (banner) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este banner, uhhh ahhh?')) return;
+    try {
+      try {
+        const urlParts = banner.image_url.split('/storage/v1/object/public/hero-banners/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage.from('hero-banners').remove([filePath]);
+        }
+      } catch (err) {
+        console.warn('No se pudo borrar el archivo del storage (quizás ya no existe):', err);
+      }
+
+      const { error } = await supabase
+        .from('banners')
+        .delete()
+        .eq('id', banner.id);
+
+      if (error) throw error;
+      showSuccess('Banner eliminado correctamente, u u a a.');
+      fetchBanners();
+    } catch (err) {
+      console.error('Error al eliminar banner:', err);
+      showError('No se pudo eliminar el banner.');
     }
   };
 
@@ -458,37 +537,7 @@ export default function AdminDashboard() {
         <p className="admin-panel-subtitle">Gestión centralizada de operaciones</p>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="admin-tabs">
-        <button
-          className={`admin-tab-btn ${activeTab === 'addProduct' ? 'active' : ''}`}
-          onClick={() => setActiveTab('addProduct')}
-        >
-          <PackagePlus size={18} />
-          <span>Añadir Producto</span>
-        </button>
-        <button
-          className={`admin-tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('payments')}
-        >
-          <DollarSign size={18} />
-          <span>Verificación de Pagos</span>
-        </button>
-        <button
-          className={`admin-tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
-          onClick={() => setActiveTab('categories')}
-        >
-          <Layers size={18} />
-          <span>Gestionar Categorías</span>
-        </button>
-        <button
-          className={`admin-tab-btn ${activeTab === 'coupons' ? 'active' : ''}`}
-          onClick={() => setActiveTab('coupons')}
-        >
-          <Sparkles size={18} />
-          <span>Incentivos (Cupones)</span>
-        </button>
-      </div>
+
 
       <div className="admin-dashboard-content">
 
@@ -825,99 +874,105 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ══ TAB: Coupons (Incentives) ════════════════════ */}
-        {activeTab === 'coupons' && (
+
+
+        {/* ══ TAB: Banners ══════════════════════════════════ */}
+        {activeTab === 'banners' && (
           <div className="admin-section">
-            <h2 className="admin-section-title">Emitir Incentivo de Compra (Cupón)</h2>
-            <p className="admin-section-subtitle" style={{ color: '#64748b', marginBottom: '1.5rem' }}>
-              Registra un cupón de descuento en Supabase y envíalo automáticamente al correo electrónico del cliente a través de Resend.
-            </p>
-            
-            <form className="admin-form" onSubmit={handleSendIncentive}>
-              {/* Selector masivo */}
+            <h2 className="admin-section-title">Gestión de Banners (Hero)</h2>
+            <form className="admin-form" onSubmit={handleAddBanner}>
               <div className="form-group">
-                <div className="switch-container">
-                  <label className="switch-label">
-                    <input
-                      type="checkbox"
-                      className="switch-input"
-                      checked={isMassEmail}
-                      onChange={e => handleMassEmailToggle(e.target.checked)}
-                    />
-                    <div className="switch-track">
-                      <div className="switch-thumb" />
-                    </div>
-                    <span className="switch-label-text">¿Enviar campaña masiva a todos los usuarios?</span>
+                <label>Título del Banner</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={bannerData.title}
+                  onChange={handleBannerInputChange}
+                  placeholder="Ej: DJI Osmo Pocket 3"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Subtítulo / Descripción</label>
+                <input
+                  type="text"
+                  name="subtitle"
+                  value={bannerData.subtitle}
+                  onChange={handleBannerInputChange}
+                  placeholder="Ej: Captura tus mejores momentos"
+                  required
+                />
+              </div>
+
+
+
+              <div className="form-group">
+                <label>Imagen del Banner</label>
+                <div className="file-upload-wrapper">
+                  <input
+                    type="file"
+                    id="bannerImage"
+                    accept="image/*"
+                    onChange={handleBannerImageChange}
+                    className="file-input-hidden"
+                  />
+                  <label htmlFor="bannerImage" className="file-upload-box">
+                    <UploadCloud size={32} className="upload-icon" />
+                    <span className="upload-text">
+                      {bannerImage ? bannerImage.name : 'Haz clic para seleccionar imagen del banner'}
+                    </span>
+                    <span className="file-upload-tip">
+                      Nota: Para un mejor rendimiento y carga rápida de la página, se recomienda subir la imagen en formatos ligeros y optimizados como .webp o .jpg
+                    </span>
                   </label>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Correo Electrónico del Cliente</label>
-                <div className="input-with-icon" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '1rem', color: '#64748b' }} />
-                  <input
-                    type="email"
-                    value={incentiveData.email}
-                    onChange={e => setIncentiveData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder={isMassEmail ? "Campaña masiva activa (correo individual deshabilitado)" : "cliente@ejemplo.com"}
-                    required={!isMassEmail}
-                    disabled={isMassEmail}
-                    style={{ paddingLeft: '2.8rem', width: '100%' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Código del Cupón</label>
-                  <input
-                    type="text"
-                    value={incentiveData.code}
-                    onChange={e => setIncentiveData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                    placeholder="Ej: INCENTIVO15"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Porcentaje de Descuento (%)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={incentiveData.discount}
-                    onChange={e => setIncentiveData(prev => ({ ...prev, discount: e.target.value }))}
-                    placeholder="Ej: 15"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                className="admin-submit-btn" 
-                disabled={isSubmitting} 
-                style={{ marginTop: '1rem', opacity: isSubmitting ? 0.7 : 1 }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 size={18} className="spin" />
-                    <span>{isMassEmail ? 'Enviando campaña masiva...' : 'Enviando cupón...'}</span>
-                  </>
+              <button type="submit" className="admin-submit-btn" disabled={isSubmittingBanner}>
+                {isSubmittingBanner ? (
+                  <><Loader2 size={18} className="spin" /> Subiendo y guardando banner...</>
                 ) : (
-                  <>
-                    {isMassEmail ? (
-                      <span>Emitir y Enviar Campaña Masiva</span>
-                    ) : (
-                      <>
-                        <Sparkles size={18} />
-                        <span>Emitir y Enviar Cupón</span>
-                      </>
-                    )}
-                  </>
+                  <><ImageIcon size={18} /> Guardar Banner</>
                 )}
               </button>
             </form>
+
+            {/* Listado de Banners Existentes */}
+            <div className="existing-banners-section" style={{ marginTop: '3rem' }}>
+              <h3 className="admin-section-title" style={{ fontSize: '1.25rem' }}>Banners Actuales</h3>
+              {isLoadingBanners ? (
+                <div className="admin-loading-state">
+                  <Loader2 size={32} className="spin" />
+                  <p>Cargando banners...</p>
+                </div>
+              ) : existingBanners.length === 0 ? (
+                <p style={{ color: '#64748b', fontSize: '0.95rem' }}>No hay banners configurados en la base de datos.</p>
+              ) : (
+                <div className="banners-list-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginTop: '1rem' }}>
+                  {existingBanners.map(banner => (
+                    <div key={banner.id} className="banner-admin-card" style={{ background: 'var(--card-bg, #1e293b)', borderRadius: '12px', border: '1px solid var(--border-color, #334155)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
+                      <img src={banner.image_url} alt={banner.title} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div>
+                        <h4 style={{ fontWeight: '600', fontSize: '1rem', color: 'var(--text-primary, #f8fafc)' }}>{banner.title}</h4>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)', margin: '0.25rem 0' }}>{banner.subtitle}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
+                          <span>Enlace: {banner.link_url}</span>
+                          <span>Orden: {banner.order_index}</span>
+                        </div>
+                      </div>
+                      <button
+                        className="btn-reject"
+                        onClick={() => handleDeleteBanner(banner)}
+                        style={{ marginTop: '0.5rem', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', borderRadius: '6px' }}
+                      >
+                        <XCircle size={16} /> Eliminar Banner
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

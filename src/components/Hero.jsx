@@ -2,44 +2,52 @@ import { useState, useEffect } from 'react';
 import { products } from '../data/products';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../utils/supabaseClient';
 import './Hero.css';
 
-/* =============================================
-   SLIDES — Metadatos del Hero Slider
-   Estructura limpia con rutas desktop + mobile
-   ============================================= */
-const slides = [
-  {
-    id: 1,
-    productId: 'dji-mic-mini',
-    title: "DJI Mic Mini",
-    subtitle: "Audio ultra-compacto, sonido profesional",
-    bgDesktop: "/SRX-Tech-Ecommerce/imagenes/dji mic mini banner srx tech (2).webp",
-    bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile3.jpg",
-    rating: 4.9
-  },
-  {
-    id: 2,
-    productId: 'dji-osmo-action-4',
-    title: "DJI Osmo Action 4",
-    subtitle: "Captura la acción sin límites",
-    bgDesktop: "/SRX-Tech-Ecommerce/imagenes/Osmo Action 4 SRX Tech banner (2).webp",
-    bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile2.jpg",
-    rating: 4.8
-  },
-  {
-    id: 3,
-    productId: 'dji-osmo-pocket-3',
-    title: "DJI Osmo Pocket 3",
-    subtitle: "La cámara más versátil para creadores de la imagen",
-    bgDesktop: "/SRX-Tech-Ecommerce/imagenes/osmo pocket 3 banner srx tech (1).webp",
-    bgMobile: "/SRX-Tech-Ecommerce/imagenes/mobile1.jpg",
-    rating: 5.0
-  }
-];
-
 export default function Hero() {
+  const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Fetch banners on mount
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('banners')
+          .select('*')
+          .order('order_index', { ascending: true });
+        if (error) throw error;
+        setSlides(data || []);
+      } catch (err) {
+        console.error('Error al cargar banners en el Hero:', err);
+      }
+    };
+    fetchBanners();
+  }, []);
+
+  /* Auto-advance slides every 5 seconds */
+  useEffect(() => {
+    if (slides.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  if (slides.length === 0) {
+    return (
+      <section className="hero-wrapper hero-section hero-slider-container">
+        <div className="hero-background-wrapper">
+          <div className="hero-bg-overlay" />
+        </div>
+        <div className="hero-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <p style={{ color: '#ffffff', fontSize: '1.1rem' }}>Cargando ofertas, u u a a...</p>
+        </div>
+      </section>
+    );
+  }
 
   const slide = slides[currentSlide];
 
@@ -51,16 +59,6 @@ export default function Hero() {
     tagline: slide.subtitle,
     name: slide.title
   };
-
-  /* Auto-advance slides every 5 seconds */
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-
 
   /* === Framer Motion Variants === */
   const badgeVariants = {
@@ -81,8 +79,6 @@ export default function Hero() {
     }
   };
 
-
-
   return (
     <section className="hero-wrapper hero-section hero-slider-container">
       {/* === Background Image — <picture> responsivo === */}
@@ -97,11 +93,8 @@ export default function Hero() {
             transition={{ duration: 0.8, ease: 'easeInOut' }}
           >
             <picture>
-              {/* En pantallas ≤ 768px carga la variante móvil vertical */}
-              <source media="(max-width: 768px)" srcSet={slide.bgMobile} />
-              {/* Por defecto (desktop), carga la imagen horizontal */}
               <img
-                src={slide.bgDesktop}
+                src={slide.image_url}
                 alt={slide.title}
                 className="hero-background-img"
               />
@@ -115,8 +108,6 @@ export default function Hero() {
       {/* === Hero Content Layer — z-index: 2 sobre la imagen === */}
       <div className="hero-content">
         {/* === Floating Badges === */}
-
-
         <motion.div
           className="hero-badge rating-badge"
           custom={1.1}
@@ -131,25 +122,47 @@ export default function Hero() {
         </motion.div>
 
         {/* === Real HTML Text Layer (Accessibility + UX) === */}
-
+        <div className="hero-text-layer">
+          <motion.h1
+            className="hero-headline"
+            variants={textVariants}
+            initial="hidden"
+            animate="visible"
+            key={`title-${slide.id}`}
+          >
+            {slide.title}
+          </motion.h1>
+          <motion.p
+            className="hero-subheadline"
+            variants={textVariants}
+            initial="hidden"
+            animate="visible"
+            key={`subtitle-${slide.id}`}
+          >
+            {slide.subtitle}
+          </motion.p>
+        </div>
 
         {/* === Bottom Controls Container === */}
         <div className="bottom-controls-container">
           {/* === Bottom Tagline Pill === */}
-          <motion.div
-            className="cta-button-pill"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
-          >
-            <span>{slide.subtitle}</span>
+          <Link to={slide.link_url || '/tienda'} style={{ textDecoration: 'none', pointerEvents: 'auto' }}>
             <motion.div
-              animate={{ x: [0, 6, 0] }}
-              transition={{ duration: 1.6, repeat: Infinity }}
+              className="cta-button-pill"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
+              whileHover={{ scale: 1.05 }}
             >
-              <ArrowRight size={16} />
+              <span>{slide.subtitle}</span>
+              <motion.div
+                animate={{ x: [0, 6, 0] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+              >
+                <ArrowRight size={16} />
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </Link>
 
           {/* === Slide Indicators / Pagination Dots === */}
           <div className="pagination-dots">
