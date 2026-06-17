@@ -131,19 +131,7 @@ export default function Hero() {
         </motion.div>
 
         {/* === Real HTML Text Layer (Accessibility + UX) === */}
-        <motion.div
-          className="hero-text-layer"
-          variants={textVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <h1 className="hero-headline">
-            {slide.title || 'Tecnología Premium'}
-          </h1>
-          <p className="hero-subheadline">
-            {slide.subtitle || 'Descubre lo último en innovación tecnológica para creadores'}
-          </p>
-        </motion.div>
+
 
         {/* === Bottom Controls Container === */}
         <div className="bottom-controls-container">

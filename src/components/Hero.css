@@ -17,7 +17,10 @@
 .hero-section {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - 70px); /* Descuenta la altura del Navbar */
+  margin-top: var(--nav-height, 70px);
+  aspect-ratio: 1920 / 650;
+  max-height: 650px;
+  min-height: 480px;
   overflow: hidden;
   background-color: #0a0812;       /* Fallback mientras carga la imagen */
   display: flex;
@@ -61,7 +64,7 @@
 .hero-background-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   display: block;
 }
@@ -161,7 +164,7 @@
 }
 
 .price-badge {
-  top: calc(var(--nav-height, 70px) + 1.5rem);
+  top: 1.5rem;
   left: 2.5rem;
   background: rgba(20, 20, 20, 0.55);
   color: #ffffff;
@@ -169,7 +172,7 @@
 
 /* ⭐ Rating Badge — posición fluida arriba-derecha */
 .rating-badge {
-  top: calc(var(--nav-height, 70px) + 1.5rem);
+  top: 1.5rem;
   right: 2.5rem;
   background: rgba(20, 20, 20, 0.55);
   color: #ffffff;
@@ -260,20 +263,20 @@
 
 .bottom-controls-container {
   position: absolute;
-  bottom: 0;
+  bottom: 20px; /* Se posiciona flotando a 20px del borde inferior de la imagen */
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 10px; /* Separación simétrica exacta */
   pointer-events: none;
 }
 
 /* Pill Tagline — "Captura la acción sin límites →" */
 .cta-button-pill {
-  margin-bottom: 10px;
+  margin-bottom: 0;
   pointer-events: auto; /* Restaura interactividad */
 
   display: flex;
@@ -371,7 +374,7 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   pointer-events: auto;
 }
 
@@ -437,9 +440,6 @@
    ========================================================================== */
 
 @media (max-width: 1024px) {
-  .hero-section {
-    min-height: calc(100vh - 70px);
-  }
 
   /* Texto ligeramente más compacto */
   .hero-text-layer {
@@ -491,6 +491,8 @@
     flex-direction: column;
     align-items: center;
     position: relative;
+    margin-top: 0;
+    aspect-ratio: auto;
     min-height: 85vh;
     max-height: 780px;
     text-align: center;
@@ -532,7 +534,7 @@
   .hero-background-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     object-position: 50% 50%; /* Centra el producto verticalmente en el área visible */
   }
 
@@ -766,8 +768,65 @@
   background: linear-gradient(to bottom, var(--navy, #1e225e) 0%, var(--navy-dark, #161944) 50%, var(--navy, #1e225e) 100%) !important;
   width: 100%;
   margin: 0;
-  padding: 40px 0; /* Da un colchón de aire simétrico arriba y abajo */
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  background-size: cover; /* Cambiar de contain a cover obligatoriamente */
+  background-position: center;
+  position: relative; /* Necesario para los botones absolutos */
   border: none !important;
   box-shadow: none !important;
 }
+
+/* ==========================================================================
+   AJUSTE PIXEL-PERFECT PARA ESCRITORIO (PC)
+   ========================================================================== */
+@media (min-width: 769px) {
+  /* Contenedor principal del slider */
+  .hero-section,
+  .hero-slider-container {
+    width: 100% !important;
+    height: auto !important; /* Elimina cualquier altura fija (px, vh) que deforme el banner */
+    min-height: unset !important;
+    max-height: unset !important;
+    aspect-ratio: unset !important;
+    padding: 0 !important;
+    margin-top: var(--nav-height, 70px) !important; /* Mantiene el espaciado del Navbar */
+    margin-bottom: 0 !important;
+    background: none !important; /* Quita fondos remanentes */
+    overflow: hidden;
+  }
+
+  /* Estructura del contenedor interno de cada slide */
+  .hero-background-wrapper,
+  .hero-slide-bg-container {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  .hero-slide-bg-container picture {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Configuración estricta de la etiqueta <img> */
+  .hero-background-img {
+    width: 100% !important;
+    height: auto !important; /* Fuerza a la imagen a respetar su resolución y proporción nativa */
+    object-fit: normal !important; /* Evita que cover o contain fuercen un reescalado artificial */
+    display: block !important;
+  }
+  
+  /* Ajuste de controles absolutos sobre el banner panorámico */
+  .bottom-controls-container {
+    position: absolute;
+    bottom: 5%; /* Flota dinámicamente según el alto del banner */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+}
+
 
