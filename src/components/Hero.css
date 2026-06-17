@@ -509,7 +509,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: 130px; /* Para que quede debajo del buscador flotante de móvil */
+    padding-top: calc(var(--nav-height, 70px) + 64px) !important; /* Ajustado exactamente al alto del header + buscador */
     z-index: 2;
   }
 
@@ -521,8 +521,8 @@
      ---------------------------------------------------------- */
   .hero-slide-bg-container {
     padding-top: 0;
-    top: 120px; /* Baja las fotos para que queden despejadas de la barra de búsqueda */
-    height: calc(100% - 120px);
+    top: calc(var(--nav-height, 70px) + 64px) !important; /* Despejado de la barra de búsqueda */
+    height: calc(100% - (var(--nav-height, 70px) + 64px)) !important;
   }
 
   .hero-slide-bg-container picture {

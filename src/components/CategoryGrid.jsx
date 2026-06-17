@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
+import { setNavFilter } from './Navbar';
 import './CategoryGrid.css';
 
 const categoryMeta = {
@@ -54,9 +56,16 @@ function CategoryCard({ category, large, onClick }) {
       <div className="category-content">
         <h3 className="cat-title">{title}</h3>
         {category.description && <p className="cat-description">{category.description}</p>}
-        <button className="pill-btn-outline" tabIndex={-1}>
+        <Link
+          to="/tienda"
+          className="pill-btn-outline"
+          onClick={(e) => {
+            e.stopPropagation();
+            setNavFilter({ type: 'category', value: category.id });
+          }}
+        >
           {category.buttonText || 'Ver más'}
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -67,6 +76,7 @@ export default function CategoryGrid() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -90,9 +100,9 @@ export default function CategoryGrid() {
     fetchCategories();
   }, []);
 
-  const scrollToTienda = () => {
-    const el = document.getElementById('tienda');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const handleCategoryClick = (categoryId) => {
+    setNavFilter({ type: 'category', value: categoryId });
+    navigate('/tienda');
   };
 
   /* Skeleton while loading */
@@ -175,7 +185,7 @@ export default function CategoryGrid() {
             <CategoryCard
               category={firstCat}
               large={true}
-              onClick={scrollToTienda}
+              onClick={() => handleCategoryClick(firstCat.id)}
             />
           )}
 
@@ -187,7 +197,7 @@ export default function CategoryGrid() {
                   key={cat.id}
                   category={cat}
                   large={false}
-                  onClick={scrollToTienda}
+                  onClick={() => handleCategoryClick(cat.id)}
                 />
               ))}
             </div>

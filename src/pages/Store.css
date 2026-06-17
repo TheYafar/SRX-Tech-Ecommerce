@@ -490,7 +490,8 @@
 
 @media (max-width: 768px) {
   .store-hero {
-    padding: 100px 0 50px;
+    padding-top: calc(var(--nav-height, 70px) + 64px) !important;
+    padding-bottom: 50px;
   }
   .store-hero-content {
     padding: 1.75rem 1.25rem;
@@ -594,7 +595,8 @@
   }
 
   .store-hero {
-    padding: 90px 0 40px;
+    padding-top: calc(var(--nav-height, 70px) + 64px) !important;
+    padding-bottom: 40px;
   }
 
   .store-hero-title { font-size: 1.75rem; }
