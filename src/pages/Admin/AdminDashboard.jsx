@@ -54,7 +54,8 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     link_url: '/tienda',
     order_index: 0
   });
-  const [bannerImage, setBannerImage] = useState(null);
+  const [bannerImagePc, setBannerImagePc] = useState(null);
+  const [bannerImageMobile, setBannerImageMobile] = useState(null);
   const [isSubmittingBanner, setIsSubmittingBanner] = useState(false);
   const [existingBanners, setExistingBanners] = useState([]);
   const [isLoadingBanners, setIsLoadingBanners] = useState(false);
@@ -432,48 +433,67 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     }));
   };
 
-  const handleBannerImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setBannerImage(e.target.files[0]);
-    }
-  };
-
   const handleAddBanner = async (e) => {
     e.preventDefault();
-    if (!bannerImage) {
-      showError('Por favor selecciona una imagen para el banner.');
+    if (!bannerImagePc || !bannerImageMobile) {
+      showError('Por favor selecciona tanto la imagen para PC como la imagen para móvil.');
       return;
     }
 
     setIsSubmittingBanner(true);
     try {
-      const fileExt = bannerImage.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `banners/${fileName}`;
+      // 1. Subir imagen de PC
+      const fileExtPc = bannerImagePc.name.split('.').pop();
+      const fileNamePc = `${Date.now()}-pc-${Math.random().toString(36).substring(2)}.${fileExtPc}`;
+      const filePathPc = `banners/${fileNamePc}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadErrorPc } = await supabase.storage
         .from('hero-banners')
-        .upload(filePath, bannerImage);
+        .upload(filePathPc, bannerImagePc);
 
-      if (uploadError) {
-        throw new Error(`Error al subir la imagen al Storage: ${uploadError.message}`);
+      if (uploadErrorPc) {
+        throw new Error(`Error al subir la imagen de PC al Storage: ${uploadErrorPc.message}`);
       }
 
-      const { data: publicUrlData } = supabase.storage
+      const { data: publicUrlDataPc } = supabase.storage
         .from('hero-banners')
-        .getPublicUrl(filePath);
+        .getPublicUrl(filePathPc);
 
-      const publicUrl = publicUrlData?.publicUrl;
-      if (!publicUrl) {
-        throw new Error('No se pudo recuperar la URL pública del banner.');
+      const publicUrlPc = publicUrlDataPc?.publicUrl;
+      if (!publicUrlPc) {
+        throw new Error('No se pudo recuperar la URL pública del banner de PC.');
       }
 
+      // 2. Subir imagen Móvil
+      const fileExtMobile = bannerImageMobile.name.split('.').pop();
+      const fileNameMobile = `${Date.now()}-mobile-${Math.random().toString(36).substring(2)}.${fileExtMobile}`;
+      const filePathMobile = `banners/${fileNameMobile}`;
+
+      const { error: uploadErrorMobile } = await supabase.storage
+        .from('hero-banners')
+        .upload(filePathMobile, bannerImageMobile);
+
+      if (uploadErrorMobile) {
+        throw new Error(`Error al subir la imagen móvil al Storage: ${uploadErrorMobile.message}`);
+      }
+
+      const { data: publicUrlDataMobile } = supabase.storage
+        .from('hero-banners')
+        .getPublicUrl(filePathMobile);
+
+      const publicUrlMobile = publicUrlDataMobile?.publicUrl;
+      if (!publicUrlMobile) {
+        throw new Error('No se pudo recuperar la URL pública del banner móvil.');
+      }
+
+      // 3. Guardar en Base de Datos
       const { error: insertError } = await supabase
         .from('banners')
         .insert([{
           title: bannerData.title,
           subtitle: bannerData.subtitle,
-          image_url: publicUrl,
+          image_url: publicUrlPc,
+          image_url_mobile: publicUrlMobile,
           link_url: bannerData.link_url || '/tienda',
           order_index: bannerData.order_index
         }]);
@@ -490,7 +510,8 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         link_url: '/tienda',
         order_index: 0
       });
-      setBannerImage(null);
+      setBannerImagePc(null);
+      setBannerImageMobile(null);
       if (e.target) e.target.reset();
 
       fetchBanners();
@@ -505,14 +526,30 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const handleDeleteBanner = async (banner) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este banner, uhhh ahhh?')) return;
     try {
-      try {
-        const urlParts = banner.image_url.split('/storage/v1/object/public/hero-banners/');
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
-          await supabase.storage.from('hero-banners').remove([filePath]);
+      // Eliminar imagen de PC
+      if (banner.image_url) {
+        try {
+          const urlParts = banner.image_url.split('/storage/v1/object/public/hero-banners/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage.from('hero-banners').remove([filePath]);
+          }
+        } catch (err) {
+          console.warn('No se pudo borrar el archivo de PC del storage:', err);
         }
-      } catch (err) {
-        console.warn('No se pudo borrar el archivo del storage (quizás ya no existe):', err);
+      }
+
+      // Eliminar imagen móvil
+      if (banner.image_url_mobile) {
+        try {
+          const urlParts = banner.image_url_mobile.split('/storage/v1/object/public/hero-banners/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage.from('hero-banners').remove([filePath]);
+          }
+        } catch (err) {
+          console.warn('No se pudo borrar el archivo móvil del storage:', err);
+        }
       }
 
       const { error } = await supabase
@@ -908,22 +945,52 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
 
               <div className="form-group">
-                <label>Imagen del Banner</label>
+                <label>Imagen para PC (Escritorio)</label>
                 <div className="file-upload-wrapper">
                   <input
                     type="file"
-                    id="bannerImage"
+                    id="bannerImagePc"
                     accept="image/*"
-                    onChange={handleBannerImageChange}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setBannerImagePc(e.target.files[0]);
+                      }
+                    }}
                     className="file-input-hidden"
                   />
-                  <label htmlFor="bannerImage" className="file-upload-box">
+                  <label htmlFor="bannerImagePc" className="file-upload-box">
                     <UploadCloud size={32} className="upload-icon" />
                     <span className="upload-text">
-                      {bannerImage ? bannerImage.name : 'Haz clic para seleccionar imagen del banner'}
+                      {bannerImagePc ? bannerImagePc.name : 'Haz clic para seleccionar imagen de PC'}
                     </span>
                     <span className="file-upload-tip">
-                      Nota: Para un mejor rendimiento y carga rápida de la página, se recomienda subir la imagen en formatos ligeros y optimizados como .webp o .jpg
+                      Nota: Para un mejor rendimiento y carga rápida de la página, se recomienda subir la imagen en formatos ligeros (.webp / .jpg) optimizados para pantallas anchas.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Imagen para Móvil (Teléfonos)</label>
+                <div className="file-upload-wrapper">
+                  <input
+                    type="file"
+                    id="bannerImageMobile"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setBannerImageMobile(e.target.files[0]);
+                      }
+                    }}
+                    className="file-input-hidden"
+                  />
+                  <label htmlFor="bannerImageMobile" className="file-upload-box">
+                    <UploadCloud size={32} className="upload-icon" />
+                    <span className="upload-text">
+                      {bannerImageMobile ? bannerImageMobile.name : 'Haz clic para seleccionar imagen móvil'}
+                    </span>
+                    <span className="file-upload-tip">
+                      Nota: Para un mejor rendimiento y carga rápida de la página, se recomienda subir la imagen en formatos ligeros (.webp / .jpg), recomendando un diseño vertical o cuadrado para mejor adaptabilidad móvil.
                     </span>
                   </label>
                 </div>
@@ -952,7 +1019,16 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 <div className="banners-list-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginTop: '1rem' }}>
                   {existingBanners.map(banner => (
                     <div key={banner.id} className="banner-admin-card" style={{ background: 'var(--card-bg, #1e293b)', borderRadius: '12px', border: '1px solid var(--border-color, #334155)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
-                      <img src={banner.image_url} alt={banner.title} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>PC</span>
+                          <img src={banner.image_url} alt={`${banner.title} PC`} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px' }} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>Móvil</span>
+                          <img src={banner.image_url_mobile || banner.image_url} alt={`${banner.title} Móvil`} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px' }} />
+                        </div>
+                      </div>
                       <div>
                         <h4 style={{ fontWeight: '600', fontSize: '1rem', color: 'var(--text-primary, #f8fafc)' }}>{banner.title}</h4>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)', margin: '0.25rem 0' }}>{banner.subtitle}</p>

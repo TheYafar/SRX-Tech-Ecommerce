@@ -70,15 +70,6 @@ export default function Hero() {
     })
   };
 
-  const textVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { delay: 0.3, duration: 0.7, ease: 'easeOut' }
-    }
-  };
-
   return (
     <section className="hero-wrapper hero-section hero-slider-container">
       {/* === Background Image — <picture> responsivo === */}
@@ -93,6 +84,9 @@ export default function Hero() {
             transition={{ duration: 0.8, ease: 'easeInOut' }}
           >
             <picture>
+              {slide.image_url_mobile && (
+                <source media="(max-width: 768px)" srcSet={slide.image_url_mobile} />
+              )}
               <img
                 src={slide.image_url}
                 alt={slide.title}
@@ -120,28 +114,6 @@ export default function Hero() {
           <span className="badge-rating">{currentProduct.rating}</span>
           <span className="badge-reviews">/ 5.0</span>
         </motion.div>
-
-        {/* === Real HTML Text Layer (Accessibility + UX) === */}
-        <div className="hero-text-layer">
-          <motion.h1
-            className="hero-headline"
-            variants={textVariants}
-            initial="hidden"
-            animate="visible"
-            key={`title-${slide.id}`}
-          >
-            {slide.title}
-          </motion.h1>
-          <motion.p
-            className="hero-subheadline"
-            variants={textVariants}
-            initial="hidden"
-            animate="visible"
-            key={`subtitle-${slide.id}`}
-          >
-            {slide.subtitle}
-          </motion.p>
-        </div>
 
         {/* === Bottom Controls Container === */}
         <div className="bottom-controls-container">
