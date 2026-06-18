@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,7 @@ import { loginSchema, registerSchema } from '../utils/validation';
 import './AuthModal.css';
 
 export default function AuthModal() {
-  const { isAuthModalOpen, authMode, closeAuthModal, login, register, setAuthMode, authContextHint } = useAuth();
+  const { isAuthModalOpen, authMode, closeAuthModal, login, register, setAuthMode, authContextHint, initialEmail } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -22,6 +22,17 @@ export default function AuthModal() {
   const { register: formRegister, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(schema)
   });
+
+  useEffect(() => {
+    if (isAuthModalOpen) {
+      reset({
+        email: initialEmail || '',
+        name: '',
+        password: '',
+        confirmPassword: ''
+      });
+    }
+  }, [isAuthModalOpen, initialEmail, reset]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);

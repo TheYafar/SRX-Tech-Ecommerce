@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [authContextHint, setAuthContextHint] = useState(null);
+  const [initialEmail, setInitialEmail] = useState('');
 
   const pendingActionRef = useRef(null);
   const userRef = useRef(null);
@@ -265,8 +266,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const openAuthModal = (mode = 'login') => {
+  const openAuthModal = (mode = 'login', email = '') => {
     setAuthMode(mode);
+    setInitialEmail(email);
     setIsAuthModalOpen(true);
   };
 
@@ -299,6 +301,8 @@ export const AuthProvider = ({ children }) => {
         executePendingAction,
         clearPendingAction,
         setAuthMode,
+        initialEmail,
+        setInitialEmail,
       }}
     >
       {children}

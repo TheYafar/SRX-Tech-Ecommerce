@@ -208,7 +208,7 @@ export default function Profile() {
                       <p className="wishlist-empty-text">
                         Cuando realices compras en la tienda, aparecerá aquí todo el historial de transacciones.
                       </p>
-                      <button className="wishlist-shop-btn" onClick={() => navigate('/')}>
+                      <button className="wishlist-shop-btn" onClick={() => navigate('/tienda')}>
                         Ir a Tienda
                       </button>
                     </div>
@@ -319,7 +319,7 @@ export default function Profile() {
                       <p className="wishlist-empty-text">
                         Añade productos de la tienda usando el icono de corazón para guardarlos y consultarlos después.
                       </p>
-                      <button className="wishlist-shop-btn" onClick={() => navigate('/')}>
+                      <button className="wishlist-shop-btn" onClick={() => navigate('/tienda')}>
                         Explorar Tienda
                       </button>
                     </div>

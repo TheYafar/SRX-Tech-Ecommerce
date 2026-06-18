@@ -483,15 +483,24 @@ export default function CheckoutModal({ isOpen, onClose }) {
               >
                 <h3 className="section-title">Detalles de Pago</h3>
                 
-                {paymentMethod === 'paypal' ? (
+                {(paymentMethod === 'paypal' || paymentMethod === 'tarjeta') ? (
                   <div className="other-payment-methods">
                     <div className="payment-instruction mb-4">
                       <div className="instruction-icon">
                         <CheckCircle size={24} />
                       </div>
                       <div className="instruction-text">
-                        <h4>Pago con PayPal</h4>
-                        <p>Completa tu pago usando el botón a continuación. Tu orden se procesará automáticamente.</p>
+                        {paymentMethod === 'tarjeta' ? (
+                          <>
+                            <h4>Pago con Tarjeta</h4>
+                            <p>Completa tu pago de forma segura con tarjeta de crédito o débito a través de PayPal.</p>
+                          </>
+                        ) : (
+                          <>
+                            <h4>Pago con PayPal</h4>
+                            <p>Completa tu pago usando tu cuenta de PayPal o tu tarjeta de débito/crédito.</p>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="payment-details-form">

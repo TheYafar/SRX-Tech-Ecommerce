@@ -1,4 +1,6 @@
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -18,6 +20,20 @@ import AdminCoupons from './pages/Admin/AdminCoupons';
 import AdminRoute from './components/AdminRoute';
 import './App.css';
 
+function RegisterRedirect() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { openAuthModal } = useAuth();
+
+  useEffect(() => {
+    const email = location.state?.email || '';
+    openAuthModal('register', email);
+    navigate('/', { replace: true });
+  }, [navigate, location, openAuthModal]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <NotificationProvider>
@@ -32,6 +48,8 @@ export default function App() {
                       <Route index element={<Home />} />
                       <Route path="tienda" element={<Store />} />
                       <Route path="profile" element={<Profile />} />
+                      <Route path="register" element={<RegisterRedirect />} />
+                      <Route path="signup" element={<RegisterRedirect />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
                     <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>

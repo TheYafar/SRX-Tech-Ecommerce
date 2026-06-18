@@ -1,11 +1,9 @@
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Send } from 'lucide-react';
+import { supabase } from '../utils/supabaseClient';
+import { setNavFilter } from './Navbar';
 import './Footer.css';
-
-const FacebookIcon = ({ size = 20 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="social-icon">
-    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-  </svg>
-);
 
 const InstagramIcon = ({ size = 20 }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="social-icon">
@@ -22,9 +20,39 @@ const TikTokIcon = ({ size = 20 }) => (
 );
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [categories, setCategories] = useState([]);
+  const navigate = useNavigate();
+
+  // Cargar categorías dinámicamente desde Supabase al montar el componente
+  useEffect(() => {
+    supabase
+      .from('categories')
+      .select('id, name, slug')
+      .then(({ data }) => {
+        if (data) setCategories(data);
+      });
+  }, []);
+
   const handleSubscribe = (e) => {
     e.preventDefault();
-    alert('¡Gracias por suscribirte!');
+    if (email.trim()) {
+      navigate('/register', { state: { email: email.trim() } });
+    }
+  };
+
+  const handleCategoryClick = (slug) => {
+    if (slug === 'accesorios') {
+      // Búsqueda inteligente fallback para accesorios
+      setNavFilter({ type: 'search', value: 'Accesorio' });
+    } else {
+      const found = categories.find(cat => cat.slug === slug);
+      if (found) {
+        setNavFilter({ type: 'category', value: found.id });
+      } else {
+        setNavFilter(null);
+      }
+    }
   };
 
   return (
@@ -44,6 +72,8 @@ export default function Footer() {
                 type="email" 
                 placeholder="Ingresa tu correo" 
                 className="footer-newsletter-input" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
               <button type="submit" className="footer-newsletter-btn" aria-label="Suscribirse">
@@ -57,28 +87,33 @@ export default function Footer() {
         <div className="footer-col">
           <h4 className="footer-title">Catálogo</h4>
           <ul className="footer-links">
-            <li><a href="#" className="footer-link-item">Cámaras</a></li>
-            <li><a href="#" className="footer-link-item">Iluminación</a></li>
-            <li><a href="#" className="footer-link-item">Accesorios</a></li>
-          </ul>
-        </div>
-
-        {/* Columna: Soporte */}
-        <div className="footer-col">
-          <h4 className="footer-title">Soporte</h4>
-          <ul className="footer-links">
-            <li><a href="#" className="footer-link-item">Contacto</a></li>
-            <li><a href="#" className="footer-link-item">Envíos</a></li>
-            <li><a href="#" className="footer-link-item">Preguntas Frecuentes</a></li>
-          </ul>
-        </div>
-
-        {/* Columna: Legal */}
-        <div className="footer-col">
-          <h4 className="footer-title">Legal</h4>
-          <ul className="footer-links">
-            <li><a href="#" className="footer-link-item">Términos de Servicio</a></li>
-            <li><a href="#" className="footer-link-item">Políticas de Reembolso</a></li>
+            <li>
+              <Link 
+                to="/tienda" 
+                onClick={() => handleCategoryClick('drones-y-sistemas-aereos')}
+                className="footer-link-item"
+              >
+                Cámaras
+              </Link>
+            </li>
+            <li>
+              <Link 
+                to="/tienda" 
+                onClick={() => handleCategoryClick('iluminacion-y-energia')}
+                className="footer-link-item"
+              >
+                Iluminación
+              </Link>
+            </li>
+            <li>
+              <Link 
+                to="/tienda" 
+                onClick={() => handleCategoryClick('accesorios')}
+                className="footer-link-item"
+              >
+                Accesorios
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -91,13 +126,20 @@ export default function Footer() {
             © 2026 SRX Tech. Todos los derechos reservados.
           </div>
           <div className="footer-socials">
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-              <FacebookIcon />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <a 
+              href="https://www.instagram.com/srx.tech?igsh=ZGdtZXBiYTkwMXVx" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              aria-label="Instagram"
+            >
               <InstagramIcon />
             </a>
-            <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+            <a 
+              href="https://www.tiktok.com/@srx_tech?_r=1&_t=ZS-97JaonmnxHm" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              aria-label="TikTok"
+            >
               <TikTokIcon />
             </a>
           </div>

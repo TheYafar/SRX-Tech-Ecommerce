@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -17,6 +18,7 @@ export default function CartDrawer() {
     cartTotal
   } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
+  const navigate = useNavigate();
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
@@ -61,7 +63,13 @@ export default function CartDrawer() {
               </div>
               <h3>Tu carrito está vacío</h3>
               <p>Agrega productos destacados de la tienda para comenzar tu experiencia.</p>
-              <button className="empty-shop-btn" onClick={() => setIsCartOpen(false)}>
+              <button
+                className="empty-shop-btn"
+                onClick={() => {
+                  setIsCartOpen(false);
+                  navigate('/tienda');
+                }}
+              >
                 Explorar Tienda
               </button>
             </div>
@@ -83,7 +91,7 @@ export default function CartDrawer() {
                           <span className="cart-item-price">{formatUSD(price)}</span>
                         </div>
                         
-                        <div className="quantity-controls">
+                        <div className="cart-quantity-controls">
                           <button 
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             aria-label="Disminuir cantidad"

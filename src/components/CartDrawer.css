@@ -235,7 +235,7 @@
   color: rgba(255, 255, 255, 0.65); /* USD blanco pero menos dominante */
 }
 
-.quantity-controls {
+.cart-quantity-controls {
   display: flex;
   align-items: center;
   background: #1e293b; /* bg-slate-800 */
@@ -245,7 +245,7 @@
   height: 28px;
 }
 
-.quantity-controls button {
+.cart-quantity-controls button {
   width: 26px;
   height: 100%;
   display: flex;
@@ -256,12 +256,12 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.quantity-controls button:hover {
+.cart-quantity-controls button:hover {
   background: #334155; /* hover-slate-700 */
   color: #ffffff;
 }
 
-.quantity-controls span {
+.cart-quantity-controls span {
   font-size: 0.85rem;
   font-weight: 700;
   padding: 0 0.4rem;
