@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // The URL and Key provided by the user
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wcnobggfbmpisahxihfu.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_wAWin60va1OOcXt2wRv1WA_x0vqMqTu';
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_wAWin60va1OOcXt2wRv1WA_x0vqMqTu';
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {

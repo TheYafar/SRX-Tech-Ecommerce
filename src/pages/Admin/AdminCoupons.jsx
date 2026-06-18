@@ -95,17 +95,31 @@ export default function AdminCoupons() {
 
       // 2. Send emails if option is active
       if (sendEmail) {
-        let emailsList = [];
         if (isMassEmail) {
-          emailsList = await getAllUserEmails();
+          const emailsList = await getAllUserEmails();
           if (emailsList.length === 0) {
             throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
           }
+          await dispatchMassCampaign(cleanCode, percent, emailsList);
         } else {
-          emailsList = [customerEmail.trim()];
-        }
+          // Petición reactiva usando fetch apuntando a la ruta relativa /api/send-email utilizando el método POST
+          const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: customerEmail.trim(),
+              couponCode: cleanCode,
+              discount: percent,
+            }),
+          });
 
-        await dispatchMassCampaign(cleanCode, percent, emailsList);
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `Error al enviar correo (Status ${response.status})`);
+          }
+        }
       }
 
       // 3. Show success notifications
