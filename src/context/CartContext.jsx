@@ -1,7 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNotifications } from './NotificationContext';
 import { useAuth } from './AuthContext';
+import { useProducts } from './ProductContext';
+import { supabase } from '../utils/supabaseClient';
 
 const CartContext = createContext();
 
@@ -14,145 +17,250 @@ export const useCart = () => {
 };
 
 // ============================================================
-// Helper: Generates local storage key for cart persistence
+// Helper: Generates orders storage key for history persistence
 // ============================================================
-const getCartStorageKey = (user) => {
-  return user ? `srx_cart_${user.id}` : 'srx_cart_guest';
-};
-
 const getOrdersStorageKey = (user) => {
   return user ? `srx_orders_${user.id}` : 'srx_orders_guest';
 };
 
 // ============================================================
-// Helper: Safe load from localStorage
-// ============================================================
-const loadCartFromStorage = (key) => {
-  if (!key) return [];
-  try {
-    const savedCart = localStorage.getItem(key);
-    return savedCart ? JSON.parse(savedCart) : [];
-  } catch (err) {
-    console.error(`Error reading localStorage key "${key}":`, err);
-    return [];
-  }
-};
-
-// ============================================================
-// Helper: Clean guest cart artifacts
-// ============================================================
-const cleanGuestCartArtifacts = () => {
-  try {
-    localStorage.removeItem('srx_cart_guest');
-    localStorage.removeItem('srx_orders_guest');
-  } catch (err) {
-    console.error('Error cleaning guest cart storage:', err);
-  }
-};
-
-// ============================================================
-// CART PROVIDER — CONDITIONAL PERSISTENCE
+// CART PROVIDER — DUAL SESSION PERSISTENCE (GUEST VS AUTH)
 // ============================================================
 export const CartProvider = ({ children }) => {
   const { showSuccess } = useNotifications();
   const { user, isLoading: isAuthLoading } = useAuth();
-
-  const prevUserIdRef = useRef(undefined);
-  const isInitialLoadRef = useRef(true);
+  const { products: availableProducts } = useProducts();
 
   const [cartItems, setCartItems] = useState([]);
+  const [dbCartItems, setDbCartItems] = useState([]); // Raw cart items from Supabase (product_id & quantity)
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isFetchingDbCart, setIsFetchingDbCart] = useState(false);
 
-  // Load cart on authentication status change
+  // Clean guest cart items from localStorage on mount (cleanup from older versions)
+  useEffect(() => {
+    try {
+      localStorage.removeItem('srx_cart_guest');
+    } catch (err) {
+      console.error('Error cleaning guest cart storage:', err);
+    }
+  }, []);
+
+  // Fetch cart items from database for authenticated users
+  const fetchCartFromDb = useCallback(async (userId) => {
+    if (!userId) return;
+    setIsFetchingDbCart(true);
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select('product_id, quantity')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error fetching cart items from Supabase:', error);
+      } else if (data) {
+        setDbCartItems(data);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching database cart:', err);
+    } finally {
+      setIsFetchingDbCart(false);
+    }
+  }, []);
+
+  // Handle auth session state changes
   useEffect(() => {
     if (isAuthLoading) {
       return;
     }
 
-    const currentUserId = user?.id || null;
-    const prevUserId = prevUserIdRef.current;
-
-    if (!isInitialLoadRef.current && currentUserId === prevUserId) {
-      return;
+    if (user) {
+      // Hydrate cart from Supabase for logged-in users
+      fetchCartFromDb(user.id);
+    } else {
+      // Guest user or logged out -> Reset cart to empty (completely volatile)
+      setDbCartItems([]);
+      setCartItems([]);
     }
+  }, [user, isAuthLoading, fetchCartFromDb]);
 
-    isInitialLoadRef.current = false;
-    prevUserIdRef.current = currentUserId;
-
-    if (!user) {
-      // Guest user -> Load guest cart
-      const storageKey = getCartStorageKey(user);
-      const loadedCart = loadCartFromStorage(storageKey);
-      setCartItems(loadedCart);
-      return;
-    }
-
-    // Registered user -> Load personal cart
-    const storageKey = getCartStorageKey(user);
-    const loadedCart = loadCartFromStorage(storageKey);
-    setCartItems(loadedCart);
-  }, [user, isAuthLoading]);
-
-  // Persist cart items to matching local storage key
-  const hasHydratedRef = useRef(false);
-
+  // Combine database cart items with full product details once available
   useEffect(() => {
-    if (isAuthLoading) return;
+    if (!user) return; // Guests use direct local updates only
 
-    if (!hasHydratedRef.current) {
-      hasHydratedRef.current = true;
+    if (dbCartItems.length === 0) {
+      setCartItems([]);
       return;
     }
 
-    const storageKey = getCartStorageKey(user);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(cartItems));
-    } catch (err) {
-      console.error(`Error saving to localStorage key "${storageKey}":`, err);
-    }
-  }, [cartItems, user, isAuthLoading]);
+    const mapped = dbCartItems.map(dbItem => {
+      const product = availableProducts.find(p => p.id === dbItem.product_id);
+      if (product) {
+        return {
+          ...product,
+          quantity: dbItem.quantity
+        };
+      }
+      return null;
+    }).filter(Boolean);
 
+    setCartItems(mapped);
+  }, [dbCartItems, availableProducts, user]);
+
+  // Handle immediate cleanup on custom logout event
   useEffect(() => {
-    hasHydratedRef.current = false;
-  }, [user?.id]);
+    const handleLogout = () => {
+      setCartItems([]);
+      setDbCartItems([]);
+    };
+    window.addEventListener('srx-logout', handleLogout);
+    return () => window.removeEventListener('srx-logout', handleLogout);
+  }, []);
 
   // ==============================================================
   // CART ACTIONS
   // ==============================================================
-  const addToCart = useCallback((product) => {
+  const addToCart = useCallback(async (product, qty = 1) => {
+    const quantityToAdd = product.quantity || qty;
+
+    // 1. Snappy UI: update local state immediately
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
       if (existingItem) {
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
         );
       }
-      return [...prevItems, { ...product, quantity: 1 }];
+      return [...prevItems, { ...product, quantity: quantityToAdd }];
     });
-    
+
     setIsCartOpen(true);
     showSuccess(`"${product.name || product.title}" añadido al carrito`, 2000);
-  }, [showSuccess]);
 
-  const removeFromCart = useCallback((productId) => {
+    // 2. Sync to Supabase if authenticated
+    if (user) {
+      // Optimistically update dbCartItems state
+      setDbCartItems((prevDbItems) => {
+        const existing = prevDbItems.find(item => item.product_id === product.id);
+        if (existing) {
+          return prevDbItems.map(item =>
+            item.product_id === product.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
+          );
+        }
+        return [...prevDbItems, { product_id: product.id, quantity: quantityToAdd }];
+      });
+
+      try {
+        const { data, error } = await supabase
+          .from('cart_items')
+          .select('quantity')
+          .eq('user_id', user.id)
+          .eq('product_id', product.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking cart item in DB:', error);
+          return;
+        }
+
+        if (data) {
+          const newQty = data.quantity + quantityToAdd;
+          const { error: updateError } = await supabase
+            .from('cart_items')
+            .update({ quantity: newQty })
+            .eq('user_id', user.id)
+            .eq('product_id', product.id);
+          if (updateError) console.error('Error updating cart quantity in DB:', updateError);
+        } else {
+          const { error: insertError } = await supabase
+            .from('cart_items')
+            .insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: quantityToAdd
+            });
+          if (insertError) console.error('Error inserting cart item in DB:', insertError);
+        }
+      } catch (err) {
+        console.error('Unexpected error during database sync inside addToCart:', err);
+      }
+    }
+  }, [user, showSuccess]);
+
+  const removeFromCart = useCallback(async (productId) => {
+    // 1. Snappy UI: update local state immediately
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
-  }, []);
 
-  const updateQuantity = useCallback((productId, quantity) => {
+    // 2. Sync to Supabase if authenticated
+    if (user) {
+      // Optimistically update dbCartItems
+      setDbCartItems((prevDbItems) => prevDbItems.filter(item => item.product_id !== productId));
+
+      try {
+        const { error } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', productId);
+        if (error) console.error('Error deleting cart item from DB:', error);
+      } catch (err) {
+        console.error('Unexpected error deleting cart item from DB:', err);
+      }
+    }
+  }, [user]);
+
+  const updateQuantity = useCallback(async (productId, quantity) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
+
+    // 1. Snappy UI: update local state immediately
     setCartItems((prevItems) =>
       prevItems.map((item) =>
         item.id === productId ? { ...item, quantity } : item
       )
     );
-  }, [removeFromCart]);
 
-  const clearCart = useCallback(() => {
+    // 2. Sync to Supabase if authenticated
+    if (user) {
+      // Optimistically update dbCartItems
+      setDbCartItems((prevDbItems) =>
+        prevDbItems.map(item =>
+          item.product_id === productId ? { ...item, quantity } : item
+        )
+      );
+
+      try {
+        const { error } = await supabase
+          .from('cart_items')
+          .update({ quantity })
+          .eq('user_id', user.id)
+          .eq('product_id', productId);
+        if (error) console.error('Error updating cart quantity in DB:', error);
+      } catch (err) {
+        console.error('Unexpected error updating cart quantity in DB:', err);
+      }
+    }
+  }, [user, removeFromCart]);
+
+  const clearCart = useCallback(async () => {
+    // 1. Snappy UI: update local state immediately
     setCartItems([]);
-  }, []);
+    setDbCartItems([]);
+
+    // 2. Sync to Supabase if authenticated
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id);
+        if (error) console.error('Error clearing cart from DB:', error);
+      } catch (err) {
+        console.error('Unexpected error clearing cart from DB:', err);
+      }
+    }
+  }, [user]);
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -200,10 +308,12 @@ export const CartProvider = ({ children }) => {
         clearCart,
         cartCount,
         cartTotal,
-        checkout
+        checkout,
+        isFetchingDbCart
       }}
     >
       {children}
     </CartContext.Provider>
   );
 };
+

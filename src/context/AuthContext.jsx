@@ -69,20 +69,9 @@ const formatUser = async (sessionUser, previousRole = null) => {
 export const AuthProvider = ({ children }) => {
   const { showSuccess, showInfo, showError } = useNotifications();
 
-  // Detects if the page was directly reloaded
-  const detectarRecarga = () => {
-    if (typeof window === 'undefined') return false;
-    return (
-      (window.performance && window.performance.navigation && window.performance.navigation.type === 1) ||
-      (window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0] && window.performance.getEntriesByType('navigation')[0].type === 'reload')
-    );
-  };
-
-  const isReloadingRef = useRef(detectarRecarga());
-
-  // Start with clean state if it's a page reload
+  // Start with clean state checking auth session
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(!isReloadingRef.current);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [authContextHint, setAuthContextHint] = useState(null);
@@ -98,32 +87,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Reset session on reload for security consistency
-    const limpiarSesionAlRecargar = async () => {
-      if (isReloadingRef.current) {
-        try {
-          await supabase.auth.signOut();
-        } catch (error) {
-          console.error('Error signing out on reload:', error);
-        } finally {
-          isReloadingRef.current = false;
-          if (mounted) {
-            setUser(null);
-            setIsLoading(false);
-          }
-        }
-      }
-    };
-
-    limpiarSesionAlRecargar();
-
     // Listen to authentication changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
-        if (isReloadingRef.current && session) {
-          return;
-        }
-
         if (session?.user) {
           const currentUser = userRef.current;
           const isTokenRefresh = event === 'TOKEN_REFRESHED';
@@ -258,6 +224,7 @@ export const AuthProvider = ({ children }) => {
 
     if (!error) {
       showInfo('Sesión cerrada correctamente', 2000);
+      window.dispatchEvent(new Event('srx-logout'));
     } else {
       console.error('Logout error:', {
         message: error.message,
