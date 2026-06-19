@@ -55,7 +55,7 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
 }
 
-.hero-badge {
+.store-hero-badge {
   display: inline-block;
   padding: 0.4rem 1.2rem;
   background: rgba(255, 255, 255, 0.1);
@@ -534,7 +534,7 @@
     font-size: 0.9rem;
   }
 
-  .hero-badge {
+  .store-hero-badge {
     font-size: 0.7rem;
     padding: 0.3rem 0.9rem;
   }

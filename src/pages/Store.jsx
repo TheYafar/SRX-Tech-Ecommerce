@@ -135,7 +135,7 @@ export default function Store() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
           >
-            <motion.span className="hero-badge" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+            <motion.span className="store-hero-badge" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
               Colección Exclusiva
             </motion.span>
             <h1 className="store-hero-title">
