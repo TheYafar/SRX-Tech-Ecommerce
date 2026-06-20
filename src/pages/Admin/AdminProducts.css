@@ -1333,3 +1333,133 @@
     justify-content: center;
   }
 }
+
+/* ================================================================
+   V3 - Carga de Imágenes Refactorizada (Portada + Galería)
+   ================================================================ */
+.cover-drag-drop {
+  border: 2px dashed #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  background: rgba(30, 41, 59, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  min-height: 180px;
+}
+
+.cover-drag-drop:hover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.cover-drag-drop.drag-active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  transform: scale(1.02);
+}
+
+.cover-preview-container {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+  height: 160px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cover-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.cover-preview-container:hover .cover-preview-img {
+  transform: scale(1.05);
+}
+
+.btn-delete-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.85);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+.btn-delete-preview:hover {
+  background: #ef4444;
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+}
+
+.gallery-upload-area {
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gallery-upload-area:hover {
+  border-color: #475569;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.gallery-previews-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.gallery-preview-item {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: #020617;
+}
+
+.gallery-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-preview-item .btn-delete-preview {
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+}
+
+.gallery-preview-item .btn-delete-preview svg {
+  width: 12px;
+  height: 12px;
+}
+

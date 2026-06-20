@@ -25,7 +25,10 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     title: '', description: '', price_usd: '', stock: '',
     features: '', category: '', category_id: ''
   });
-  const [productImage, setProductImage] = useState(null);
+  const [portada, setPortada] = useState(null);
+  const [previewPortada, setPreviewPortada] = useState('');
+  const [galeria, setGaleria] = useState([]);
+  const [previewGaleria, setPreviewGaleria] = useState([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [categories, setCategories] = useState([]);
 
@@ -172,22 +175,63 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     setProductData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (e) => {
+  const handlePortadaChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setProductImage(e.target.files[0]);
+      const file = e.target.files[0];
+      setPortada(file);
+      setPreviewPortada(URL.createObjectURL(file));
     }
+  };
+
+  const handleRemovePortada = () => {
+    setPortada(null);
+    setPreviewPortada('');
+  };
+
+  const handleGaleriaChange = (e) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+      if (galeria.length + imageFiles.length > 3) {
+        showError('Límite excedido. Solo puedes agregar un máximo de 3 imágenes secundarias en la galería.');
+        return;
+      }
+
+      setGaleria(prev => [...prev, ...imageFiles]);
+      const newPreviews = imageFiles.map(file => URL.createObjectURL(file));
+      setPreviewGaleria(prev => [...prev, ...newPreviews]);
+    }
+  };
+
+  const handleRemoveGaleriaItem = (index) => {
+    setGaleria(prev => prev.filter((_, i) => i !== index));
+    setPreviewGaleria(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    if (!productData.title || !productData.price_usd || !productImage || !productData.category_id) {
-      showError('Por favor completa todos los campos requeridos, incluyendo la categoría y la imagen.');
+    if (!productData.title || !productData.price_usd || !portada || !productData.category_id) {
+      showError('Por favor completa todos los campos requeridos, incluyendo la categoría y la imagen de portada.');
       return;
     }
     setIsSubmittingProduct(true);
     try {
-      const imageUrl = await uploadProductImage(productImage);
-      if (!imageUrl) throw new Error('La función de subida de imagen devolvió nulo.');
+      // 1. Sube la imagen de portada
+      const urlPortada = await uploadProductImage(portada);
+      if (!urlPortada) throw new Error('Error al subir la imagen de portada.');
+
+      // 2. Sube las imágenes de la galería en paralelo (Promise.all)
+      const urlsGaleria = await Promise.all(
+        galeria.map(async (file) => {
+          const url = await uploadProductImage(file);
+          if (!url) throw new Error(`Fallo al subir una de las imágenes de la galería: ${file.name}`);
+          return url;
+        })
+      );
+
+      // 3. Combina ambas partes en un único arreglo indexado
+      const finalImages = [urlPortada, ...urlsGaleria];
 
       let parsedFeatures = {};
       try {
@@ -202,7 +246,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         description: productData.description,
         price_usd: parseFloat(productData.price_usd),
         specifications: parsedFeatures,
-        images_urls: [imageUrl],
+        images_urls: finalImages,
         category_id: finalCategoryId
       };
 
@@ -226,8 +270,8 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         description: productData.description,
         price_usd: parseFloat(productData.price_usd),
         specifications: parsedFeatures,
-        images_urls: [imageUrl],
-        image: imageUrl,
+        images_urls: finalImages,
+        image: urlPortada,
         price: parseFloat(productData.price_usd),
         salePrice: null,
         category: productData.category,
@@ -236,11 +280,14 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
       showSuccess('Producto añadido correctamente.');
       setProductData({ title: '', description: '', price_usd: '', stock: '', features: '', category: '', category_id: '' });
-      setProductImage(null);
+      setPortada(null);
+      setPreviewPortada('');
+      setGaleria([]);
+      setPreviewGaleria([]);
       e.target.reset();
     } catch (error) {
       console.error('Error exacto:', error.message, error.details);
-      showError('Ocurrió un error al añadir el producto.');
+      showError('Ocurrió un error al añadir el producto: ' + error.message);
     } finally {
       setIsSubmittingProduct(false);
     }
@@ -643,23 +690,113 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Imagen del Producto</label>
-                <div className="file-upload-wrapper">
-                  <input
-                    type="file" id="productImage" accept="image/*"
-                    onChange={handleImageChange} className="file-input-hidden"
-                  />
-                  <label htmlFor="productImage" className="file-upload-box">
-                    <UploadCloud size={32} className="upload-icon" />
-                    <span className="upload-text">
-                      {productImage ? productImage.name : 'Haz clic para seleccionar una imagen'}
-                    </span>
-                  </label>
+              {/* Imagen de Portada y Galería (Contenedor Responsivo en Grilla) */}
+              <div className="image-upload-grid">
+                {/* Columna 1: Portada (Obligatoria) */}
+                <div className="upload-column">
+                  <span className="upload-label">Imagen de Portada (Obligatoria)</span>
+                  <div className="image-box-wrapper">
+                    {previewPortada ? (
+                      <div className="image-preview-container">
+                        <img
+                          src={previewPortada}
+                          alt="Previsualización Portada"
+                          className="image-preview-img"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemovePortada}
+                          className="btn-remove-image"
+                          title="Eliminar portada"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          id="portadaInput"
+                          accept="image/*"
+                          multiple={false}
+                          onChange={handlePortadaChange}
+                          className="file-input-hidden"
+                        />
+                        <label
+                          htmlFor="portadaInput"
+                          className="image-box-clickable"
+                        >
+                          <UploadCloud size={32} className="upload-icon" />
+                          <span className="upload-text">
+                            Seleccionar Portada
+                          </span>
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Columna 2 y 3: Galería (Opcional, hasta 3) */}
+                <div className="upload-column">
+                  <span className="upload-label">Galería de Imágenes (Opcional, hasta 3)</span>
+                  <div className="gallery-grid">
+                    {/* Previews de la Galería */}
+                    {previewGaleria.map((preview, index) => (
+                      <div key={index} className="gallery-slot">
+                        <div className="image-preview-container">
+                          <img
+                            src={preview}
+                            alt={`Galería preview ${index + 1}`}
+                            className="image-preview-img"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGaleriaItem(index)}
+                            className="btn-remove-image"
+                            title="Eliminar imagen"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Botón para añadir imágenes (si no se ha alcanzado el límite de 3) */}
+                    {galeria.length < 3 && (
+                      <div className="gallery-slot">
+                        <div className="image-box-wrapper" style={{ height: '100%' }}>
+                          <input
+                            type="file"
+                            id="galeriaInput"
+                            accept="image/*"
+                            multiple
+                            onChange={handleGaleriaChange}
+                            className="file-input-hidden"
+                          />
+                          <label
+                            htmlFor="galeriaInput"
+                            className="image-box-clickable"
+                          >
+                            <PlusCircle size={28} className="upload-icon" />
+                            <span className="upload-text" style={{ fontSize: '0.75rem' }}>
+                              Añadir Imagen
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Relleno para mantener la grilla estructurada de 3 columnas */}
+                    {Array.from({ length: 3 - galeria.length - (galeria.length < 3 ? 1 : 0) }).map((_, idx) => (
+                      <div key={`empty-${idx}`} className="gallery-slot gallery-slot-empty">
+                        <span>Vacío</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <button type="submit" className="admin-submit-btn" disabled={isSubmittingProduct}>
+              <button type="submit" className="admin-submit-btn" disabled={isSubmittingProduct || !portada}>
                 {isSubmittingProduct
                   ? <><Loader2 size={18} className="spin" /> Guardando...</>
                   : <><PackagePlus size={18} /> Añadir Producto al Catálogo</>
@@ -693,7 +830,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                     <div key={payment.id} className="payment-card">
                       <div className="payment-card-header">
                         <span className="payment-id">
-                          Pedido #{order?.id ? String(order.id).substring(0, 8) : 'N/A'}
+                          Pedido #{order?.id ? String(order.id).slice(-6).toUpperCase() : 'N/A'}
                         </span>
                         <span className="payment-amount">
                           {payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : ''}

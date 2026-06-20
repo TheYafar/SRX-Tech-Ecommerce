@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { X, CreditCard, Shield, CheckCircle, Lock, User, Mail, Phone, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
+import { X, CreditCard, Shield, CheckCircle, AlertCircle, Lock, User, Mail, Phone, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import PaymentInstructions from './PaymentInstructions';
@@ -58,6 +59,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatVES, exchangeRate } = useCurrency();
+  const { showSuccess, showError } = useNotifications();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -82,6 +84,15 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const discountAmount = Number((cartTotal * (appliedDiscount / 100)).toFixed(2));
   const finalTotal = Math.max(0, Number((cartTotal - discountAmount).toFixed(2)));
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isContactInfoValid = 
+    (user 
+      ? formData.name.trim() !== '' 
+      : (formData.name.trim().split(/\s+/).filter(Boolean).length >= 2)
+    ) && 
+    (user ? true : emailRegex.test(formData.email.trim())) && 
+    formData.phone.trim() !== '';
 
   useEffect(() => {
     if (user) {
@@ -167,17 +178,19 @@ export default function CheckoutModal({ isOpen, onClose }) {
         }
       }
 
-      // Paso 2: Insertar en orders
+      // Paso 2: Insertar en orders con payload condicional
+      const orderPayload = {
+        user_id: user ? user.id : null,
+        total_amount_usd: finalTotal,
+        status: 'pending_payment',
+        user_name: formData.name.trim() || (user ? (user.name || user.user_metadata?.full_name) : ''),
+        user_email: (user ? user.email : formData.email) || formData.email || '',
+        user_phone: formData.phone.trim()
+      };
+
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .insert([{
-          user_id: user?.id || null,
-          total_amount_usd: finalTotal,
-          status: 'pending_payment',
-          user_name: formData.name,
-          user_email: formData.email,
-          user_phone: formData.phone
-        }])
+        .insert([orderPayload])
         .select()
         .single();
 
@@ -250,10 +263,83 @@ export default function CheckoutModal({ isOpen, onClose }) {
       clearCart();
     } catch (err) {
       console.error('Error in processCheckout:', err);
-      alert(`Fallo en el proceso de compra: ${err.message || err}`);
+      showError(`Fallo en el proceso de compra: ${err.message || err}`);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const renderContactFields = () => {
+    return (
+      <div className="contact-fields-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+        <h3 className="section-title">Datos de Contacto</h3>
+        <div className="form-group">
+          <label className="form-label">Nombre Completo</label>
+          <div className="input-with-icon">
+            <User size={18} className="input-icon" />
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Tu nombre y apellido"
+              className="form-input"
+              required
+            />
+          </div>
+          {!user && formData.name.trim() !== '' && formData.name.trim().split(/\s+/).filter(Boolean).length < 2 && (
+            <p className="form-help-text warning-text" style={{ color: '#dc3545', fontSize: '0.8rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}>
+              <AlertCircle size={12} /> Por favor, introduce tu nombre y apellido (mínimo dos palabras).
+            </p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Correo electrónico</label>
+          <div className="input-with-icon">
+            <Mail size={18} className="input-icon" />
+            <input
+              type="email"
+              name="email"
+              value={user ? user.email : formData.email}
+              onChange={handleInputChange}
+              placeholder="tu@email.com"
+              className="form-input"
+              required
+              disabled={!!user}
+            />
+          </div>
+          {user ? (
+            <p className="form-help-text success-text" style={{ color: '#28a745', fontSize: '0.8rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}>
+              <CheckCircle size={12} /> Sesión iniciada como <strong>{user.email}</strong>. Tu orden se guardará en tu cuenta.
+            </p>
+          ) : (
+            <p className="form-help-text info-text" style={{ color: '#4f6ef7', fontSize: '0.8rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}>
+              <AlertCircle size={12} /> Campo obligatorio. Escribe tu correo para recibir el comprobante de tu compra.
+            </p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Teléfono</label>
+          <div className="input-with-icon">
+            <Phone size={18} className="input-icon" />
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="+58 424-000-0000"
+              className="form-input"
+              required
+            />
+          </div>
+          <p className="form-help-text info-text" style={{ color: '#4f6ef7', fontSize: '0.8rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}>
+            <AlertCircle size={12} /> Campo obligatorio. Ej: +58 424-1234567 o 04241234567.
+          </p>
+        </div>
+      </div>
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -413,7 +499,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
             </motion.div>
 
             <motion.button 
-              className="success-btn"
+              className="checkout-success-btn"
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.97 }}
               initial={{ y: 15, opacity: 0 }}
@@ -485,6 +571,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 
                 {(paymentMethod === 'paypal' || paymentMethod === 'tarjeta') ? (
                   <div className="other-payment-methods">
+                    {renderContactFields()}
+
                     <div className="payment-instruction mb-4">
                       <div className="instruction-icon">
                         <CheckCircle size={24} />
@@ -504,27 +592,52 @@ export default function CheckoutModal({ isOpen, onClose }) {
                       </div>
                     </div>
                     <div className="payment-details-form">
-                      <div className="paypal-button-container">
-                        <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
-                          <PayPalButtons 
-                            style={{ layout: "vertical", shape: "pill" }}
-                            createOrder={(data, actions) => {
-                              return actions.order.create({
-                                purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
-                              });
-                            }}
-                            onApprove={(data, actions) => {
-                              return actions.order.capture().then(() => {
-                                processCheckout();
-                              });
-                            }}
-                          />
-                        </PayPalScriptProvider>
-                      </div>
+                      {isContactInfoValid ? (
+                        <div className="paypal-button-container">
+                          <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
+                            <PayPalButtons 
+                              style={{ layout: "vertical", shape: "pill" }}
+                              createOrder={(data, actions) => {
+                                return actions.order.create({
+                                  purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
+                                });
+                              }}
+                              onApprove={(data, actions) => {
+                                setIsSubmitting(true);
+                                return actions.order.capture()
+                                  .then(() => {
+                                    processCheckout();
+                                  })
+                                  .catch((err) => {
+                                    console.error('PayPal capture error:', err);
+                                    showError('Error al capturar el pago con PayPal.');
+                                    setIsSubmitting(false);
+                                  });
+                              }}
+                              onError={(err) => {
+                                console.error('PayPal error:', err);
+                                showError('Ocurrió un error con el servicio de PayPal.');
+                                setIsSubmitting(false);
+                              }}
+                              onCancel={() => {
+                                showError('El pago con PayPal fue cancelado.');
+                                setIsSubmitting(false);
+                              }}
+                            />
+                          </PayPalScriptProvider>
+                        </div>
+                      ) : (
+                        <div className="payment-validation-warning" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '8px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: '600', marginTop: '1rem' }}>
+                          <AlertCircle size={18} />
+                          <span>Por favor, completa tus datos de contacto arriba para habilitar el pago de PayPal.</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <form className="payment-details-form" onSubmit={handleSubmit}>
+                    {renderContactFields()}
+
                     <div className="payment-instruction mb-4">
                       <div className="instruction-icon">
                         <CheckCircle size={24} />
@@ -556,54 +669,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         paymentMethod={paymentMethod}
                       />
                     )}
-
-                    <div className="form-group">
-                      <label className="form-label">Nombre Completo</label>
-                      <div className="input-with-icon">
-                        <User size={18} className="input-icon" />
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          placeholder="Tu nombre y apellido"
-                          className="form-input"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Correo electrónico</label>
-                      <div className="input-with-icon">
-                        <Mail size={18} className="input-icon" />
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          placeholder="tu@email.com"
-                          className="form-input"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Teléfono</label>
-                      <div className="input-with-icon">
-                        <Phone size={18} className="input-icon" />
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          placeholder="+58 424-000-0000"
-                          className="form-input"
-                          required
-                        />
-                      </div>
-                    </div>
 
                     <div className="form-group">
                       <label className="form-label">
@@ -655,7 +720,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <button 
                       type="submit"
                       className="checkout-submit-btn mt-4"
-                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile || !formData.name || !formData.email || !formData.phone}
+                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile || !isContactInfoValid}
                     >
                       {isSubmitting ? (
                         <>

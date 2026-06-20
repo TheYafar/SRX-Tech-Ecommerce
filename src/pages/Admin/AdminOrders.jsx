@@ -175,7 +175,7 @@ export default function AdminOrders() {
 
   const getShortId = (id) => {
     if (!id) return '—';
-    return id.substring(0, 8).toUpperCase();
+    return id.slice(-6).toUpperCase();
   };
 
   const getCustomerName = (order) => {

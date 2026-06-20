@@ -818,38 +818,47 @@
 }
 
 /* CTA Button */
-.success-btn {
+.checkout-success-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px; /* Acompañamiento alineado */
   padding: 12px 24px;
-  background: linear-gradient(135deg, var(--nav-bg) 0%, #2a2f7a 50%, #3d43a5 100%);
-  color: white;
-  border: none;
+  background: #ffffff;
+  color: #000000 !important;
+  border: 2px solid #000000;
   border-radius: var(--radius-sm);
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    0 6px 20px rgba(30, 34, 94, 0.3),
-    0 2px 6px rgba(30, 34, 94, 0.15);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 3;
   position: relative;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
-.success-btn:hover {
-  box-shadow: 
-    0 10px 36px rgba(30, 34, 94, 0.4),
-    0 4px 12px rgba(30, 34, 94, 0.2);
+.checkout-success-btn svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transition: all 0.3s ease;
+}
+
+.checkout-success-btn:hover {
+  background: #000000;
+  color: #ffffff !important;
+  border-color: #000000;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   transform: translateY(-2px);
 }
 
-.success-btn:active {
+.checkout-success-btn:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.checkout-success-btn:active {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 4px 12px rgba(30, 34, 94, 0.25);
 }
 
 /* Responsive */
@@ -990,7 +999,7 @@
     max-width: 360px;
   }
 
-  .success-btn {
+  .checkout-success-btn {
     padding: 1rem 2rem;
     font-size: 0.95rem;
   }
@@ -1134,7 +1143,7 @@
     font-size: 1.3rem;
   }
 
-  .success-btn {
+  .checkout-success-btn {
     width: 100%;
     justify-content: center;
     padding: 1rem 1.5rem;

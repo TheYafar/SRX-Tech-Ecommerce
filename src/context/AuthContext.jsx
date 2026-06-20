@@ -60,6 +60,7 @@ const formatUser = async (sessionUser, previousRole = null) => {
       `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1e225e&color=fff`,
     role: role,
     createdAt: sessionUser.created_at,
+    user_metadata: metadata,
   };
 };
 

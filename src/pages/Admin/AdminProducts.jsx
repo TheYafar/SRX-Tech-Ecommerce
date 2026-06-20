@@ -296,7 +296,8 @@ export default function AdminProducts() {
     compatible_devices: [],
     use_scenarios: [],
   });
-  const [newProductImage, setNewProductImage] = useState(null);
+  const [newCoverImage, setNewCoverImage] = useState(null);
+  const [newSecondaryImages, setNewSecondaryImages] = useState([]);
 
   // ── Formulario de edición ──
   const [formData, setFormData] = useState({
@@ -310,6 +311,11 @@ export default function AdminProducts() {
     compatibleDevices: [],
     useScenarios: [],
   });
+  const [editCoverImage, setEditCoverImage] = useState(null);
+  const [editSecondaryImages, setEditSecondaryImages] = useState([]);
+  const [isDragActiveNew, setIsDragActiveNew] = useState(false);
+  const [isDragActiveEdit, setIsDragActiveEdit] = useState(false);
+
 
   // ── Cargar categorías al montar ──
   useEffect(() => {
@@ -356,11 +362,11 @@ export default function AdminProducts() {
     }
   };
 
-  // ================================================================
-  // handleEdit — Abre modal con datos precargados
-  // ================================================================
   const handleEdit = (producto) => {
     setEditingProduct(producto);
+    const existingImages = producto.images_urls || (producto.image ? [producto.image] : []);
+    setEditCoverImage(existingImages[0] || null);
+    setEditSecondaryImages(existingImages.slice(1));
     setFormData({
       nombre: producto.name || '',
       precioNormal: producto.price_usd ?? producto.price ?? '',
@@ -386,6 +392,35 @@ export default function AdminProducts() {
     setIsLoading(true);
 
     try {
+      // 1. Subir imagen de portada a Supabase Storage
+      let urlPortada = '';
+      if (editCoverImage instanceof File) {
+        urlPortada = await uploadProductImage(editCoverImage);
+        if (!urlPortada) throw new Error('Error al subir la nueva imagen de portada.');
+      } else if (typeof editCoverImage === 'string') {
+        urlPortada = editCoverImage;
+      } else {
+        throw new Error('La imagen de portada es obligatoria.');
+      }
+
+      // 2. Subir imágenes secundarias cíclicamente
+      const arregloUrlsSecundarias = [];
+      for (const img of editSecondaryImages) {
+        if (img instanceof File) {
+          const url = await uploadProductImage(img);
+          if (url) {
+            arregloUrlsSecundarias.push(url);
+          } else {
+            console.warn('Fallo al subir una imagen secundaria de edición.');
+          }
+        } else if (typeof img === 'string') {
+          arregloUrlsSecundarias.push(img);
+        }
+      }
+
+      // 3. Unificar el arreglo
+      const arrayFinalImagenes = [urlPortada, ...arregloUrlsSecundarias];
+
       const safePrice = parseFloat(String(formData.precioNormal).replace(',', '.'));
       const safeOfferPrice = formData.precioOferta
         ? parseFloat(String(formData.precioOferta).replace(',', '.'))
@@ -401,6 +436,7 @@ export default function AdminProducts() {
         // Nuevas columnas de arrays
         compatible_devices: formData.compatibleDevices,
         use_scenarios: formData.useScenarios,
+        images_urls: arrayFinalImagenes,
         // Categoría (si viene como id numérico o slug de texto)
         ...(formData.categoria
           ? isNaN(formData.categoria)
@@ -434,13 +470,16 @@ export default function AdminProducts() {
                 isBestSeller: payload.is_best_seller,
                 compatible_devices: payload.compatible_devices,
                 use_scenarios: payload.use_scenarios,
+                images_urls: arrayFinalImagenes,
+                image: urlPortada,
               }
             : p
         )
       );
+      showSuccess('¡Producto actualizado exitosamente!');
     } catch (error) {
       console.error('Error BD:', error);
-      alert('Error: ' + error.message);
+      showError('Error al actualizar: ' + error.message);
     } finally {
       setIsLoading(false);
       setEditingProduct(null);
@@ -481,18 +520,32 @@ export default function AdminProducts() {
       showError('Selecciona una categoría para el producto.');
       return;
     }
-    if (!newProductImage) {
-      showError('Sube una imagen para el producto.');
+    if (!newCoverImage) {
+      showError('La imagen de portada es obligatoria.');
       return;
     }
 
     setIsSubmittingNew(true);
     try {
-      // 1. Subir imagen al Storage
-      const imageUrl = await uploadProductImage(newProductImage);
-      if (!imageUrl) throw new Error('Error al subir la imagen del producto.');
+      // 1. Subir imagen de portada al Storage
+      const urlPortada = await uploadProductImage(newCoverImage);
+      if (!urlPortada) throw new Error('Error al subir la imagen de portada.');
 
-      // 2. Insertar en Supabase
+      // 2. Subir imágenes secundarias cíclicamente
+      const arregloUrlsSecundarias = [];
+      for (const file of newSecondaryImages) {
+        const url = await uploadProductImage(file);
+        if (url) {
+          arregloUrlsSecundarias.push(url);
+        } else {
+          console.warn('Fallo al subir una de las imágenes secundarias.');
+        }
+      }
+
+      // 3. Unificar el arreglo
+      const arrayFinalImagenes = [urlPortada, ...arregloUrlsSecundarias];
+
+      // 4. Insertar en Supabase
       const { data, error } = await supabase
         .from('products')
         .insert([{
@@ -504,17 +557,17 @@ export default function AdminProducts() {
           category_id: Number(newProductData.category_id),
           compatible_devices: newProductData.compatible_devices,
           use_scenarios: newProductData.use_scenarios,
-          images_urls: [imageUrl],
+          images_urls: arrayFinalImagenes,
         }])
         .select()
         .single();
 
       if (error) throw error;
 
-      // 3. Éxito: agregar al estado local y cerrar modal
+      // 5. Éxito: agregar al estado local y cerrar modal
       addProductToState({
         ...data,
-        image: imageUrl,
+        image: urlPortada,
         price: parseFloat(newProductData.price_usd),
         salePrice: null,
         tagline: newProductData.description ? newProductData.description.substring(0, 50) + '...' : '',
@@ -530,7 +583,8 @@ export default function AdminProducts() {
         name: '', sku: '', description: '', price_usd: '',
         stock: '', category_id: '', compatible_devices: [], use_scenarios: [],
       });
-      setNewProductImage(null);
+      setNewCoverImage(null);
+      setNewSecondaryImages([]);
 
       // Refrescar la lista completa de fondo
       fetchProducts();
@@ -811,6 +865,118 @@ export default function AdminProducts() {
                   onChange={(val) => setFormData({ ...formData, useScenarios: val })}
                 />
 
+                {/* ── Imagen de Portada (Obligatoria) ── */}
+                <div className="edit-form-group">
+                  <label>Imagen de Portada (Obligatoria)</label>
+                  <div
+                    className={`cover-drag-drop ${isDragActiveEdit ? 'drag-active' : ''} ${editCoverImage ? 'has-image' : ''}`}
+                    onDragEnter={(e) => { e.preventDefault(); setIsDragActiveEdit(true); }}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragActiveEdit(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); setIsDragActiveEdit(false); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragActiveEdit(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        const file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) {
+                          setEditCoverImage(file);
+                        } else {
+                          showError('Por favor selecciona un archivo de imagen.');
+                        }
+                      }
+                    }}
+                  >
+                    {editCoverImage ? (
+                      <div className="cover-preview-container">
+                        <img
+                          src={editCoverImage instanceof File ? URL.createObjectURL(editCoverImage) : editCoverImage}
+                          alt="Previsualización Portada"
+                          className="cover-preview-img"
+                        />
+                        <button
+                          type="button"
+                          className="btn-delete-preview"
+                          onClick={() => setEditCoverImage(null)}
+                          title="Eliminar portada"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          id="editCoverImageInput"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setEditCoverImage(e.target.files[0]);
+                            }
+                          }}
+                          className="create-file-input"
+                        />
+                        <label htmlFor="editCoverImageInput" className="create-file-label">
+                          <UploadCloud size={28} className="create-upload-icon" />
+                          <span className="create-upload-text">Arrastra aquí o haz clic para seleccionar portada</span>
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Imágenes de la Galería (Opcional) ── */}
+                <div className="edit-form-group">
+                  <label>Imágenes Secundarias (Máximo 3)</label>
+                  <div className="gallery-upload-area">
+                    <input
+                      type="file"
+                      id="editSecondaryImagesInput"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          const files = Array.from(e.target.files);
+                          const imageFiles = files.filter(f => f.type.startsWith('image/'));
+                          if (imageFiles.length > 3) {
+                            showError('Máximo 3 imágenes secundarias permitidas.');
+                            e.target.value = ''; // Limpiar input
+                            setEditSecondaryImages([]);
+                          } else {
+                            setEditSecondaryImages(imageFiles);
+                          }
+                        }
+                      }}
+                      className="create-file-input"
+                    />
+                    <label htmlFor="editSecondaryImagesInput" className="create-file-label">
+                      <UploadCloud size={24} className="create-upload-icon" />
+                      <span className="create-upload-text">Seleccionar hasta 3 imágenes secundarias</span>
+                    </label>
+                  </div>
+
+                  {editSecondaryImages.length > 0 && (
+                    <div className="gallery-previews-grid">
+                      {editSecondaryImages.map((img, idx) => (
+                        <div key={idx} className="gallery-preview-item">
+                          <img
+                            src={img instanceof File ? URL.createObjectURL(img) : img}
+                            alt={`Preview secundaria ${idx + 1}`}
+                            className="gallery-preview-img"
+                          />
+                          <button
+                            type="button"
+                            className="btn-delete-preview"
+                            onClick={() => setEditSecondaryImages(prev => prev.filter((_, i) => i !== idx))}
+                            title="Eliminar imagen"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* ── Checkbox: Más Vendido ── */}
                 <label className="edit-form-checkbox">
                   <input
@@ -835,7 +1001,7 @@ export default function AdminProducts() {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-save" disabled={isLoading}>
+                <button type="submit" className="btn-save" disabled={isLoading || !editCoverImage}>
                   {isLoading ? (
                     <><Loader size={18} className="spin" /><span>Guardando...</span></>
                   ) : (
@@ -989,33 +1155,116 @@ export default function AdminProducts() {
                   onChange={(val) => setNewProductData({ ...newProductData, use_scenarios: val })}
                 />
 
-                {/* ── Imagen del Producto ── */}
+                {/* ── Imagen de Portada (Obligatoria) ── */}
                 <div className="edit-form-group">
-                  <label>Imagen del Producto</label>
-                  <div className="create-file-upload">
+                  <label>Imagen de Portada (Obligatoria)</label>
+                  <div
+                    className={`cover-drag-drop ${isDragActiveNew ? 'drag-active' : ''} ${newCoverImage ? 'has-image' : ''}`}
+                    onDragEnter={(e) => { e.preventDefault(); setIsDragActiveNew(true); }}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragActiveNew(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); setIsDragActiveNew(false); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragActiveNew(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        const file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) {
+                          setNewCoverImage(file);
+                        } else {
+                          showError('Por favor selecciona un archivo de imagen.');
+                        }
+                      }
+                    }}
+                  >
+                    {newCoverImage ? (
+                      <div className="cover-preview-container">
+                        <img
+                          src={URL.createObjectURL(newCoverImage)}
+                          alt="Previsualización Portada"
+                          className="cover-preview-img"
+                        />
+                        <button
+                          type="button"
+                          className="btn-delete-preview"
+                          onClick={() => setNewCoverImage(null)}
+                          title="Eliminar portada"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          id="newCoverImageInput"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setNewCoverImage(e.target.files[0]);
+                            }
+                          }}
+                          className="create-file-input"
+                        />
+                        <label htmlFor="newCoverImageInput" className="create-file-label">
+                          <UploadCloud size={28} className="create-upload-icon" />
+                          <span className="create-upload-text">Arrastra aquí o haz clic para seleccionar portada</span>
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Imágenes de la Galería (Opcional) ── */}
+                <div className="edit-form-group">
+                  <label>Imágenes Secundarias (Máximo 3)</label>
+                  <div className="gallery-upload-area">
                     <input
                       type="file"
-                      id="newProductImage"
+                      id="newSecondaryImagesInput"
                       accept="image/*"
+                      multiple
                       onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setNewProductImage(e.target.files[0]);
+                        if (e.target.files) {
+                          const files = Array.from(e.target.files);
+                          const imageFiles = files.filter(f => f.type.startsWith('image/'));
+                          if (imageFiles.length > 3) {
+                            showError('Máximo 3 imágenes secundarias permitidas.');
+                            e.target.value = ''; // Limpiar input
+                            setNewSecondaryImages([]);
+                          } else {
+                            setNewSecondaryImages(imageFiles);
+                          }
                         }
                       }}
                       className="create-file-input"
                     />
-                    <label htmlFor="newProductImage" className="create-file-label">
-                      <UploadCloud size={28} className="create-upload-icon" />
-                      <span className="create-upload-text">
-                        {newProductImage ? newProductImage.name : 'Haz clic para seleccionar una imagen'}
-                      </span>
-                      {newProductImage && (
-                        <span className="create-upload-hint">
-                          {(newProductImage.size / 1024).toFixed(1)} KB
-                        </span>
-                      )}
+                    <label htmlFor="newSecondaryImagesInput" className="create-file-label">
+                      <UploadCloud size={24} className="create-upload-icon" />
+                      <span className="create-upload-text">Seleccionar hasta 3 imágenes secundarias</span>
                     </label>
                   </div>
+
+                  {newSecondaryImages.length > 0 && (
+                    <div className="gallery-previews-grid">
+                      {newSecondaryImages.map((file, idx) => (
+                        <div key={idx} className="gallery-preview-item">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview secundaria ${idx + 1}`}
+                            className="gallery-preview-img"
+                          />
+                          <button
+                            type="button"
+                            className="btn-delete-preview"
+                            onClick={() => setNewSecondaryImages(prev => prev.filter((_, i) => i !== idx))}
+                            title="Eliminar imagen"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -1030,7 +1279,7 @@ export default function AdminProducts() {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-save" disabled={isSubmittingNew}>
+                <button type="submit" className="btn-save" disabled={isSubmittingNew || !newCoverImage}>
                   {isSubmittingNew ? (
                     <><Loader size={18} className="spin" /><span>Creando...</span></>
                   ) : (

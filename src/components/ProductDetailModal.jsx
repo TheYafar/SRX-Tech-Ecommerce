@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +63,25 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  const images = useMemo(() => {
+    if (!product) return [];
+    if (Array.isArray(product.images_urls) && product.images_urls.length > 0) {
+      return product.images_urls.filter(Boolean);
+    }
+    return product.image ? [product.image] : [];
+  }, [product]);
+
+  const [activeImage, setActiveImage] = useState(null);
+
+  // Sync activeImage with the first image when the product changes
+  useEffect(() => {
+    if (images.length > 0) {
+      setActiveImage(images[0]);
+    } else {
+      setActiveImage(product?.image || null);
+    }
+  }, [product, images]);
 
   if (!product) return null;
 
@@ -138,7 +157,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                   transition={{ duration: 0.3 }}
                 >
                   <img 
-                    src={product.image} 
+                    src={activeImage || product.image} 
                     alt={product.name} 
                     className="product-detail-image"
                   />
@@ -165,6 +184,27 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                     </motion.button>
                   </div>
                 </motion.div>
+
+                {/* Thumbnails Gallery */}
+                {images.length > 1 && (
+                  <div className="product-thumbnails-gallery">
+                    {images.map((imgUrl, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`thumbnail-btn ${activeImage === imgUrl ? 'active' : ''}`}
+                        onClick={() => setActiveImage(imgUrl)}
+                        aria-label={`Ver imagen ${idx + 1}`}
+                      >
+                        <img 
+                          src={imgUrl} 
+                          alt={`Miniatura ${idx + 1}`} 
+                          className="thumbnail-img"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Product Badges */}
                 <div className="product-badges">
