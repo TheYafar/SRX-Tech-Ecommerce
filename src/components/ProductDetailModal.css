@@ -23,7 +23,7 @@
   background: #ffffff;
   border-radius: var(--radius-lg); /* 24px */
   width: 100%;
-  max-width: 960px; /* Generous width for 2 columns */
+  max-width: 1080px; /* Increased from 960px to enlarge the modal and its image */
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
@@ -69,7 +69,7 @@
 /* Layout - Generous spacing (p-10 equivalent, items-start) */
 .product-detail-content {
   display: grid;
-  grid-template-columns: 45fr 55fr; /* 45% / 55% proportions */
+  grid-template-columns: 50fr 50fr; /* 50% / 50% proportions to enlarge the image column */
   gap: 2.5rem;
   padding: 2.5rem; /* Respiro de 2.5rem (p-10) */
   align-items: start; /* Alineados al tope superior */
@@ -93,7 +93,8 @@
 .product-detail-image {
   width: 100%;
   aspect-ratio: 1 / 1; /* Aspect Square */
-  object-fit: cover; /* Centered object-fit cover */
+  object-fit: contain; /* Don't crop, show full image */
+  background: #f8fafc; /* Elegant light slate background */
   display: block;
 }
 
@@ -583,7 +584,8 @@
 
   .product-detail-image {
     aspect-ratio: 4 / 3; /* Control height on mobile to prevent overflow */
-    object-fit: cover;
+    object-fit: contain; /* Don't crop, show full image */
+    background: #f8fafc; /* Elegant light slate background */
   }
 
   /* Info block vertical scroll inside the main container */

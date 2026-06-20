@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
 
   // Start with clean state checking auth session
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [authContextHint, setAuthContextHint] = useState(null);

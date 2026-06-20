@@ -6,9 +6,8 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    storage: window.sessionStorage,
-    autoRefreshToken: true,
-    persistSession: true
+    persistSession: false, // Evita que guarde el token en localStorage/sessionStorage
+    autoRefreshToken: false // Desactiva el refresco automático de tokens entre recargas
   }
 });
 

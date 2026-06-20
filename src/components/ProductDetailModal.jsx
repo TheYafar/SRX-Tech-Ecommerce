@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useNotifications } from '../context/NotificationContext';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock, Smartphone, Package } from 'lucide-react';
 import './ProductDetailModal.css';
 
@@ -60,6 +61,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
   const { addToCart } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
+  const { showSuccess, showError } = useNotifications();
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -82,6 +84,33 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
       setActiveImage(product?.image || null);
     }
   }, [product, images]);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: product.name,
+      text: product.tagline || product.description || `Mira este increíble producto: ${product.name}`,
+      url: `${window.location.origin}/producto/${product.id || ''}`
+    };
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        showSuccess('¡Enlace del producto copiado al portapapeles!');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Error sharing product:', err);
+        try {
+          await navigator.clipboard.writeText(shareData.url);
+          showSuccess('¡Enlace del producto copiado al portapapeles!');
+        } catch (clipErr) {
+          showError('No se pudo copiar el enlace al portapapeles.');
+        }
+      }
+    }
+  };
 
   if (!product) return null;
 
@@ -178,6 +207,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                       className="action-btn"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
+                      onClick={handleShare}
                       aria-label="Compartir"
                     >
                       <Share2 size={20} />
