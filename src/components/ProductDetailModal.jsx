@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -74,16 +74,38 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
     return product.image ? [product.image] : [];
   }, [product]);
 
-  const [activeImage, setActiveImage] = useState(null);
+  const sliderRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  // Sync activeImage with the first image when the product changes
+  // Sync activeIndex and scroll to start when product changes
   useEffect(() => {
-    if (images.length > 0) {
-      setActiveImage(images[0]);
-    } else {
-      setActiveImage(product?.image || null);
+    setActiveIndex(0);
+    if (sliderRef.current) {
+      sliderRef.current.scrollLeft = 0;
     }
-  }, [product, images]);
+  }, [product]);
+
+  const handleSliderScroll = () => {
+    if (!sliderRef.current) return;
+    const { scrollLeft, clientWidth } = sliderRef.current;
+    if (clientWidth > 0) {
+      const index = Math.round(scrollLeft / clientWidth);
+      if (index !== activeIndex && index >= 0 && index < images.length) {
+        setActiveIndex(index);
+      }
+    }
+  };
+
+  const scrollToImage = (index) => {
+    if (!sliderRef.current) return;
+    const { clientWidth } = sliderRef.current;
+    sliderRef.current.scrollTo({
+      left: index * clientWidth,
+      behavior: 'smooth'
+    });
+    setActiveIndex(index);
+  };
 
   const handleShare = async () => {
     const shareData = {
@@ -178,18 +200,28 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
             </button>
 
             <div className="product-detail-content">
-              {/* Product Image */}
+              {/* Product Image Slider */}
               <div className="product-image-section">
-                <motion.div 
-                  className="product-image-wrapper"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <img 
-                    src={activeImage || product.image} 
-                    alt={product.name} 
-                    className="product-detail-image"
-                  />
+                <div className="product-image-slider-container">
+                  <motion.div 
+                    ref={sliderRef}
+                    className="product-images-slider"
+                    onScroll={handleSliderScroll}
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {images.map((imgUrl, idx) => (
+                      <div key={idx} className="product-slider-slide">
+                        <img 
+                          src={imgUrl} 
+                          alt={`${product.name} - Imagen ${idx + 1}`} 
+                          className="product-detail-image"
+                          onClick={() => setIsLightboxOpen(true)}
+                          style={{ cursor: 'zoom-in' }}
+                        />
+                      </div>
+                    ))}
+                  </motion.div>
                   
                   {/* Quick Actions */}
                   <div className="product-actions">
@@ -213,7 +245,22 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                       <Share2 size={20} />
                     </motion.button>
                   </div>
-                </motion.div>
+
+                  {/* Navigation dots for mobile/slider */}
+                  {images.length > 1 && (
+                    <div className="slider-dots">
+                      {images.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`slider-dot ${activeIndex === idx ? 'active' : ''}`}
+                          onClick={() => scrollToImage(idx)}
+                          aria-label={`Ir a imagen ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Thumbnails Gallery */}
                 {images.length > 1 && (
@@ -222,8 +269,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                       <button
                         key={idx}
                         type="button"
-                        className={`thumbnail-btn ${activeImage === imgUrl ? 'active' : ''}`}
-                        onClick={() => setActiveImage(imgUrl)}
+                        className={`thumbnail-btn ${activeIndex === idx ? 'active' : ''}`}
+                        onClick={() => scrollToImage(idx)}
                         aria-label={`Ver imagen ${idx + 1}`}
                       >
                         <img 
@@ -442,6 +489,40 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                 </motion.div>
               </div>
             </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Lightbox Visualizer for Fullscreen Image */}
+      {isOpen && isLightboxOpen && (
+        <motion.div
+          className="product-lightbox-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <button 
+            className="lightbox-close-btn"
+            onClick={() => setIsLightboxOpen(false)}
+            aria-label="Cerrar pantalla completa"
+          >
+            &times;
+          </button>
+          
+          <motion.div 
+            className="lightbox-content"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 250 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={images[activeIndex] || product.image} 
+              alt={product.name} 
+              className="lightbox-image"
+            />
           </motion.div>
         </motion.div>
       )}

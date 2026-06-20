@@ -81,21 +81,81 @@
   width: 100%;
 }
 
-.product-image-wrapper {
+.product-image-slider-container {
   position: relative;
   width: 100%;
   border-radius: 1.5rem; /* rounded-2xl modern corners */
   overflow: hidden;
   box-shadow: var(--shadow-md);
-  background: var(--bg-tertiary);
+  background: #ffffff; /* Unified white background */
+}
+
+.product-images-slider {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+  background: #ffffff;
+}
+
+.product-images-slider::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+.product-slider-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
 }
 
 .product-detail-image {
   width: 100%;
   aspect-ratio: 1 / 1; /* Aspect Square */
   object-fit: contain; /* Don't crop, show full image */
-  background: #f8fafc; /* Elegant light slate background */
+  background: #ffffff; /* Unified white background */
   display: block;
+}
+
+/* Slider navigation dots */
+.slider-dots {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.45);
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.slider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slider-dot.active {
+  background: #ffffff;
+  transform: scale(1.15);
+  width: 16px;
+  border-radius: 4px;
 }
 
 /* Floating Actions - Glassmorphism */
@@ -572,20 +632,29 @@
     gap: 1.25rem;
   }
 
-  /* Image at top taking full width */
+  /* Image section itself is normal width */
   .product-image-section {
     width: 100%;
     order: 0;
   }
 
-  .product-image-wrapper {
-    border-radius: 1rem; /* rounded-xl */
+  /* Only the slider container goes edge-to-edge on mobile */
+  .product-image-slider-container {
+    width: calc(100% + 2.5rem); /* Expand past padding */
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    margin-top: -1.25rem;
+    border-radius: 1.5rem 1.5rem 0 0; /* Matches top corners of the modal */
+    box-shadow: none;
+    border-bottom: 1px solid #f1f5f9; /* Soft bottom separator border */
+    background: #ffffff;
   }
 
   .product-detail-image {
-    aspect-ratio: 4 / 3; /* Control height on mobile to prevent overflow */
+    aspect-ratio: 1 / 1; /* Keep square for e-commerce standards */
+    max-height: 400px; /* Increase max height for better visibility */
     object-fit: contain; /* Don't crop, show full image */
-    background: #f8fafc; /* Elegant light slate background */
+    background: #ffffff; /* Elegant unified white background */
   }
 
   /* Info block vertical scroll inside the main container */
@@ -678,4 +747,68 @@
     width: 52px;
     height: 52px;
   }
+}
+
+/* ==========================================================================
+   Fullscreen Lightbox Visualizer Styles
+   ========================================================================== */
+.product-lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 15, 30, 0.95); /* Extremely dark, premium deep blue/black background */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 4000; /* Float above the modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.lightbox-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 4010;
+}
+
+.lightbox-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg) scale(1.05);
+}
+
+.lightbox-content {
+  max-width: 95%;
+  max-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  user-select: none;
+  -webkit-user-drag: none;
 }
