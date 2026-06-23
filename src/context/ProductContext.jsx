@@ -30,7 +30,7 @@ export const ProductProvider = ({ children }) => {
         ...p,
         image: p.images_urls?.[0] || 'https://via.placeholder.com/150',
         price: p.price_usd || 0,
-        salePrice: p.sale_price_usd || null,
+        salePrice: p.sale_price_usd || (p.compare_at_price_usd && p.compare_at_price_usd < p.price_usd ? p.compare_at_price_usd : null),
         tagline: p.description ? p.description.substring(0, 50) + '...' : '',
         stock: p.stock || 0,
         compareAtPrice: p.compare_at_price_usd || null,

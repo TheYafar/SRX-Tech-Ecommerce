@@ -55,6 +55,22 @@
   display: block;
 }
 
+.admin-logo-divider {
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: #cbd5e1; /* slate-300 */
+  margin: 0 0.1rem;
+  user-select: none;
+}
+
+.admin-logo-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b; /* slate-800 */
+  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
+}
+
 .admin-logo-badge {
   font-size: 0.72rem;
   font-weight: 700;

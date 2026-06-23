@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Send } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 import { setNavFilter } from './Navbar';
@@ -23,6 +23,7 @@ export default function Footer() {
   const [email, setEmail] = useState('');
   const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Cargar categorías dinámicamente desde Supabase al montar el componente
   useEffect(() => {
@@ -61,13 +62,15 @@ export default function Footer() {
         
         {/* Columna Principal: Marca y Newsletter */}
         <div className="footer-brand-col">
-          <div className="footer-brand-logo-container">
+          <Link to="/" className="footer-brand-logo-container" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img 
               src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
-              alt="SRX Tech Logo" 
+              alt="SRX Logo" 
               className="footer-brand-logo" 
             />
-          </div>
+            <span className="footer-logo-divider">|</span>
+            <span className="footer-logo-text">Tech</span>
+          </Link>
           <p className="footer-description">
             Únete a nuestra comunidad y recibe ofertas exclusivas, novedades y consejos sobre tecnología premium.
           </p>

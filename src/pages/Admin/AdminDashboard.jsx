@@ -22,8 +22,12 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
   // ── States for Add Product ──────────────────────────────
   const [productData, setProductData] = useState({
-    title: '', description: '', price_usd: '', stock: '',
-    features: '', category: '', category_id: ''
+    category_id: '',
+    name: '',
+    description: '',
+    price_usd: '',
+    stock: '',
+    specifications: ''
   });
   const [portada, setPortada] = useState(null);
   const [previewPortada, setPreviewPortada] = useState('');
@@ -69,7 +73,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data, error } = await supabase.from('categories').select('id, name, slug');
+        const { data, error } = await supabase.from('categories').select('id, name');
         if (error) throw error;
         if (data) setCategories(data);
       } catch (err) {
@@ -209,9 +213,9 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     setPreviewGaleria(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddProduct = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!productData.title || !productData.price_usd || !portada || !productData.category_id) {
+    if (!productData.name || !productData.price_usd || !portada || !productData.category_id) {
       showError('Por favor completa todos los campos requeridos, incluyendo la categoría y la imagen de portada.');
       return;
     }
@@ -235,19 +239,24 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
       let parsedFeatures = {};
       try {
-        if (productData.features.trim() !== '') parsedFeatures = JSON.parse(productData.features);
-      } catch { showError('Las características deben ser un JSON válido. Guardando como objeto vacío.'); }
+        if (productData.specifications && productData.specifications.trim() !== '') {
+          parsedFeatures = JSON.parse(productData.specifications);
+        }
+      } catch {
+        showError('Las características deben ser un JSON válido. Guardando como objeto vacío.');
+      }
 
       let finalCategoryId = productData.category_id;
       if (finalCategoryId === '' || finalCategoryId === 'Seleccionar categoría') finalCategoryId = null;
 
       const objetoProducto = {
-        name: productData.title,
-        description: productData.description,
+        category_id: finalCategoryId,
+        name: productData.name.trim(),
+        description: productData.description ? productData.description.trim() : null,
         price_usd: parseFloat(productData.price_usd),
+        stock: parseInt(productData.stock) || 0,
         specifications: parsedFeatures,
-        images_urls: finalImages,
-        category_id: finalCategoryId
+        images_urls: finalImages
       };
 
       const { data: productoCreado, error: productError } = await supabase
@@ -266,20 +275,21 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
       addProductToState({
         id: productoCreado.id,
-        name: productData.title,
-        description: productData.description,
+        name: productData.name.trim(),
+        description: productData.description ? productData.description.trim() : null,
         price_usd: parseFloat(productData.price_usd),
         specifications: parsedFeatures,
         images_urls: finalImages,
         image: urlPortada,
         price: parseFloat(productData.price_usd),
         salePrice: null,
-        category: productData.category,
-        tagline: productData.description ? productData.description.substring(0, 50) + '...' : ''
+        category: categories.find(c => c.id === finalCategoryId)?.name || '',
+        tagline: productData.description ? productData.description.substring(0, 50) + '...' : '',
+        stock: stockDelFormulario
       });
 
       showSuccess('Producto añadido correctamente.');
-      setProductData({ title: '', description: '', price_usd: '', stock: '', features: '', category: '', category_id: '' });
+      setProductData({ category_id: '', name: '', description: '', price_usd: '', stock: '', specifications: '' });
       setPortada(null);
       setPreviewPortada('');
       setGaleria([]);
@@ -629,11 +639,11 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         {activeTab === 'addProduct' && (
           <div className="admin-section">
             <h2 className="admin-section-title">Nuevo Producto</h2>
-            <form className="admin-form" onSubmit={handleAddProduct}>
+            <form className="admin-form" onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Título del Producto</label>
                 <input
-                  type="text" name="title" value={productData.title}
+                  type="text" name="name" value={productData.name}
                   onChange={handleProductInputChange}
                   placeholder="Ej: Sony A7S III" required
                 />
@@ -665,10 +675,10 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 <div className="form-group">
                   <label>Precio (USD)</label>
                   <input
-                    type="number" step="0.01" name="price_usd"
-                    value={productData.price_usd}
-                    onChange={handleProductInputChange}
-                    placeholder="Ej: 3499.99" required
+                     type="number" step="0.01" name="price_usd"
+                     value={productData.price_usd}
+                     onChange={handleProductInputChange}
+                     placeholder="Ej: 3499.99" required
                   />
                 </div>
                 <div className="form-group">
@@ -683,7 +693,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
               <div className="form-group">
                 <label>Características (JSON)</label>
                 <textarea
-                  name="features" value={productData.features}
+                  name="specifications" value={productData.specifications}
                   onChange={handleProductInputChange}
                   placeholder='{"Resolución": "4K", "Sensor": "Full Frame"}'
                   rows={3} className="font-mono"

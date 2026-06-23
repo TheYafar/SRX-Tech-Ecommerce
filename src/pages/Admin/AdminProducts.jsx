@@ -437,12 +437,7 @@ export default function AdminProducts() {
         compatible_devices: formData.compatibleDevices,
         use_scenarios: formData.useScenarios,
         images_urls: arrayFinalImagenes,
-        // Categoría (si viene como id numérico o slug de texto)
-        ...(formData.categoria
-          ? isNaN(formData.categoria)
-            ? { category: formData.categoria }
-            : { category_id: Number(formData.categoria) }
-          : {}),
+        category_id: formData.categoria || null,
       };
 
       const { error } = await supabase
@@ -554,7 +549,7 @@ export default function AdminProducts() {
           description: newProductData.description.trim() || null,
           price_usd: parseFloat(newProductData.price_usd),
           stock: parseInt(newProductData.stock) || 0,
-          category_id: Number(newProductData.category_id),
+          category_id: newProductData.category_id || null,
           compatible_devices: newProductData.compatible_devices,
           use_scenarios: newProductData.use_scenarios,
           images_urls: arrayFinalImagenes,

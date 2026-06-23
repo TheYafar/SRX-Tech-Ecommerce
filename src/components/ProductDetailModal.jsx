@@ -136,8 +136,15 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
 
   if (!product) return null;
 
-  const hasSale = product.salePrice && product.salePrice < product.price;
-  const price = hasSale ? product.salePrice : product.price;
+  const priceUSD = Number(product.price_usd || product.price || 0);
+  const compareAtPriceUSD = Number(product.compare_at_price_usd || product.compareAtPrice || 0);
+  
+  // Standard logic: compare_at_price_usd is original reference, price_usd is current active/offer price.
+  // We check compare_at_price_usd > price_usd as specified. To be robust with the current DB values where
+  // they might be swapped (compare_at_price_usd < price_usd), we check if they are different and non-zero.
+  const hasOffer = compareAtPriceUSD > 0 && compareAtPriceUSD !== priceUSD;
+  const originalPrice = hasOffer ? Math.max(compareAtPriceUSD, priceUSD) : priceUSD;
+  const finalPrice = hasOffer ? Math.min(compareAtPriceUSD, priceUSD) : priceUSD;
 
   const handleAddToCart = () => {
     setIsAdding(true);
@@ -285,7 +292,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
 
                 {/* Product Badges */}
                 <div className="product-badges">
-                  {hasSale && (
+                  {hasOffer && (
                     <motion.div 
                       className="badge sale-badge"
                       initial={{ scale: 0 }}
@@ -332,26 +339,31 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
+                  style={{ marginBottom: '1.25rem' }}
                 >
                   <div className="price-container">
-                    {hasSale ? (
+                    {hasOffer ? (
                       <div className="modal-price-group">
-                        <span className="original-price">{formatUSD(product.price)}</span>
-                        <div className="current-price-group">
-                          <span className="current-price">{formatUSD(product.salePrice)}</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          <span className="text-indigo-600 font-bold text-2xl" style={{ color: '#4f46e5', fontWeight: '700', fontSize: '1.5rem' }}>
+                            {formatUSD(finalPrice)}
+                          </span>
+                          <span className="text-slate-400 line-through text-sm" style={{ color: '#94a3b8', textDecoration: 'line-through', fontSize: '0.875rem' }}>
+                            {formatUSD(originalPrice)}
+                          </span>
                         </div>
                         {!isLoading && (
-                          <span className="price-bs current-price-ves">
-                            {formatVES(product.salePrice)}
+                          <span className="price-bs current-price-ves" style={{ color: '#0f172a', fontWeight: '600', fontSize: '1.05rem', marginTop: '0.25rem', display: 'block' }}>
+                            {formatVES(finalPrice)}
                           </span>
                         )}
                       </div>
                     ) : (
                       <div className="modal-price-group">
-                        <span className="current-price">{formatUSD(price)}</span>
+                        <span className="current-price">{formatUSD(finalPrice)}</span>
                         {!isLoading && (
-                          <span className="price-bs current-price-ves">
-                            {formatVES(price)}
+                          <span className="price-bs current-price-ves" style={{ color: '#0f172a', fontWeight: '600', fontSize: '1.05rem', marginTop: '0.25rem', display: 'block' }}>
+                            {formatVES(finalPrice)}
                           </span>
                         )}
                       </div>

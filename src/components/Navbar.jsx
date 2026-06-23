@@ -129,9 +129,11 @@ export default function Navbar() {
           <Link to="/" className="nav-logo" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img 
               src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
-              alt="SRX Tech Logo" 
+              alt="SRX Logo" 
               className="nav-logo-img" 
             />
+            <span className="logo-divider">|</span>
+            <span className="logo-tech">Tech</span>
           </Link>
         </div>
 
