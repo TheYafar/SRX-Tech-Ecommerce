@@ -127,9 +127,11 @@ export default function Navbar() {
         {/* Bloque Izquierdo: Solo el logo */}
         <div className="navbar-left">
           <Link to="/" className="nav-logo" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <span className="logo-srx">SRX</span>
-            <span className="logo-divider">|</span>
-            <span className="logo-tech">Tech</span>
+            <img 
+              src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+              alt="SRX Tech Logo" 
+              className="nav-logo-img" 
+            />
           </Link>
         </div>
 

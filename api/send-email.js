@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Faltan parámetros obligatorios para welcome-coupon: couponCode o discount.' });
       }
 
-      subject = '¡Tu regalo de bienvenida en SRX Tech está listo! 🎁';
+      subject = '¡Tu regalo de bienvenida en SRX Tech está listo!';
       html = `
 <!DOCTYPE html>
 <html lang="es">

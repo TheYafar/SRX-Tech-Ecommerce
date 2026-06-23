@@ -76,7 +76,7 @@ export default {
 
       // Inicialización de la librería de Resend
       const resend = new Resend(apiKey);
-      console.log(`📧 [send-mass-coupon] Enviando cupón ${sanitizedCodigo} (${sanitizedPorcentaje}%) a ${listaCorreos.length} destinatarios...`);
+      console.log(`[send-mass-coupon] Enviando cupón ${sanitizedCodigo} (${sanitizedPorcentaje}%) a ${listaCorreos.length} destinatarios...`);
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -91,7 +91,7 @@ export default {
           const { data, error } = await resend.emails.send({
             from: "SRX Tech <diego@srxtech.com>",
             to: [cleanEmail],
-            subject: "¡Tu código de descuento exclusivo en SRX Tech está listo! 🎉",
+            subject: "¡Tu código de descuento exclusivo en SRX Tech está listo!",
             html: `
               <div style="background-color: #0f172a; color: #ffffff; padding: 30px; font-family: sans-serif; border-radius: 8px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #38bdf8; text-align: center;">¡Gracias por ser parte de SRX Tech!</h2>
@@ -107,12 +107,12 @@ export default {
           });
           
           if (error) {
-            console.error(`❌ Error al enviar correo a ${cleanEmail}:`, error);
+            console.error(`Error al enviar correo a ${cleanEmail}:`, error);
             return { email, success: false, error };
           }
           return { email, success: true, id: data?.id };
         } catch (err) {
-          console.error(`❌ Excepción al enviar correo a ${email}:`, err);
+          console.error(`Excepción al enviar correo a ${email}:`, err);
           let itemError = err.message || String(err);
           if (
             itemError.includes("net::") ||
@@ -141,7 +141,7 @@ export default {
       );
 
     } catch (error) {
-      console.error("❌ Error en Edge Function send-mass-coupon:", error);
+      console.error("Error en Edge Function send-mass-coupon:", error);
       let errorMessage = error.message || String(error);
       
       // Detección de problemas de red en Deno Deploy

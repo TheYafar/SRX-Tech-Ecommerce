@@ -37,7 +37,14 @@ export default function AdminLayout() {
     <div className="admin-layout">
       {/* Mobile Header */}
       <div className="admin-mobile-header">
-        <span className="admin-logo">SRX Admin</span>
+        <div className="admin-mobile-logo-container">
+          <img 
+            src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+            alt="SRX Tech Logo" 
+            className="admin-logo-img" 
+          />
+          <span className="admin-logo-badge">Admin</span>
+        </div>
         <button className="admin-menu-btn" onClick={() => setIsSidebarOpen(true)}>
           <Menu size={24} />
         </button>
@@ -47,9 +54,12 @@ export default function AdminLayout() {
       <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <Link to="/" className="admin-logo-link">
-            <span className="logo-srx">SRX</span>
-            <span className="logo-divider">|</span>
-            <span className="logo-tech">Admin</span>
+            <img 
+              src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+              alt="SRX Tech Logo" 
+              className="admin-logo-img" 
+            />
+            <span className="admin-logo-badge">Admin</span>
           </Link>
           <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
             <X size={24} />

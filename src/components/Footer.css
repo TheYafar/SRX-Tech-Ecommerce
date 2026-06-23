@@ -35,6 +35,18 @@
   background-clip: text;
 }
 
+.footer-brand-logo-container {
+  margin-bottom: 1.5rem;
+  display: inline-block;
+}
+
+.footer-brand-logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .footer-description {
   color: #a3a3a3;
   font-size: 0.95rem;

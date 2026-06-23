@@ -61,7 +61,13 @@ export default function Footer() {
         
         {/* Columna Principal: Marca y Newsletter */}
         <div className="footer-brand-col">
-          <div className="footer-brand">SRX Tech</div>
+          <div className="footer-brand-logo-container">
+            <img 
+              src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+              alt="SRX Tech Logo" 
+              className="footer-brand-logo" 
+            />
+          </div>
           <p className="footer-description">
             Únete a nuestra comunidad y recibe ofertas exclusivas, novedades y consejos sobre tecnología premium.
           </p>

@@ -170,7 +170,7 @@
   color: #ffffff;
 }
 
-/* ⭐ Rating Badge — posición fluida arriba-derecha */
+/* Rating Badge — posición fluida arriba-derecha */
 .rating-badge {
   top: 1.5rem;
   right: 2.5rem;
@@ -568,7 +568,7 @@
   }
 
   /* ----------------------------------------------------------
-     3.5 ⭐ Rating Badge — Posición fluida en móvil
+     3.5 Rating Badge — Posición fluida en móvil
      - position: absolute con top/right controlados
      - Despegado de la zona del buscador con margen superior
        calculado: nav-height + barra búsqueda (~56px) + gap

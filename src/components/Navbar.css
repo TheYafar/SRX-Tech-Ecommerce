@@ -65,6 +65,13 @@
 
 .nav-logo:hover { opacity: 0.88; }
 
+.nav-logo-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .logo-srx {
   font-size: 1.45rem;
   font-weight: 900;

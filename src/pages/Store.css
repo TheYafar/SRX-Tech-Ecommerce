@@ -393,22 +393,24 @@
   margin: 1.25rem auto 0;
   padding: 8px 14px 8px 12px;
   background: rgba(0, 242, 254, 0.08);
-  border: 1px solid rgba(0, 242, 254, 0.25);
+  border: 1px solid rgba(0, 242, 254, 0.35);
   border-radius: 20px;
-  font-size: 0.82rem;
-  color: #94a3b8;
+  font-size: 0.85rem;
+  color: #334155; /* Slate grey for 'Categoría:' */
   width: fit-content;
   position: relative;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .active-nav-filter-chip svg {
-  color: #00f2fe;
+  color: #008fa0; /* Richer cyan for contrast on light background */
   flex-shrink: 0;
 }
 
 .active-nav-filter-chip strong {
-  color: #e2e8f0;
-  font-weight: 600;
+  color: #000000; /* Pure black text */
+  font-weight: 700; /* Extra bold/marked */
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.1); /* Subtle definition */
 }
 
 .chip-clear-btn {
@@ -418,18 +420,18 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.08); /* Dark slate tint for clear visibility */
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
+  color: #475569;
   transition: all 0.2s ease;
   margin-left: 2px;
   flex-shrink: 0;
 }
 
 .chip-clear-btn:hover {
-  background: rgba(231, 76, 94, 0.25);
-  color: #e74c5e;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
 
 /* Back Link */

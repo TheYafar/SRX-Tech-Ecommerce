@@ -116,7 +116,7 @@ function buildEmailHTML(params: {
                         letter-spacing: -0.5px;
                         color: #f1f5f9;
                       ">
-                        ⚡ SRX <span style="color: ${accentColor};">Tech</span>
+                        SRX <span style="color: ${accentColor};">Tech</span>
                       </span>
                     </div>
                   </td>
@@ -193,7 +193,7 @@ function buildEmailHTML(params: {
                 color: #94a3b8;
                 line-height: 1.7;
               ">
-                Hola, <strong style="color: #e2e8f0;">${fullName}</strong> 👋
+                Hola, <strong style="color: #e2e8f0;">${fullName}</strong>
               </p>
               <p style="
                 margin: 0;
@@ -307,7 +307,7 @@ function buildPaymentEmail(fullName: string): EmailPayload {
       ctaLabel: "Ver mis pedidos",
       ctaHref: "https://srxtech.com/profile",
       accentColor: "#4ade80",
-      iconEmoji: "✅",
+      iconEmoji: "✓",
     }),
   };
 }
@@ -316,7 +316,7 @@ function buildPaymentEmail(fullName: string): EmailPayload {
 function buildShippingEmail(fullName: string): EmailPayload {
   return {
     to: "", // filled by caller
-    subject: "🚚 ¡Tu pedido va en camino! - SRX Tech",
+    subject: "¡Tu pedido va en camino! - SRX Tech",
     html: buildEmailHTML({
       fullName,
       title: "¡Tu pedido está en camino!",
@@ -327,7 +327,7 @@ function buildShippingEmail(fullName: string): EmailPayload {
       ctaLabel: "Rastrear pedido",
       ctaHref: "https://srxtech.com/profile",
       accentColor: "#60a5fa",
-      iconEmoji: "🚚",
+      iconEmoji: "✓",
     }),
   };
 }
@@ -479,13 +479,13 @@ serve(async (req: Request) => {
     const resendData = await resendResponse.json();
 
     console.log(
-      `[send-notification] ✅ Email sent to ${customer.email} | Resend ID: ${resendData.id}`
+      `[send-notification] Email sent to ${customerEmail} | Resend ID: ${resendData.id}`
     );
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Email sent to ${customer.email}`,
+        message: `Email sent to ${customerEmail}`,
         resend_id: resendData.id,
         table,
         trigger_status: newStatus,
@@ -499,7 +499,7 @@ serve(async (req: Request) => {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
 
-    console.error(`[send-notification] ❌ Error: ${errorMessage}`);
+    console.error(`[send-notification] Error: ${errorMessage}`);
 
     return new Response(
       JSON.stringify({
