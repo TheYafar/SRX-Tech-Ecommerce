@@ -66,7 +66,7 @@
 .nav-logo:hover { opacity: 0.88; }
 
 .nav-logo-img {
-  height: 38px;
+  height: 28px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -80,7 +80,7 @@
 }
 
 .logo-divider {
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   font-weight: 200;
   color: rgba(255, 255, 255, 0.35);
   margin: 0 0.15rem;
@@ -88,7 +88,7 @@
 }
 
 .logo-tech {
-  font-size: 1.25rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.5px;
