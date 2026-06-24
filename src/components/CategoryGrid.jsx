@@ -6,21 +6,21 @@ import './CategoryGrid.css';
 
 const categoryMeta = {
   'drones-y-sistemas-aereos': { // Tarjeta grande de la izquierda
-    image: '/SRX-Tech-Ecommerce/imagenes/srx.jpg',
+    image: '/srx.jpg',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
   'audio-profesional': { // Tarjeta superior derecha
-    image: '/SRX-Tech-Ecommerce/imagenes/srx2.jpg',
+    image: '/srx2.jpg',
     titleDisplay: 'Audio Profesional',
     description: 'Lentes de marcas reconocidas para ampliar tu creatividad visual.',
     buttonText: 'Comprar',
     order: 1
   },
   'iluminacion-y-energia': { // Tarjeta inferior derecha
-    image: '/SRX-Tech-Ecommerce/imagenes/srx3.jpg',
+    image: '/srx3.jpg',
     titleDisplay: 'Iluminación y Energía',
     description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
     buttonText: 'Explorar',

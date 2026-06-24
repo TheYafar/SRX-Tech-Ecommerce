@@ -39,7 +39,7 @@ export default function AdminLayout() {
       <div className="admin-mobile-header">
         <div className="admin-mobile-logo-container">
           <img 
-            src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+            src="/Renovacion_logo_SRX_1a_2.png" 
             alt="SRX Logo" 
             className="admin-logo-img" 
           />
@@ -57,7 +57,7 @@ export default function AdminLayout() {
         <div className="sidebar-header">
           <Link to="/" className="admin-logo-link">
             <img 
-              src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+              src="/Renovacion_logo_SRX_1a_2.png" 
               alt="SRX Logo" 
               className="admin-logo-img" 
             />

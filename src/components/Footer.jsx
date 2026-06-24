@@ -64,7 +64,7 @@ export default function Footer() {
         <div className="footer-brand-col">
           <Link to="/" className="footer-brand-logo-container" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img 
-              src="/SRX-Tech-Ecommerce/imagenes/Renovacion_logo_SRX_1a_2.png" 
+              src="/Renovacion_logo_SRX_1a_2.png" 
               alt="SRX Logo" 
               className="footer-brand-logo" 
             />
