@@ -372,7 +372,7 @@ export default function AdminOrders() {
     <div className="admin-orders animate-fade-in">
       <div className="admin-page-header-row">
         <div>
-          <h1 className="admin-page-title">Pedidos</h1>
+          <h1 className="admin-page-title">Encargos</h1>
           <p className="admin-page-subtitle">Gestiona las ventas y verifica pagos manuales</p>
         </div>
         
@@ -382,14 +382,14 @@ export default function AdminOrders() {
             className={`subtab-btn ${ordersTab === 'active' ? 'active' : ''}`}
             onClick={() => setOrdersTab('active')}
           >
-            Pedidos Activos ({activeOrdersCount})
+            Encargos Activos ({activeOrdersCount})
           </button>
           <button
             type="button"
             className={`subtab-btn ${ordersTab === 'history' ? 'active' : ''}`}
             onClick={() => setOrdersTab('history')}
           >
-            Historial de Pedidos
+            Historial de Encargos
           </button>
         </div>
       </div>
@@ -420,12 +420,12 @@ export default function AdminOrders() {
         {loading ? (
           <div className="admin-orders-empty-state">
             <Loader size={40} className="spinner-icon" />
-            <p>Cargando pedidos...</p>
+            <p>Cargando encargos...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="admin-orders-empty-state">
             <PackageOpen size={48} />
-            <p>{searchTerm || statusFilter !== 'all' ? 'No se encontraron pedidos con esos filtros.' : 'Aún no hay pedidos en esta sección.'}</p>
+            <p>{searchTerm || statusFilter !== 'all' ? 'No se encontraron encargos con esos filtros.' : 'Aún no hay encargos en esta sección.'}</p>
           </div>
         ) : (
           <div className="orders-grid">
@@ -455,7 +455,7 @@ export default function AdminOrders() {
 
                   <div className="order-card-body">
                     <div className="order-meta-row">
-                      <span className="order-id-label">Pedido #{getShortId(order.id)}</span>
+                      <span className="order-id-label">Encargo #{getShortId(order.id)}</span>
                       <span className="order-date">{formatDate(order.created_at)}</span>
                     </div>
 
@@ -496,13 +496,13 @@ export default function AdminOrders() {
                                 <CheckCircle size={16} /> Aprobar Pago
                               </button>
                             )}
-                            <button className="btn-action reject" title="Rechazar Pedido" onClick={() => handleRejectOrder(order.id)}>
+                            <button className="btn-action reject" title="Rechazar Encargo" onClick={() => handleRejectOrder(order.id)}>
                               <XCircle size={16} /> Rechazar
                             </button>
                           </>
                         )}
                         {order.status === 'paid' && (
-                          <button className="btn-action deliver" title="Entregar Pedido" onClick={() => handleMarkDelivered(order.id)}>
+                          <button className="btn-action deliver" title="Entregar Encargo" onClick={() => handleMarkDelivered(order.id)}>
                             <CheckCircle size={16} /> Entregar
                           </button>
                         )}
@@ -510,13 +510,13 @@ export default function AdminOrders() {
                     )}
                     {/* Botón común para entregar pedidos listos */}
                     {order.status === 'ready' && (
-                      <button className="btn-action deliver" title="Entregar Pedido" onClick={() => handleMarkDelivered(order.id)}>
+                      <button className="btn-action deliver" title="Entregar Encargo" onClick={() => handleMarkDelivered(order.id)}>
                         <CheckCircle size={16} /> Entregar
                       </button>
                     )}
                     {/* Botón para encargos en proceso */}
                     {isEncargo && order.status === 'processing' && (
-                      <button className="btn-action deliver" title="Entregar Pedido" onClick={() => handleMarkDelivered(order.id)}>
+                      <button className="btn-action deliver" title="Entregar Encargo" onClick={() => handleMarkDelivered(order.id)}>
                         <CheckCircle size={16} /> Entregar
                       </button>
                     )}
@@ -541,7 +541,7 @@ export default function AdminOrders() {
             <div className="order-modal-content animate-slide-up" onClick={(e) => e.stopPropagation()}>
               <div className="order-modal-header">
                 <div>
-                  <h2>Pedido #{getShortId(order.id)}</h2>
+                  <h2>Encargo #{getShortId(order.id)}</h2>
                   <span className="order-modal-date">{new Date(order.created_at).toLocaleString('es-VE')}</span>
                 </div>
                 <div className="header-badge-container">
@@ -595,10 +595,26 @@ export default function AdminOrders() {
                         <strong>{formatCurrency(payment.amount_paid)} {payment.currency}</strong>
                       </div>
                       {payment.proof_image_url && (
-                        <div className="proof-image-link-container">
-                          <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="proof-image-link">
-                            <Eye size={14} style={{ marginRight: '4px' }} /> Ver comprobante completo
-                          </a>
+                        <div className="proof-image-container" style={{ marginTop: '12px' }}>
+                          <img
+                            src={payment.proof_image_url}
+                            alt="Comprobante de pago"
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '220px',
+                              borderRadius: '8px',
+                              cursor: 'zoom-in',
+                              border: '1px solid #334155',
+                              display: 'block',
+                              marginTop: '8px'
+                            }}
+                            onClick={() => window.open(payment.proof_image_url, '_blank')}
+                          />
+                          <div className="proof-image-link-container" style={{ marginTop: '6px' }}>
+                            <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="proof-image-link" style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.85rem', color: '#38bdf8' }}>
+                              <Eye size={14} style={{ marginRight: '4px' }} /> Ver comprobante completo
+                            </a>
+                          </div>
                         </div>
                       )}
                       {(order.status === 'pending_payment' || order.status === 'pending') && (
@@ -612,7 +628,7 @@ export default function AdminOrders() {
 
                 {/* Lista de Productos */}
                 <div className="modal-products-section">
-                  <h3>Productos del Pedido</h3>
+                  <h3>Productos del Encargo</h3>
                   <div className="modal-products-list">
                     {items.map(item => {
                       const product = item.products;
@@ -666,24 +682,24 @@ export default function AdminOrders() {
                           </button>
                         )}
                         <button className="btn-action reject" onClick={() => { handleRejectOrder(order.id); setSelectedOrder(null); }}>
-                          Rechazar Pedido
+                          Rechazar Encargo
                         </button>
                       </>
                     )
                   )}
                   {order.status === 'paid' && (
                     <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
-                      Entregar Pedido
+                      Entregar Encargo
                     </button>
                   )}
                   {isEncargo && order.status === 'processing' && (
                     <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
-                      Entregar Pedido
+                      Entregar Encargo
                     </button>
                   )}
                   {order.status === 'ready' && (
                     <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
-                      Entregar Pedido
+                      Entregar Encargo
                     </button>
                   )}
                 </div>

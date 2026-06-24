@@ -14,10 +14,10 @@ export default function AdminLayout() {
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { id: 'orders', icon: ShoppingBag, label: 'Pedidos', path: '/admin/orders' },
+    { id: 'orders', icon: ShoppingBag, label: 'Encargos', path: '/admin/orders' },
     { id: 'products', icon: Package, label: 'Catálogo', path: '/admin/products' },
     { id: 'coupons', icon: Ticket, label: 'Cupones', path: '/admin/coupons' },
-    { id: 'payments', icon: DollarSign, label: 'Verificación de Pagos', path: '/admin/payments' },
+    { id: 'payments', icon: DollarSign, label: 'Pagos normales al contado', path: '/admin/payments' },
     { id: 'categories', icon: Layers, label: 'Gestionar Categorías', path: '/admin/categories' },
     { id: 'banners', icon: ImageIcon, label: 'Gestión de Banners', path: '/admin/banners' },
   ];

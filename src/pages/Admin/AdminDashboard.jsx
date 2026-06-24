@@ -145,7 +145,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     try {
       let query = supabase
         .from('payments')
-        .select('*, orders(*, profiles(full_name, email))');
+        .select('*, orders(*, profiles(full_name, email), order_items(*, products(*)))');
 
       if (filterType === 'pending') {
         query = query.eq('status', 'pending_verification');
@@ -155,7 +155,20 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
-      setPendingPayments(data || []);
+
+      // Filtrar para mostrar solo pagos que NO sean por encargo
+      const normalPayments = (data || []).filter(payment => {
+        const order = payment.orders;
+        if (!order) return true;
+        const hasOutOfStockItem = order.order_items?.some(item => {
+          const stock = item.products?.stock;
+          return stock === null || stock === undefined || stock <= 0;
+        });
+        const isEncargo = order.status === 'pending' || hasOutOfStockItem;
+        return !isEncargo;
+      });
+
+      setPendingPayments(normalPayments);
     } catch (error) {
       console.error('[AdminDashboard] Error cargando pagos:', error);
       showError('No se pudieron cargar los pagos.');
@@ -960,7 +973,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
           <div className="admin-section">
               <div className="admin-payments-header-row">
                 <h2 className="admin-section-title">
-                  {paymentsFilter === 'pending' ? 'Pagos Pendientes de Verificación' : 'Historial de Verificaciones'}
+                  {paymentsFilter === 'pending' ? 'Pagos al Contado Pendientes' : 'Historial de Pagos al Contado'}
                 </h2>
                 
                 <div className="payments-subtabs">
@@ -969,7 +982,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                     className={`subtab-btn ${paymentsFilter === 'pending' ? 'active' : ''}`}
                     onClick={() => setPaymentsFilter('pending')}
                   >
-                    Pendientes de Verificación {paymentsFilter === 'pending' ? `(${pendingPayments.length})` : ''}
+                    Pendientes de Validación {paymentsFilter === 'pending' ? `(${pendingPayments.length})` : ''}
                   </button>
                   <button
                     type="button"
