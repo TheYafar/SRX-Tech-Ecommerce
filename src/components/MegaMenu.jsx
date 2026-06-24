@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Grid, Smartphone } from 'lucide-react';
 import './MegaMenu.css';
@@ -56,9 +56,16 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
     onClose();
   };
 
-
-
   if (!isOpen) return null;
+
+  // Obtener clasificaciones (categorías raíz)
+  const classifications = categories.filter(c => c.parent_id === null);
+
+  // Filtrar las clasificaciones activas para mostrar en el menú
+  const activeClassifications = classifications.filter(clf => {
+    const children = categories.filter(c => c.parent_id === clf.id);
+    return children.length > 0 || clf.slug === 'para-tu-equipo' || clf.slug === 'por-producto';
+  });
 
   return (
     <div className="mega-menu-overlay" aria-hidden="true">
@@ -68,53 +75,52 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
         role="dialog"
         aria-label="Menú de navegación por categorías"
       >
-        {/* ── Col 1: Por Producto (Categorías) ── */}
-        <div className="mega-col">
-          <div className="mega-col-header">
-            <Grid size={14} className="mega-col-icon" />
-            <span>Por Producto</span>
-          </div>
-          <ul className="mega-link-list">
-            {categories.length > 0 ? (
-              categories.map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    className="mega-link"
-                    onClick={() => handleCategoryClick(cat.id)}
-                  >
-                    {cat.name}
-                  </button>
-                </li>
-              ))
-            ) : (
-              <li><span className="mega-link-empty">Cargando…</span></li>
-            )}
-          </ul>
-        </div>
+        {activeClassifications.map((clf, index) => {
+          const children = categories.filter(c => c.parent_id === clf.id);
+          
+          // Si es "Para tu Equipo" y no tiene subcategorías en DB, renderizamos las opciones fijas (DEVICE_OPTIONS)
+          const links = clf.slug === 'para-tu-equipo' && children.length === 0
+            ? DEVICE_OPTIONS.map(opt => ({ id: opt.value, name: opt.label, isDevice: true, value: opt.value }))
+            : children;
 
-        {/* ── Divider ── */}
-        <div className="mega-divider" />
-
-        {/* ── Col 2: Para tu equipo ── */}
-        <div className="mega-col">
-          <div className="mega-col-header">
-            <Smartphone size={14} className="mega-col-icon" />
-            <span>Para tu equipo</span>
-          </div>
-          <ul className="mega-link-list">
-            {DEVICE_OPTIONS.map((opt) => (
-              <li key={opt.value}>
-                <button
-                  className="mega-link"
-                  onClick={() => handleDeviceClick(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
+          return (
+            <Fragment key={clf.id}>
+              {index > 0 && <div className="mega-divider" />}
+              <div className="mega-col">
+                <div className="mega-col-header">
+                  {clf.slug === 'para-tu-equipo' ? (
+                    <Smartphone size={14} className="mega-col-icon" />
+                  ) : (
+                    <Grid size={14} className="mega-col-icon" />
+                  )}
+                  <span>{clf.name}</span>
+                </div>
+                <ul className="mega-link-list">
+                  {links.length > 0 ? (
+                    links.map((link) => (
+                      <li key={link.id}>
+                        <button
+                          className="mega-link"
+                          onClick={() => {
+                            if (link.isDevice) {
+                              handleDeviceClick(link.value);
+                            } else {
+                              handleCategoryClick(link.id);
+                            }
+                          }}
+                        >
+                          {link.name}
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li><span className="mega-link-empty">No hay categorías</span></li>
+                  )}
+                </ul>
+              </div>
+            </Fragment>
+          );
+        })}
       </div>
     </div>
   );

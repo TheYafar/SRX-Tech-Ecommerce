@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Eye, CheckCircle, XCircle, Search, Loader, PackageOpen, PackageCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, CheckCircle, XCircle, Search, Loader, PackageOpen, PackageCheck, X, ExternalLink } from 'lucide-react';
 import { supabase } from '../../utils/supabaseClient';
 import { enviarCorreoPagoVerificado, enviarCorreoPedidoListo } from '../../services/emailService';
 import './AdminOrders.css';
@@ -9,15 +10,18 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [ordersTab, setOrdersTab] = useState('active'); // 'active' | 'history'
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const navigate = useNavigate();
 
-  // Load orders from Supabase with JOIN to profiles
+  // Load orders from Supabase with JOIN to profiles, order_items and products
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from('orders')
-          .select('*, profiles(full_name, email)')
+          .select('*, profiles(full_name, email), order_items(*, products(*)), payments(*, payment_methods(name))')
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -37,7 +41,51 @@ export default function AdminOrders() {
 
   // View order details
   const handleViewOrder = (order) => {
-    // Detail viewer placeholder
+    setSelectedOrder(order);
+  };
+
+  // Deliver order -> UPDATE status to 'delivered' in Supabase
+  const handleMarkDelivered = async (orderId) => {
+    const confirmed = window.confirm('¿Confirmas que este pedido ha sido ENTREGADO al cliente?');
+    if (!confirmed) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'delivered' })
+        .eq('id', orderId)
+        .select();
+
+      if (error) {
+        console.error('[AdminOrders] Error marking order as delivered:', error);
+        alert('Error al actualizar el pedido. Intenta de nuevo.');
+        return;
+      }
+
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, status: 'delivered' } : order
+        )
+      );
+
+      // Actualizar el modal si está abierto
+      setSelectedOrder(prev => prev && prev.id === orderId ? { ...prev, status: 'delivered' } : prev);
+    } catch (err) {
+      console.error('[AdminOrders] Exception marking order as delivered:', err);
+      alert('Ocurrió un error inesperado al actualizar el pedido.');
+    }
+  };
+
+  // Redirect to Payment Verification section
+  const handleVerifyPaymentRedirect = (order) => {
+    setSelectedOrder(null);
+    const isCompleted = ['paid', 'ready', 'shipped', 'delivered', 'cancelled'].includes(order.status);
+    navigate('/admin/payments', { 
+      state: { 
+        searchOrderId: order.id, 
+        paymentsFilter: isCompleted ? 'history' : 'pending' 
+      } 
+    });
   };
 
   // Approve order -> UPDATE status to 'paid' in Supabase
@@ -46,14 +94,20 @@ export default function AdminOrders() {
     if (!confirmed) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update({ status: 'paid' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
 
       if (error) {
         console.error('[AdminOrders] Error approving order:', error);
         alert('Error al aprobar el pedido. Intenta de nuevo.');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert('No se pudo aprobar el pedido. Verifica los permisos de administrador (RLS) en la tabla orders.');
         return;
       }
 
@@ -64,19 +118,18 @@ export default function AdminOrders() {
         )
       );
 
-      // Send payment verified email
-      try {
-        const orderData = orders.find(o => o.id === orderId);
-        const correoCliente = orderData?.profiles?.email || orderData?.user_email;
-        const nombreCliente = orderData?.profiles?.full_name || orderData?.user_name || 'Cliente';
+      // Send payment verified email (background)
+      const orderDataForEmail = orders.find(o => o.id === orderId);
+      const correoCliente = orderDataForEmail?.profiles?.email || orderDataForEmail?.user_email;
+      const nombreCliente = orderDataForEmail?.profiles?.full_name || orderDataForEmail?.user_name || 'Cliente';
 
-        if (correoCliente) {
-          await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
-        } else {
-          console.warn('[AdminOrders] Client email not found for payment notification.');
-        }
-      } catch (emailError) {
-        console.error('[AdminOrders] Error sending payment email:', emailError);
+      if (correoCliente) {
+        enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId)
+          .catch(emailError => {
+            console.error('[AdminOrders] Error sending payment email:', emailError);
+          });
+      } else {
+        console.warn('[AdminOrders] Client email not found for payment notification.');
       }
     } catch (err) {
       console.error('[AdminOrders] Exception approving order:', err);
@@ -90,14 +143,20 @@ export default function AdminOrders() {
     if (!confirmed) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update({ status: 'ready' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
 
       if (error) {
         console.error('[AdminOrders] Error marking order as ready:', error);
         alert('Error al actualizar el pedido. Intenta de nuevo.');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert('No se pudo actualizar el pedido. Verifica los permisos de administrador (RLS) en la tabla orders.');
         return;
       }
 
@@ -108,19 +167,18 @@ export default function AdminOrders() {
         )
       );
 
-      // Send order ready email
-      try {
-        const orderData = orders.find(o => o.id === orderId);
-        const correoCliente = orderData?.profiles?.email || orderData?.user_email;
-        const nombreCliente = orderData?.profiles?.full_name || orderData?.user_name || 'Cliente';
+      // Send order ready email (background)
+      const orderDataForReadyEmail = orders.find(o => o.id === orderId);
+      const correoClienteReady = orderDataForReadyEmail?.profiles?.email || orderDataForReadyEmail?.user_email;
+      const nombreClienteReady = orderDataForReadyEmail?.profiles?.full_name || orderDataForReadyEmail?.user_name || 'Cliente';
 
-        if (correoCliente) {
-          await enviarCorreoPedidoListo(correoCliente, nombreCliente, orderId);
-        } else {
-          console.warn('[AdminOrders] Client email not found for order ready notification.');
-        }
-      } catch (emailError) {
-        console.error('[AdminOrders] Error sending order ready email:', emailError);
+      if (correoClienteReady) {
+        enviarCorreoPedidoListo(correoClienteReady, nombreClienteReady, orderId)
+          .catch(emailError => {
+            console.error('[AdminOrders] Error sending order ready email:', emailError);
+          });
+      } else {
+        console.warn('[AdminOrders] Client email not found for order ready notification.');
       }
     } catch (err) {
       console.error('[AdminOrders] Exception marking order as ready:', err);
@@ -134,14 +192,20 @@ export default function AdminOrders() {
     if (!confirmed) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update({ status: 'cancelled' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
 
       if (error) {
         console.error('[AdminOrders] Error rejecting order:', error);
         alert('Error al rechazar el pedido. Intenta de nuevo.');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert('No se pudo rechazar el pedido. Verifica los permisos de administrador (RLS) en la tabla orders.');
         return;
       }
 
@@ -154,6 +218,76 @@ export default function AdminOrders() {
     } catch (err) {
       console.error('[AdminOrders] Exception rejecting order:', err);
       alert('Ocurrió un error inesperado al rechazar el pedido.');
+    }
+  };
+
+  // Approve encargo -> UPDATE status to 'processing' in Supabase
+  const handleApproveEncargo = async (orderId) => {
+    const confirmed = window.confirm('¿Confirmas que deseas APROBAR este encargo? El estado del pedido cambiará a En Proceso.');
+    if (!confirmed) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'processing' })
+        .eq('id', orderId)
+        .select();
+
+      if (error) {
+        console.error('[AdminOrders] Error approving encargo:', error);
+        alert('Error al aprobar el encargo. Intenta de nuevo.');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert('No se pudo aprobar el encargo. Verifica los permisos de administrador (RLS) en la tabla orders.');
+        return;
+      }
+
+      // Update local state
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, status: 'processing' } : order
+        )
+      );
+    } catch (err) {
+      console.error('[AdminOrders] Exception approving encargo:', err);
+      alert('Ocurrió un error inesperado al aprobar el encargo.');
+    }
+  };
+
+  // Reject encargo -> UPDATE status to 'cancelled' in Supabase
+  const handleRejectEncargo = async (orderId) => {
+    const confirmed = window.confirm('¿Estás seguro de que deseas RECHAZAR este encargo? Se cancelará el pedido.');
+    if (!confirmed) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId)
+        .select();
+
+      if (error) {
+        console.error('[AdminOrders] Error rejecting encargo:', error);
+        alert('Error al rechazar el encargo. Intenta de nuevo.');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert('No se pudo rechazar el encargo. Verifica los permisos de administrador (RLS) en la tabla orders.');
+        return;
+      }
+
+      // Update local state
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, status: 'cancelled' } : order
+        )
+      );
+    } catch (err) {
+      console.error('[AdminOrders] Exception rejecting encargo:', err);
+      alert('Ocurrió un error inesperado al rechazar el encargo.');
     }
   };
 
@@ -182,12 +316,22 @@ export default function AdminOrders() {
     return order.profiles?.full_name || order.user_name || order.profiles?.email || order.user_email || 'Cliente Desconocido';
   };
 
+  // ── Helper to detect backorders / encargos ──
+  const isOrderEncargo = (order) => {
+    const hasOutOfStockItem = order.order_items?.some(item => {
+      const stock = item.products?.stock;
+      return stock === null || stock === undefined || stock <= 0;
+    });
+    return order.status === 'pending' || hasOutOfStockItem;
+  };
+
   // ── Mapa de estados para badges (preserva tu CSS actual) ──
   const statusConfig = {
     pending_payment: { label: 'Pendiente', className: 'pending' },
     pending:         { label: 'Pendiente', className: 'pending' },
     approved:        { label: 'Aprobado',  className: 'approved' },
     paid:            { label: 'Pagado',    className: 'approved' },
+    processing:      { label: 'En Proceso',className: 'processing' },
     ready:           { label: 'Listo',     className: 'ready' },
     shipped:         { label: 'Enviado',   className: 'shipped' },
     delivered:       { label: 'Entregado', className: 'shipped' },
@@ -199,24 +343,55 @@ export default function AdminOrders() {
     return config;
   };
 
-  // ── Filtrado por búsqueda y estado ──
+  // Calculate active orders count for badge
+  const activeOrdersCount = orders.filter(o => !['paid', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].includes(o.status)).length;
+
+  // ── Filtrado por búsqueda, pestaña y estado ──
   const filteredOrders = orders.filter(order => {
+    const items = order.order_items || [];
+    const firstItemName = items[0]?.products?.name || '';
+    
     const matchesSearch = searchTerm === '' ||
       getShortId(order.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getCustomerName(order).toLowerCase().includes(searchTerm.toLowerCase());
+      getCustomerName(order).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      firstItemName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // active: pending_payment, pending
+    // history: paid, processing, ready, shipped, delivered, cancelled
+    const isHistoryStatus = ['paid', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].includes(order.status);
+    const matchesTab = ordersTab === 'history' ? isHistoryStatus : !isHistoryStatus;
 
     const matchesStatus = statusFilter === 'all' || 
       (statusConfig[order.status]?.className === statusFilter) ||
       order.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesTab && matchesStatus;
   });
 
   return (
     <div className="admin-orders animate-fade-in">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Pedidos</h1>
-        <p className="admin-page-subtitle">Gestiona las ventas y verifica pagos manuales</p>
+      <div className="admin-page-header-row">
+        <div>
+          <h1 className="admin-page-title">Pedidos</h1>
+          <p className="admin-page-subtitle">Gestiona las ventas y verifica pagos manuales</p>
+        </div>
+        
+        <div className="orders-subtabs">
+          <button
+            type="button"
+            className={`subtab-btn ${ordersTab === 'active' ? 'active' : ''}`}
+            onClick={() => setOrdersTab('active')}
+          >
+            Pedidos Activos ({activeOrdersCount})
+          </button>
+          <button
+            type="button"
+            className={`subtab-btn ${ordersTab === 'history' ? 'active' : ''}`}
+            onClick={() => setOrdersTab('history')}
+          >
+            Historial de Pedidos
+          </button>
+        </div>
       </div>
 
       <div className="admin-toolbar">
@@ -235,11 +410,13 @@ export default function AdminOrders() {
             <option value="pending">Pendientes</option>
             <option value="approved">Aprobados</option>
             <option value="shipped">Enviados</option>
+            <option value="delivered">Entregados</option>
+            <option value="cancelled">Cancelados</option>
           </select>
         </div>
       </div>
 
-      <div className="admin-table-container">
+      <div className="admin-orders-container">
         {loading ? (
           <div className="admin-orders-empty-state">
             <Loader size={40} className="spinner-icon" />
@@ -248,55 +425,276 @@ export default function AdminOrders() {
         ) : filteredOrders.length === 0 ? (
           <div className="admin-orders-empty-state">
             <PackageOpen size={48} />
-            <p>{searchTerm || statusFilter !== 'all' ? 'No se encontraron pedidos con esos filtros.' : 'Aún no hay pedidos registrados.'}</p>
+            <p>{searchTerm || statusFilter !== 'all' ? 'No se encontraron pedidos con esos filtros.' : 'Aún no hay pedidos en esta sección.'}</p>
           </div>
         ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>ID Pedido</th>
-                <th>Cliente</th>
-                <th>Fecha</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.map(order => {
-                const badge = getStatusBadge(order.status);
-                return (
-                  <tr key={order.id}>
-                    <td className="font-mono font-medium">{getShortId(order.id)}</td>
-                    <td>{getCustomerName(order)}</td>
-                    <td>{formatDate(order.created_at)}</td>
-                    <td className="font-bold">{formatCurrency(order.total_amount_usd)}</td>
-                    <td>
-                      <span className={`status-badge ${badge.className}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button className="btn-icon view" title="Ver Detalles" onClick={() => handleViewOrder(order)}><Eye size={18} /></button>
+          <div className="orders-grid">
+            {filteredOrders.map(order => {
+              const badge = getStatusBadge(order.status);
+              const items = order.order_items || [];
+              const firstItemName = items[0]?.products?.name || 'Producto Desconocido';
+              const productTitle = items.length > 1 ? `${firstItemName} + ${items.length - 1} más` : firstItemName;
+              const isEncargo = isOrderEncargo(order);
+
+              return (
+                <div key={order.id} className={`order-card ${isEncargo ? 'is-encargo' : ''}`}>
+                  {isEncargo && (
+                    <div className="encargo-badge-container">
+                      <span className="badge-encargo">POR ENCARGO</span>
+                    </div>
+                  )}
+
+                  <div className="order-card-header">
+                    <h3 className="order-product-title" title={productTitle}>
+                      {productTitle}
+                    </h3>
+                    <span className={`status-badge ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  <div className="order-card-body">
+                    <div className="order-meta-row">
+                      <span className="order-id-label">Pedido #{getShortId(order.id)}</span>
+                      <span className="order-date">{formatDate(order.created_at)}</span>
+                    </div>
+
+                    <div className="order-details-info">
+                      <p><strong>Cliente:</strong> {getCustomerName(order)}</p>
+                      <p><strong>Email:</strong> {order.profiles?.email || order.user_email || 'N/A'}</p>
+                      {order.user_phone && <p><strong>Teléfono:</strong> {order.user_phone}</p>}
+                      <p className="order-total-amount"><strong>Total:</strong> <span className="total-price">{formatCurrency(order.total_amount_usd)}</span></p>
+                    </div>
+                  </div>
+
+                  <div className="order-card-actions">
+                    <button className="btn-action view" title="Ver Detalles" onClick={() => handleViewOrder(order)}>
+                      <Eye size={16} /> Detalles
+                    </button>
+
+                    {isEncargo ? (
+                      (order.status === 'pending_payment' || order.status === 'pending') && (
+                        <>
+                          <button className="btn-action approve-encargo" title="Aprobar Encargo" onClick={() => handleApproveEncargo(order.id)}>
+                            <CheckCircle size={16} /> Aprobar Encargo
+                          </button>
+                          <button className="btn-action reject-encargo" title="Rechazar Encargo" onClick={() => handleRejectEncargo(order.id)}>
+                            <XCircle size={16} /> Rechazar Encargo
+                          </button>
+                        </>
+                      )
+                    ) : (
+                      <>
                         {(order.status === 'pending_payment' || order.status === 'pending') && (
                           <>
-                            <button className="btn-icon approve" title="Aprobar Pago" onClick={() => handleApproveOrder(order.id)}><CheckCircle size={18} /></button>
-                            <button className="btn-icon reject" title="Rechazar" onClick={() => handleRejectOrder(order.id)}><XCircle size={18} /></button>
+                            {order.payments?.[0] ? (
+                              <button className="btn-action verify" title="Verificar Pago" onClick={() => handleVerifyPaymentRedirect(order)}>
+                                <Search size={16} /> Verificar Pago
+                              </button>
+                            ) : (
+                              <button className="btn-action approve" title="Aprobar Pago" onClick={() => handleApproveOrder(order.id)}>
+                                <CheckCircle size={16} /> Aprobar Pago
+                              </button>
+                            )}
+                            <button className="btn-action reject" title="Rechazar Pedido" onClick={() => handleRejectOrder(order.id)}>
+                              <XCircle size={16} /> Rechazar
+                            </button>
                           </>
                         )}
                         {order.status === 'paid' && (
-                          <button className="btn-icon ready" title="Marcar como Listo" onClick={() => handleMarkReady(order.id)}><PackageCheck size={18} /></button>
+                          <button className="btn-action deliver" title="Entregar Pedido" onClick={() => handleMarkDelivered(order.id)}>
+                            <CheckCircle size={16} /> Entregar
+                          </button>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </>
+                    )}
+                    {/* Botón común para entregar pedidos listos */}
+                    {order.status === 'ready' && (
+                      <button className="btn-action deliver" title="Entregar Pedido" onClick={() => handleMarkDelivered(order.id)}>
+                        <CheckCircle size={16} /> Entregar
+                      </button>
+                    )}
+                    {/* Botón para encargos en proceso */}
+                    {isEncargo && order.status === 'processing' && (
+                      <button className="btn-action deliver" title="Entregar Pedido" onClick={() => handleMarkDelivered(order.id)}>
+                        <CheckCircle size={16} /> Entregar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* Modal de Detalles del Pedido */}
+      {selectedOrder && (() => {
+        const order = selectedOrder;
+        const payment = order.payments?.[0];
+        const items = order.order_items || [];
+        const badge = getStatusBadge(order.status);
+        const isEncargo = isOrderEncargo(order);
+        
+        return (
+          <div className="order-modal-overlay" onClick={() => setSelectedOrder(null)}>
+            <div className="order-modal-content animate-slide-up" onClick={(e) => e.stopPropagation()}>
+              <div className="order-modal-header">
+                <div>
+                  <h2>Pedido #{getShortId(order.id)}</h2>
+                  <span className="order-modal-date">{new Date(order.created_at).toLocaleString('es-VE')}</span>
+                </div>
+                <div className="header-badge-container">
+                  <span className={`status-badge ${badge.className}`}>{badge.label}</span>
+                  {isEncargo && <span className="badge-encargo-inline">POR ENCARGO</span>}
+                  <button className="btn-modal-close" onClick={() => setSelectedOrder(null)}>
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="order-modal-body">
+                <div className="order-modal-grid" style={{ gridTemplateColumns: payment ? '1fr 1fr' : '1fr' }}>
+                  {/* Columna Cliente */}
+                  <div className="modal-info-card">
+                    <h3>Detalles del Cliente</h3>
+                    <div className="info-item">
+                      <span>Nombre:</span>
+                      <strong>{getCustomerName(order)}</strong>
+                    </div>
+                    <div className="info-item">
+                      <span>Email:</span>
+                      <strong>{order.profiles?.email || order.user_email || 'N/A'}</strong>
+                    </div>
+                    <div className="info-item">
+                      <span>Teléfono:</span>
+                      <strong>{order.user_phone || 'N/A'}</strong>
+                    </div>
+                  </div>
+
+                  {/* Columna Pago */}
+                  {payment && (
+                    <div className="modal-info-card">
+                      <h3>Información de Pago</h3>
+                      <div className="info-item">
+                        <span>Método:</span>
+                        <strong>{payment.payment_methods?.name || 'N/A'}</strong>
+                      </div>
+                      <div className="info-item">
+                        <span>Referencia:</span>
+                        <strong className="reference-badge-inline">{payment.reference_number || 'N/A'}</strong>
+                      </div>
+                      <div className="info-item">
+                        <span>Estado del Pago:</span>
+                        <strong className={`payment-status-text ${payment.status}`}>
+                          {payment.status === 'completed' ? 'Aceptado' : payment.status === 'rejected' ? 'Rechazado' : 'Pendiente de Verificación'}
+                        </strong>
+                      </div>
+                      <div className="info-item">
+                        <span>Monto del Pago:</span>
+                        <strong>{formatCurrency(payment.amount_paid)} {payment.currency}</strong>
+                      </div>
+                      {payment.proof_image_url && (
+                        <div className="proof-image-link-container">
+                          <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="proof-image-link">
+                            <Eye size={14} style={{ marginRight: '4px' }} /> Ver comprobante completo
+                          </a>
+                        </div>
+                      )}
+                      {(order.status === 'pending_payment' || order.status === 'pending') && (
+                        <button className="btn-modal-action verify-cta" onClick={() => handleVerifyPaymentRedirect(order)}>
+                          <ExternalLink size={14} /> Ir a verificar en panel de pagos
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Lista de Productos */}
+                <div className="modal-products-section">
+                  <h3>Productos del Pedido</h3>
+                  <div className="modal-products-list">
+                    {items.map(item => {
+                      const product = item.products;
+                      const mainImage = product?.images_urls?.[0] || 'https://via.placeholder.com/80';
+                      return (
+                        <div key={item.id} className="modal-product-item">
+                          <img src={mainImage} alt={product?.name} className="modal-product-img" />
+                          <div className="modal-product-details">
+                            <h4>{product?.name || 'Producto Desconocido'}</h4>
+                            <span className="modal-product-stock">Stock actual: {product?.stock ?? 0}</span>
+                          </div>
+                          <div className="modal-product-math">
+                            <span>{item.quantity} x {formatCurrency(item.price_at_purchase_usd)}</span>
+                            <strong className="modal-product-subtotal">{formatCurrency(item.quantity * item.price_at_purchase_usd)}</strong>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="modal-total-summary">
+                  <span>Gran Total:</span>
+                  <strong className="modal-total-price">{formatCurrency(order.total_amount_usd)}</strong>
+                </div>
+              </div>
+
+              <div className="order-modal-footer">
+                <div className="footer-actions-left">
+                  {isEncargo ? (
+                    (order.status === 'pending_payment' || order.status === 'pending') && (
+                      <>
+                        <button className="btn-action approve-encargo" onClick={() => { handleApproveEncargo(order.id); setSelectedOrder(null); }}>
+                          Aprobar Encargo
+                        </button>
+                        <button className="btn-action reject-encargo" onClick={() => { handleRejectEncargo(order.id); setSelectedOrder(null); }}>
+                          Rechazar Encargo
+                        </button>
+                      </>
+                    )
+                  ) : (
+                    (order.status === 'pending_payment' || order.status === 'pending') && (
+                      <>
+                        {payment ? (
+                          <button className="btn-action verify" onClick={() => handleVerifyPaymentRedirect(order)}>
+                            Verificar Pago
+                          </button>
+                        ) : (
+                          <button className="btn-action approve" onClick={() => { handleApproveOrder(order.id); setSelectedOrder(null); }}>
+                            Aprobar Pago
+                          </button>
+                        )}
+                        <button className="btn-action reject" onClick={() => { handleRejectOrder(order.id); setSelectedOrder(null); }}>
+                          Rechazar Pedido
+                        </button>
+                      </>
+                    )
+                  )}
+                  {order.status === 'paid' && (
+                    <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
+                      Entregar Pedido
+                    </button>
+                  )}
+                  {isEncargo && order.status === 'processing' && (
+                    <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
+                      Entregar Pedido
+                    </button>
+                  )}
+                  {order.status === 'ready' && (
+                    <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
+                      Entregar Pedido
+                    </button>
+                  )}
+                </div>
+                <button className="btn-close-modal-footer" onClick={() => setSelectedOrder(null)}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import { useProducts } from '../../context/ProductContext';
 import { enviarCorreoPagoVerificado } from '../../services/emailService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 
 import './AdminDashboard.css';
 
@@ -39,18 +41,35 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   // ── States for Payments ─────────────────────────────────
   const [pendingPayments, setPendingPayments] = useState([]);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
+  const [paymentsFilter, setPaymentsFilter] = useState('pending'); // 'pending' | 'history'
+  const [paymentsSearchTerm, setPaymentsSearchTerm] = useState('');
+  const location = useLocation();
+
+  useEffect(() => {
+    if (activeTab === 'payments' && location.state?.searchOrderId) {
+      setPaymentsSearchTerm(location.state.searchOrderId);
+      if (location.state.paymentsFilter) {
+        setPaymentsFilter(location.state.paymentsFilter);
+      }
+      // Limpiar el estado de navegación
+      window.history.replaceState({}, document.title);
+    }
+  }, [activeTab, location.state]);
 
   // ── States for Category Management ─────────────────────
   const [allCategories, setAllCategories] = useState([]);
   const [isCatLoading, setIsCatLoading] = useState(false);
-  const [editingCatId, setEditingCatId] = useState(null);
-  const [editingName, setEditingName] = useState('');
   const [newCatName, setNewCatName] = useState('');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [isSavingCat, setIsSavingCat] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState('por-producto'); // 'por-producto' | 'para-tu-equipo'
-  const [editingCategoryGroup, setEditingCategoryGroup] = useState('por-producto'); // grupo activo en edición
-  const [rootCategoryIds, setRootCategoryIds] = useState({ porProducto: null, paraTuEquipo: null });
+
+  // Dynamic Classification States
+  const [classificationOptions, setClassificationOptions] = useState([]);
+  const [selectedClassificationId, setSelectedClassificationId] = useState(null);
+  const [isCreatingClassification, setIsCreatingClassification] = useState(false);
+  const [newClassificationName, setNewClassificationName] = useState('');
+  const [isSavingClassification, setIsSavingClassification] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
 
 
 
@@ -87,28 +106,25 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const fetchAllCategories = useCallback(async () => {
     setIsCatLoading(true);
     try {
-      // Fetch de macro-categorías raíz para mapear UUIDs
-      const { data: rootData, error: rootError } = await supabase
-        .from('categories')
-        .select('id, slug')
-        .in('slug', ['por-producto', 'para-tu-equipo']);
-      if (rootError) throw rootError;
-      if (rootData) {
-        const ids = { porProducto: null, paraTuEquipo: null };
-        rootData.forEach(cat => {
-          if (cat.slug === 'por-producto')    ids.porProducto  = cat.id;
-          if (cat.slug === 'para-tu-equipo') ids.paraTuEquipo = cat.id;
-        });
-        setRootCategoryIds(ids);
-      }
-
       // Fetch de todas las categorías para la lista
       const { data, error } = await supabase
         .from('categories')
         .select('id, name, slug, parent_id')
         .order('name', { ascending: true });
       if (error) throw error;
-      setAllCategories(data || []);
+
+      const allCats = data || [];
+      setAllCategories(allCats);
+
+      // Filtrar categorías raíz (parent_id es null) como clasificaciones
+      const roots = allCats.filter(c => c.parent_id === null);
+      setClassificationOptions(roots);
+
+      // Seleccionar una clasificación por defecto si no está seleccionada
+      if (roots.length > 0) {
+        const defaultRoot = roots.find(r => r.slug === 'por-producto') || roots[0];
+        setSelectedClassificationId(prev => prev || defaultRoot.id);
+      }
     } catch (err) {
       console.error('[AdminDashboard] Error al cargar todas las categorías:', err);
       showError('No se pudieron cargar las categorías.');
@@ -124,31 +140,37 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   }, [activeTab, fetchAllCategories]);
 
   // ── Payments fetch ──────────────────────────────────────
-  const fetchPendingPayments = useCallback(async () => {
+  const fetchPendingPayments = useCallback(async (filterType = paymentsFilter) => {
     setIsLoadingPayments(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('payments')
-        .select('*, orders(*, profiles(full_name, email))')
-        .eq('status', 'pending_verification')
-        .order('created_at', { ascending: false });
+        .select('*, orders(*, profiles(full_name, email))');
+
+      if (filterType === 'pending') {
+        query = query.eq('status', 'pending_verification');
+      } else {
+        query = query.in('status', ['completed', 'rejected']);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
       setPendingPayments(data || []);
     } catch (error) {
       console.error('[AdminDashboard] Error cargando pagos:', error);
-      showError('No se pudieron cargar los pagos pendientes.');
+      showError('No se pudieron cargar los pagos.');
     } finally {
       setIsLoadingPayments(false);
     }
-  }, [showError]);
+  }, [showError, paymentsFilter]);
 
   useEffect(() => {
     let timeoutId;
     if (activeTab === 'payments') {
-      timeoutId = setTimeout(() => fetchPendingPayments(), 0);
+      timeoutId = setTimeout(() => fetchPendingPayments(paymentsFilter), 0);
     }
     return () => { if (timeoutId) clearTimeout(timeoutId); };
-  }, [activeTab, fetchPendingPayments]);
+  }, [activeTab, fetchPendingPayments, paymentsFilter]);
 
   const fetchBanners = useCallback(async () => {
     setIsLoadingBanners(true);
@@ -303,47 +325,58 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     }
   };
 
-  // ── Payment handlers ────────────────────────────────────
   const handlePaymentAction = async (paymentId, newStatus, orderId) => {
     const actionLabel = newStatus === 'completed' ? 'VALIDAR' : 'RECHAZAR';
     if (!window.confirm(`¿Estás seguro de ${actionLabel} este pago?`)) return;
     try {
-      const { error: paymentError } = await supabase
-        .from('payments').update({ status: newStatus }).eq('id', paymentId);
+      // 1. Actualizar el pago en Supabase
+      const { data: updatedPayment, error: paymentError } = await supabase
+        .from('payments')
+        .update({ status: newStatus })
+        .eq('id', paymentId)
+        .select();
       if (paymentError) throw paymentError;
 
+      if (!updatedPayment || updatedPayment.length === 0) {
+        throw new Error('No se pudo actualizar el pago en Supabase. Verifica los permisos de administrador (RLS) en la tabla payments.');
+      }
+
+      // 2. Actualizar el pedido en Supabase si aplica
       if (orderId) {
-        const orderNewStatus = newStatus === 'completed' ? 'paid' : 'rejected';
-        const { error: orderError } = await supabase
-          .from('orders').update({ status: orderNewStatus }).eq('id', orderId);
-        if (orderError) {
-          showError('El pago se actualizó, pero hubo un error al actualizar la orden.');
-          fetchPendingPayments();
-          return;
+        const orderNewStatus = newStatus === 'completed' ? 'paid' : 'cancelled';
+        const { data: updatedOrder, error: orderError } = await supabase
+          .from('orders')
+          .update({ status: orderNewStatus })
+          .eq('id', orderId)
+          .select();
+        if (orderError) throw orderError;
+
+        if (!updatedOrder || updatedOrder.length === 0) {
+          throw new Error('El pago se actualizó, pero no se pudo actualizar el pedido (verifica los permisos RLS en la tabla orders).');
         }
       }
-      // Send payment verified email
-      if (newStatus === 'completed' && orderId) {
-        try {
-          // Extraer datos del cliente desde el pago actual en el estado local
-          const paymentRecord = pendingPayments.find(p => p.id === paymentId);
-          const order = paymentRecord?.orders;
-          const profile = order?.profiles;
-          const correoCliente = profile?.email || order?.user_email;
-          const nombreCliente = profile?.full_name || order?.user_name || 'Cliente';
 
-          if (correoCliente) {
-            await enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId);
-          } else {
-            console.warn('[AdminDashboard] No se encontró email del cliente para enviar notificación de pago.');
-          }
-        } catch (emailError) {
-          console.error('[AdminDashboard] Error al enviar correo de pago verificado (no afecta la orden):', emailError);
+      // 3. Envío del correo en segundo plano (sin await) para no retrasar la interfaz de usuario
+      if (newStatus === 'completed' && orderId) {
+        const paymentRecord = pendingPayments.find(p => p.id === paymentId);
+        const order = paymentRecord?.orders;
+        const profile = order?.profiles;
+        const correoCliente = profile?.email || order?.user_email;
+        const nombreCliente = profile?.full_name || order?.user_name || 'Cliente';
+
+        if (correoCliente) {
+          enviarCorreoPagoVerificado(correoCliente, nombreCliente, orderId)
+            .catch(emailError => {
+              console.error('[AdminDashboard] Error al enviar correo de pago verificado (en segundo plano):', emailError);
+            });
+        } else {
+          console.warn('[AdminDashboard] No se encontró email del cliente para enviar notificación de pago.');
         }
       }
 
       showSuccess(`Pago ${newStatus === 'completed' ? 'validado' : 'rechazado'} correctamente.`);
-      fetchPendingPayments();
+      // Remueve del estado local para que desaparezca con una transición limpia
+      setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
     } catch (error) {
       console.error('Error al actualizar pago:', error);
       showError('No se pudo actualizar el estado del pago.');
@@ -352,55 +385,148 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
   // ── Category Management handlers ────────────────────────
 
-  const startEditCat = (cat) => {
-    setEditingCatId(cat.id);
-    setEditingName(cat.name);
-    // Detectar a qué macro-categoría raíz pertenece
-    setEditingCategoryGroup(
-      cat.parent_id === rootCategoryIds.porProducto ? 'por-producto' : 'para-tu-equipo'
-    );
+  const handleSaveNewClassification = async () => {
+    if (!newClassificationName.trim()) {
+      showError('El nombre de la clasificación no puede estar vacío.');
+      return;
+    }
+    setIsSavingClassification(true);
+    try {
+      const cleanName = newClassificationName.trim();
+      const slug = cleanName.toLowerCase().replace(/ /g, '-');
+      
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([{
+          name: cleanName,
+          slug,
+          parent_id: null
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setClassificationOptions(prev => [...prev, data]);
+      setAllCategories(prev => [...prev, data]);
+      setCategories(prev => [...prev, data]);
+      setSelectedClassificationId(data.id);
+      
+      showSuccess(`Clasificación "${cleanName}" creada correctamente.`);
+      setIsCreatingClassification(false);
+      setNewClassificationName('');
+    } catch (err) {
+      console.error('Error al crear clasificación:', err);
+      showError('No se pudo crear la clasificación. Verifica que el nombre sea único.');
+    } finally {
+      setIsSavingClassification(false);
+    }
   };
 
-  const cancelEditCat = () => {
-    setEditingCatId(null);
-    setEditingName('');
-    setEditingCategoryGroup('por-producto');
+  const handleDeleteClassification = async (classification) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar la clasificación "${classification.name}"? Las subcategorías pertenecientes a esta clasificación quedarán sin clasificación asignada.`)) {
+      return;
+    }
+    try {
+      const { data: deletedRows, error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', classification.id)
+        .select();
+
+      if (error) throw error;
+
+      if (!deletedRows || deletedRows.length === 0) {
+        showError('No se pudo eliminar: sin permisos en la base de datos o la fila no existe.');
+        return; 
+      }
+
+      setAllCategories(prev => prev.filter(c => c.id !== classification.id));
+      setCategories(prev => prev.filter(c => c.id !== classification.id));
+      setClassificationOptions(prev => prev.filter(c => c.id !== classification.id));
+
+      if (selectedClassificationId === classification.id) {
+        const remaining = classificationOptions.filter(c => c.id !== classification.id);
+        if (remaining.length > 0) {
+          const defaultRoot = remaining.find(r => r.slug === 'por-producto') || remaining[0];
+          setSelectedClassificationId(defaultRoot.id);
+        } else {
+          setSelectedClassificationId(null);
+        }
+      }
+
+      showSuccess(`Clasificación "${classification.name}" eliminada correctamente.`);
+    } catch (err) {
+      console.error('Error al eliminar clasificación:', err);
+      showError('No se pudo eliminar la clasificación.');
+    }
   };
 
-  const saveEditCat = async (cat) => {
-    if (!editingName.trim()) {
-      showError('El nombre no puede estar vacío.');
+  const startEditCategory = (cat) => {
+    setEditingCategory(cat);
+    setNewCatName(cat.name);
+    setSelectedClassificationId(cat.parent_id);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategory(null);
+    setNewCatName('');
+    if (classificationOptions.length > 0) {
+      const defaultRoot = classificationOptions.find(r => r.slug === 'por-producto') || classificationOptions[0];
+      setSelectedClassificationId(defaultRoot.id);
+    }
+  };
+
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCatName.trim()) {
+      showError('El nombre de la categoría es requerido.');
       return;
     }
     setIsSavingCat(true);
     try {
-      const cleanName = editingName.trim();
-      const newSlug   = cleanName.toLowerCase().replace(/ /g, '-');
-      const newParentId = editingCategoryGroup === 'por-producto'
-        ? rootCategoryIds.porProducto
-        : rootCategoryIds.paraTuEquipo;
-
+      const cleanName = newCatName.trim();
+      const slug = cleanName.toLowerCase().replace(/ /g, '-');
+      const parentId = editingCategory.parent_id === null ? null : selectedClassificationId;
+      
       const { error } = await supabase
         .from('categories')
         .update({
-          name:      cleanName,
-          slug:      newSlug,
-          parent_id: newParentId
+          name: cleanName,
+          slug,
+          parent_id: parentId
         })
-        .eq('id', cat.id);
+        .eq('id', editingCategory.id);
+        
       if (error) throw error;
-
+      
       setAllCategories(prev =>
-        prev.map(c => c.id === cat.id
-          ? { ...c, name: cleanName, slug: newSlug, parent_id: newParentId }
+        prev.map(c => c.id === editingCategory.id
+          ? { ...c, name: cleanName, slug, parent_id: parentId }
           : c
         )
       );
-      showSuccess('Categoría actualizada correctamente.');
-      cancelEditCat();
+      setCategories(prev =>
+        prev.map(c => c.id === editingCategory.id
+          ? { ...c, name: cleanName, slug, parent_id: parentId }
+          : c
+        )
+      );
+      
+      if (editingCategory.parent_id === null) {
+        setClassificationOptions(prev =>
+          prev.map(c => c.id === editingCategory.id
+            ? { ...c, name: cleanName, slug }
+            : c
+          )
+        );
+      }
+      
+      showSuccess(`Categoría "${cleanName}" actualizada correctamente.`);
+      cancelEditCategory();
     } catch (err) {
-      console.error('Error guardando categoría:', err);
-      showError('No se pudo guardar la categoría.');
+      console.error('Error al actualizar categoría:', err);
+      showError('No se pudo actualizar la categoría.');
     } finally {
       setIsSavingCat(false);
     }
@@ -416,9 +542,8 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     try {
       const cleanName = newCatName.trim();
       const slug = cleanName.toLowerCase().replace(/ /g, '-');
-      const parentId = selectedGroup === 'por-producto'
-        ? rootCategoryIds.porProducto
-        : rootCategoryIds.paraTuEquipo;
+      const parentId = selectedClassificationId;
+      
       const { data, error } = await supabase
         .from('categories')
         .insert([{
@@ -426,12 +551,16 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
           slug,
           parent_id: parentId
         }])
-        .select('id, name, slug')
+        .select()
         .single();
+        
       if (error) throw error;
+      
       setAllCategories(prev => [...prev, data]);
       setCategories(prev => [...prev, data]);
-      showSuccess(`Categoría "${data.name}" creada en "${selectedGroup === 'por-producto' ? 'Por Producto' : 'Para tu Equipo'}" correctamente.`);
+      
+      const parentName = classificationOptions.find(c => c.id === parentId)?.name || 'la clasificación seleccionada';
+      showSuccess(`Categoría "${data.name}" creada en "${parentName}" correctamente.`);
       setNewCatName('');
     } catch (err) {
       console.error('Error creando categoría:', err);
@@ -444,14 +573,11 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const handleDeleteCategory = async (cat) => {
     const categoryId = cat.id;
 
-    // 1. Confirmación previa — evita eliminaciones accidentales
     if (!window.confirm(
       '¿Estás seguro de que deseas eliminar esta categoría? Los productos asociados quedarán sin categoría asignada.'
     )) return;
 
     try {
-      // 2. Consulta de eliminación estricta — .select() fuerza a Supabase a devolver
-      //    la fila eliminada; si RLS bloquea silenciosamente, data llegará vacío.
       const { data: deletedRows, error } = await supabase
         .from('categories')
         .delete()
@@ -461,22 +587,18 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
       if (error) throw error;
 
       if (!deletedRows || deletedRows.length === 0) {
-        console.warn('[handleDeleteCategory] Supabase no devolvió filas eliminadas.', {
-          categoryId,
-          categoryName: cat.name,
-        });
-        showError('No se pudo eliminar: sin permisos en la base de datos. Revisa las políticas RLS en Supabase.');
+        showError('No se pudo eliminar: sin permisos en la base de datos o la fila no existe.');
         return; 
       }
 
-      // 4. Actualización inmediata del estado — sin recarga de página
-      setAllCategories(prevCategories => prevCategories.filter(c => c.id !== categoryId));
-      setCategories(prevCategories => prevCategories.filter(c => c.id !== categoryId));
+      setAllCategories(prev => prev.filter(c => c.id !== categoryId));
+      setCategories(prev => prev.filter(c => c.id !== categoryId));
+      setClassificationOptions(prev => prev.filter(c => c.id !== categoryId));
 
       showSuccess(`Categoría "${cat.name}" eliminada correctamente.`);
     } catch (err) {
-      console.error('[handleDeleteCategory] Error al eliminar categoría:', err);
-      showError('No se pudo eliminar la categoría. Revisa la consola para más detalles.');
+      console.error('Error al eliminar categoría:', err);
+      showError('No se pudo eliminar la categoría. Revisa la consola.');
     }
   };
 
@@ -622,6 +744,23 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
       showError('No se pudo eliminar el banner.');
     }
   };
+
+  const filteredPayments = pendingPayments.filter(payment => {
+    if (!paymentsSearchTerm) return true;
+    const term = paymentsSearchTerm.toLowerCase();
+    const order = payment.orders;
+    const orderId = order?.id ? String(order.id).toLowerCase() : '';
+    const shortId = order?.id ? String(order.id).slice(-6).toLowerCase() : '';
+    const clientName = (order?.profiles?.full_name || order?.user_name || '').toLowerCase();
+    const clientEmail = (order?.profiles?.email || order?.user_email || '').toLowerCase();
+    const reference = (payment.reference_number || '').toLowerCase();
+
+    return orderId.includes(term) || 
+           shortId.includes(term) || 
+           clientName.includes(term) || 
+           clientEmail.includes(term) || 
+           reference.includes(term);
+  });
 
   // ── Render ───────────────────────────────────────────────
   return (
@@ -819,84 +958,145 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         {/* ══ TAB: Payments ════════════════════════════════ */}
         {activeTab === 'payments' && (
           <div className="admin-section">
-            <h2 className="admin-section-title">Pagos Pendientes de Verificación</h2>
-
-            {isLoadingPayments ? (
-              <div className="admin-loading-state">
-                <Loader2 size={32} className="spin" />
-                <p>Cargando pagos pendientes...</p>
+              <div className="admin-payments-header-row">
+                <h2 className="admin-section-title">
+                  {paymentsFilter === 'pending' ? 'Pagos Pendientes de Verificación' : 'Historial de Verificaciones'}
+                </h2>
+                
+                <div className="payments-subtabs">
+                  <button
+                    type="button"
+                    className={`subtab-btn ${paymentsFilter === 'pending' ? 'active' : ''}`}
+                    onClick={() => setPaymentsFilter('pending')}
+                  >
+                    Pendientes de Verificación {paymentsFilter === 'pending' ? `(${pendingPayments.length})` : ''}
+                  </button>
+                  <button
+                    type="button"
+                    className={`subtab-btn ${paymentsFilter === 'history' ? 'active' : ''}`}
+                    onClick={() => setPaymentsFilter('history')}
+                  >
+                    Historial de Pagos
+                  </button>
+                </div>
               </div>
-            ) : pendingPayments.length === 0 ? (
-              <div className="admin-empty-state">
-                <CheckCircle size={48} className="empty-icon text-green" />
-                <p>¡Todo al día! No hay pagos pendientes por verificar.</p>
+
+              {/* Barra de búsqueda de pagos */}
+              <div className="admin-toolbar" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div className="admin-search-box" style={{ display: 'flex', alignItems: 'center', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 1rem', width: '100%', maxWidth: '350px' }}>
+                  <Search size={18} style={{ color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por Pedido ID, cliente o referencia..."
+                    value={paymentsSearchTerm}
+                    onChange={(e) => setPaymentsSearchTerm(e.target.value)}
+                    style={{ border: 'none', background: 'transparent', outline: 'none', paddingLeft: '0.5rem', width: '100%', color: '#f1f5f9' }}
+                  />
+                </div>
               </div>
-            ) : (
-              <div className="payments-grid">
-                {pendingPayments.map(payment => {
-                  const order = payment.orders;
-                  const profile = order?.profiles;
-                  return (
-                    <div key={payment.id} className="payment-card">
-                      <div className="payment-card-header">
-                        <span className="payment-id">
-                          Pedido #{order?.id ? String(order.id).slice(-6).toUpperCase() : 'N/A'}
-                        </span>
-                        <span className="payment-amount">
-                          {payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : ''}
-                          {Number(payment.amount_paid).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          {' '}<span className="payment-currency">{payment.currency || 'USD'}</span>
-                        </span>
-                      </div>
 
-                      <div className="payment-details">
-                        <p><strong>Cliente:</strong> {profile?.full_name || order?.user_name || 'Sin nombre'}</p>
-                        <p><strong>Email:</strong> {profile?.email || order?.user_email || 'N/A'}</p>
-                        <p><strong>Fecha:</strong> {new Date(payment.created_at).toLocaleString()}</p>
-                        {payment.reference_number && (
-                          <p><strong>Nº Referencia:</strong> <span className="reference-badge">{payment.reference_number}</span></p>
-                        )}
-                      </div>
-
-                      <div className="payment-proof">
-                        {payment.proof_image_url ? (
-                          <div className="proof-image-container">
-                            <img
-                              src={payment.proof_image_url}
-                              alt="Comprobante de pago"
-                              className="proof-image"
-                              onClick={() => window.open(payment.proof_image_url, '_blank')}
-                              style={{ cursor: 'zoom-in' }}
-                            />
-                            <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="view-full-btn">
-                              <Search size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Ver comprobante completo
-                            </a>
-                          </div>
-                        ) : (
-                          <div className="no-proof">
-                            <ImageIcon size={24} />
-                            <span>Sin imagen de comprobante</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="payment-actions">
-                        <button
-                          className="btn-reject"
-                          onClick={() => handlePaymentAction(payment.id, 'rejected', order?.id)}
+              {isLoadingPayments ? (
+                <div className="admin-loading-state">
+                  <Loader2 size={32} className="spin" />
+                  <p>{paymentsFilter === 'pending' ? 'Cargando pagos pendientes...' : 'Cargando historial de pagos...'}</p>
+                </div>
+              ) : pendingPayments.length === 0 ? (
+                <div className="admin-empty-state">
+                  <CheckCircle size={48} className="empty-icon text-green" />
+                  <p>
+                    {paymentsFilter === 'pending' 
+                      ? '¡Todo al día! No hay pagos pendientes por verificar.' 
+                      : 'No hay registros en el historial de pagos.'}
+                  </p>
+                </div>
+              ) : filteredPayments.length === 0 ? (
+                <div className="admin-empty-state">
+                  <Search size={48} className="empty-icon text-slate-400" style={{ color: '#64748b' }} />
+                  <p>No se encontraron pagos que coincidan con la búsqueda.</p>
+                </div>
+              ) : (
+                <div className="payments-grid">
+                  <AnimatePresence mode="popLayout">
+                    {filteredPayments.map(payment => {
+                      const order = payment.orders;
+                      const profile = order?.profiles;
+                      return (
+                        <motion.div 
+                          key={payment.id} 
+                          className="payment-card"
+                          initial={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                          transition={{ duration: 0.35, ease: 'easeInOut' }}
+                          layout
                         >
-                          <XCircle size={18} /> Rechazar
-                        </button>
-                        <button
-                          className="btn-approve"
-                          onClick={() => handlePaymentAction(payment.id, 'completed', order?.id)}
-                        >
-                          <CheckCircle size={18} /> Validar Pago
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                          <div className="payment-card-header">
+                            <span className="payment-id">
+                              Pedido #{order?.id ? String(order.id).slice(-6).toUpperCase() : 'N/A'}
+                            </span>
+                            <span className="payment-amount">
+                              {payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : ''}
+                              {Number(payment.amount_paid).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {' '}<span className="payment-currency">{payment.currency || 'USD'}</span>
+                            </span>
+                          </div>
+
+                          <div className="payment-details">
+                            <p><strong>Cliente:</strong> {profile?.full_name || order?.user_name || 'Sin nombre'}</p>
+                            <p><strong>Email:</strong> {profile?.email || order?.user_email || 'N/A'}</p>
+                            <p><strong>Fecha:</strong> {new Date(payment.created_at).toLocaleString('es-VE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                            {payment.reference_number && (
+                              <p><strong>Nº Referencia:</strong> <span className="reference-badge">{payment.reference_number}</span></p>
+                            )}
+                          </div>
+
+                          <div className="payment-proof">
+                            {payment.proof_image_url ? (
+                              <div className="proof-image-container">
+                                <img
+                                  src={payment.proof_image_url}
+                                  alt="Comprobante de pago"
+                                  className="proof-image"
+                                  onClick={() => window.open(payment.proof_image_url, '_blank')}
+                                  style={{ cursor: 'zoom-in' }}
+                                />
+                                <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="view-full-btn">
+                                  <Search size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Ver comprobante completo
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="no-proof">
+                                <ImageIcon size={24} />
+                                <span>Sin imagen de comprobante</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {paymentsFilter === 'history' ? (
+                            <div className="payment-status-badge-container">
+                              <span className={`payment-status-badge ${payment.status}`}>
+                                {payment.status === 'completed' ? 'Pago Aceptado' : 'Pago Rechazado'}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="payment-actions">
+                              <button
+                                className="btn-reject"
+                                onClick={() => handlePaymentAction(payment.id, 'rejected', order?.id)}
+                              >
+                                <XCircle size={18} /> Rechazar
+                              </button>
+                              <button
+                                className="btn-approve"
+                                onClick={() => handlePaymentAction(payment.id, 'completed', order?.id)}
+                              >
+                                <CheckCircle size={18} /> Validar Pago
+                              </button>
+                            </div>
+                          )}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
             )}
           </div>
@@ -908,10 +1108,11 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
             <h2 className="admin-section-title">Gestionar Categorías</h2>
 
             {/* ── Add new category form ── */}
-            <form className="cat-add-form" onSubmit={handleAddCategory}>
+            {/* ── Add/Edit category form ── */}
+            <form className="cat-add-form" onSubmit={editingCategory ? handleUpdateCategory : handleAddCategory}>
               <h3 className="cat-add-title">
-                <PlusCircle size={18} />
-                Nueva Categoría
+                {editingCategory ? <Pencil size={18} /> : <PlusCircle size={18} />}
+                {editingCategory ? `Editar Categoría: ${editingCategory.name}` : 'Nueva Categoría'}
               </h3>
               <div className="cat-add-fields">
                 <div className="form-group">
@@ -926,32 +1127,162 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 </div>
 
                 {/* ── Botonera de grupo ── */}
-                <div className="form-group">
-                  <label>Clasificar en</label>
-                  <div className="category-group-selector">
-                    <button
-                      type="button"
-                      className={`selector-btn ${selectedGroup === 'por-producto' ? 'active' : ''}`}
-                      onClick={() => setSelectedGroup('por-producto')}
-                    >
-                      Por Producto
-                    </button>
-                    <button
-                      type="button"
-                      className={`selector-btn ${selectedGroup === 'para-tu-equipo' ? 'active' : ''}`}
-                      onClick={() => setSelectedGroup('para-tu-equipo')}
-                    >
-                      Para tu Equipo
-                    </button>
+                {(!editingCategory || editingCategory.parent_id !== null) && (
+                  <div className="form-group">
+                    <label>Clasificar en</label>
+                    <div className="category-group-selector" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      {classificationOptions.map(option => (
+                        <div key={option.id} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className={`selector-btn ${selectedClassificationId === option.id ? 'active' : ''}`}
+                            onClick={() => setSelectedClassificationId(option.id)}
+                            style={{
+                              paddingRight: option.slug !== 'por-producto' && option.slug !== 'para-tu-equipo' ? '2.2rem' : '1.25rem'
+                            }}
+                          >
+                            {option.name}
+                          </button>
+                          {option.slug !== 'por-producto' && option.slug !== 'para-tu-equipo' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClassification(option);
+                              }}
+                              style={{
+                                position: 'absolute',
+                                right: '8px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: selectedClassificationId === option.id ? '#ffffff' : '#f87171',
+                                opacity: 0.7,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '4px',
+                                zIndex: 10
+                              }}
+                              title={`Eliminar clasificación "${option.name}"`}
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Botón/Input para añadir nueva clasificación */}
+                    <div style={{ marginTop: '0.75rem' }}>
+                      {!isCreatingClassification ? (
+                        <button
+                          type="button"
+                          className="selector-btn"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.375rem',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px dashed rgba(255, 255, 255, 0.2)',
+                            color: '#cbd5e1',
+                            padding: '0.4rem 0.8rem',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem',
+                            width: 'auto',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setIsCreatingClassification(true)}
+                        >
+                          <PlusCircle size={14} />
+                          Añadir nueva clasificación
+                        </button>
+                      ) : (
+                        <div style={{
+                          display: 'flex',
+                          gap: '8px',
+                          alignItems: 'center',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          padding: '0.5rem',
+                          borderRadius: '10px',
+                          maxWidth: '400px'
+                        }}>
+                          <input
+                            type="text"
+                            value={newClassificationName}
+                            onChange={(e) => setNewClassificationName(e.target.value)}
+                            placeholder="Ej: Repuestos, Para Creadores"
+                            style={{
+                              flex: 1,
+                              background: '#1e293b',
+                              border: '1px solid #334155',
+                              padding: '0.4rem 0.75rem',
+                              borderRadius: '8px',
+                              color: '#f1f5f9',
+                              fontSize: '0.85rem',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveNewClassification}
+                            disabled={isSavingClassification}
+                            style={{
+                              background: '#2563eb',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '0.4rem 0.8rem',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {isSavingClassification ? '...' : 'Guardar'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCreatingClassification(false);
+                              setNewClassificationName('');
+                            }}
+                            style={{
+                              background: 'transparent',
+                              color: '#94a3b8',
+                              border: 'none',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-              <button type="submit" className="admin-submit-btn cat-add-btn" disabled={isAddingCat}>
-                {isAddingCat
-                  ? <><Loader2 size={16} className="spin" /> Creando...</>
-                  : <><PlusCircle size={16} /> Crear Categoría</>
-                }
-              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="submit" className="admin-submit-btn cat-add-btn" disabled={editingCategory ? isSavingCat : isAddingCat}>
+                  {editingCategory ? (
+                    isSavingCat ? <><Loader2 size={16} className="spin" /> Guardando...</> : <><Check size={16} /> Actualizar Categoría</>
+                  ) : (
+                    isAddingCat ? <><Loader2 size={16} className="spin" /> Creando...</> : <><PlusCircle size={16} /> Crear Categoría</>
+                  )}
+                </button>
+                {editingCategory && (
+                  <button
+                    type="button"
+                    className="admin-submit-btn cat-add-btn"
+                    style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#cbd5e1', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                    onClick={cancelEditCategory}
+                  >
+                    Cancelar Edición
+                  </button>
+                )}
+              </div>
             </form>
 
             {/* ── Categories list ── */}
@@ -972,84 +1303,50 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                     key={cat.id}
                     className="cat-row"
                   >
-                    {/* ── Name / Edit inline ── */}
+                    {/* ── Name and Classification Badge ── */}
                     <div className="cat-row-body">
-                      {editingCatId === cat.id ? (
-                        <div className="cat-edit-fields">
-                          <input
-                            type="text"
-                            className="cat-inline-input"
-                            value={editingName}
-                            onChange={e => setEditingName(e.target.value)}
-                            placeholder="Nombre de la categoría"
-                            autoFocus
-                          />
-                          {/* ── Botonera de grupo en edición ── */}
-                          <div className="category-group-selector category-group-selector--edit">
-                            <button
-                              type="button"
-                              className={`selector-btn ${editingCategoryGroup === 'por-producto' ? 'active' : ''}`}
-                              onClick={() => setEditingCategoryGroup('por-producto')}
-                            >
-                              Por Producto
-                            </button>
-                            <button
-                              type="button"
-                              className={`selector-btn ${editingCategoryGroup === 'para-tu-equipo' ? 'active' : ''}`}
-                              onClick={() => setEditingCategoryGroup('para-tu-equipo')}
-                            >
-                              Para tu Equipo
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="cat-row-info">
-                          <span className="cat-row-name">{cat.name}</span>
-                        </div>
-                      )}
+                      <div className="cat-row-info">
+                        <span className="cat-row-name">{cat.name}</span>
+                        <span className="cat-hidden-badge" style={{
+                          background: cat.parent_id ? 'rgba(96, 165, 250, 0.1)' : 'rgba(168, 85, 247, 0.1)',
+                          color: cat.parent_id ? '#60a5fa' : '#c084fc',
+                          borderColor: cat.parent_id ? 'rgba(96, 165, 250, 0.25)' : 'rgba(168, 85, 247, 0.25)',
+                          borderStyle: 'solid',
+                          borderWidth: '1px',
+                          display: 'inline-block',
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                          borderRadius: '4px',
+                          padding: '0.1rem 0.45rem',
+                          marginLeft: '0.5rem'
+                        }}>
+                          {cat.parent_id
+                            ? `Clasificación: ${allCategories.find(c => c.id === cat.parent_id)?.name || 'Desconocido'}`
+                            : 'Clasificación Principal'
+                          }
+                        </span>
+                      </div>
                     </div>
 
                     {/* ── Actions ── */}
                     <div className="cat-row-actions">
-                      {editingCatId === cat.id ? (
-                        <>
-                          <button
-                            className="cat-action-btn cat-action-btn--save"
-                            onClick={() => saveEditCat(cat)}
-                            disabled={isSavingCat}
-                            title="Guardar cambios"
-                          >
-                            {isSavingCat ? <Loader2 size={15} className="spin" /> : <Check size={15} />}
-                          </button>
-                          <button
-                            className="cat-action-btn cat-action-btn--cancel"
-                            onClick={cancelEditCat}
-                            title="Cancelar"
-                          >
-                            <X size={15} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="cat-action-btn cat-action-btn--edit"
-                            onClick={() => startEditCat(cat)}
-                            title="Editar"
-                          >
-                            <Pencil size={15} />
-                          </button>
+                      <button
+                        className="cat-action-btn cat-action-btn--edit"
+                        onClick={() => startEditCategory(cat)}
+                        title="Editar"
+                      >
+                        <Pencil size={15} />
+                      </button>
 
-
-
-                          <button
-                            className="cat-action-btn cat-action-btn--delete"
-                            onClick={() => handleDeleteCategory(cat)}
-                            title="Eliminar categoría"
-                          >
-                            <XCircle size={15} />
-                          </button>
-                        </>
-                      )}
+                      <button
+                        className="cat-action-btn cat-action-btn--delete"
+                        onClick={() => handleDeleteCategory(cat)}
+                        title="Eliminar categoría"
+                      >
+                        <XCircle size={15} />
+                      </button>
                     </div>
                   </div>
                 ))}

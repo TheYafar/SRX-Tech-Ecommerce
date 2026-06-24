@@ -53,7 +53,7 @@ export default function Navbar() {
   useEffect(() => {
     supabase
       .from('categories')
-      .select('id, name')
+      .select('id, name, slug, parent_id')
       .then(({ data }) => { if (data) setCategories(data); });
   }, []);
 
@@ -324,25 +324,43 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* ── DIMENSIÓN 1: Por Producto (Categorías) ── */}
+          {/* ── DIMENSIÓN 1: Categorías Dinámicas agrupadas por clasificación ── */}
           {categories.length > 0 && (
-            <div className="mobile-dim-section">
-              <div className="mobile-dim-label">
-                <Grid size={11} />
-                Por Producto
-              </div>
-              <div className="mobile-tags-row">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    className="mobile-dim-tag"
-                    onClick={() => handleFilter({ type: 'category', value: cat.id })}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+            (() => {
+              const classifications = categories.filter(c => c.parent_id === null);
+              const activeClassifications = classifications.filter(clf => {
+                const children = categories.filter(c => c.parent_id === clf.id);
+                return children.length > 0 || clf.slug === 'por-producto';
+              });
+              
+              return activeClassifications.map(clf => {
+                const children = categories.filter(c => c.parent_id === clf.id);
+                if (clf.slug === 'para-tu-equipo') return null; // Se renderiza aparte
+                
+                return (
+                  <div key={clf.id} className="mobile-dim-section">
+                    <div className="mobile-dim-label">
+                      <Grid size={11} />
+                      {clf.name}
+                    </div>
+                    <div className="mobile-tags-row">
+                      {children.map((cat) => (
+                        <button
+                          key={cat.id}
+                          className="mobile-dim-tag"
+                          onClick={() => {
+                            handleFilter({ type: 'category', value: cat.id });
+                            setIsMobileMenuOpen(false);
+                          }}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()
           )}
 
           {/* ── DIMENSIÓN 2: Para tu equipo ── */}
