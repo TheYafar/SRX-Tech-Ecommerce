@@ -57,7 +57,7 @@ function SpecTabs({ compatibleDevices = [], useScenarios = [] }) {
 }
 
 // ── Componente Principal ────────────────────────────────────────────────────
-export default function ProductDetailModal({ product, isOpen, onClose }) {
+export default function ProductDetailModal({ product, isOpen, onClose, onMouseEnter, onMouseLeave }) {
   const { addToCart } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
@@ -196,6 +196,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
             animate="visible"
             exit="exit"
             onClick={(e) => e.stopPropagation()}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
           >
             {/* Close Button - Universal */}
             <button 

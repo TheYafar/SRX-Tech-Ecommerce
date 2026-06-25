@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -17,8 +17,18 @@ export default function ProductCard({ product }) {
   const isOutOfStock = !product.stock || product.stock < 1;
   const [isAdded, setIsAdded] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const lastClosedTimeRef = useRef(0);
+  const closeTimeoutRef = useRef(null);
   
   const isLiked = isProductLiked(product.id);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -34,6 +44,42 @@ export default function ProductCard({ product }) {
 
   const handleCloseDetail = () => {
     setIsDetailOpen(false);
+    lastClosedTimeRef.current = Date.now();
+  };
+
+  const handleMouseEnter = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+      const now = Date.now();
+      // Impedimos que se vuelva a abrir inmediatamente si se acaba de cerrar (cooldown de 800ms)
+      if (now - lastClosedTimeRef.current > 800) {
+        handleQuickView();
+      }
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      closeTimeoutRef.current = setTimeout(() => {
+        setIsDetailOpen(false);
+      }, 300);
+    }
+  };
+
+  const handleModalMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+  };
+
+  const handleModalMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      closeTimeoutRef.current = setTimeout(() => {
+        setIsDetailOpen(false);
+      }, 300);
+    }
   };
 
   return (
@@ -43,6 +89,8 @@ export default function ProductCard({ product }) {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ y: -8 }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="card-image-container">
           {tieneOferta && (
@@ -135,12 +183,6 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          {isOutOfStock && (
-            <p className="backorder-notice">
-              Llegarán nuevas unidades en 7 a 10 días hábiles
-            </p>
-          )}
-          
           <motion.button 
             className={`pill-btn cart-btn ${isOutOfStock ? 'order-btn' : ''} ${isAdded ? 'added-to-cart' : ''}`}
             onClick={handleAddToCart}
@@ -166,6 +208,8 @@ export default function ProductCard({ product }) {
         product={product} 
         isOpen={isDetailOpen} 
         onClose={handleCloseDetail} 
+        onMouseEnter={handleModalMouseEnter}
+        onMouseLeave={handleModalMouseLeave}
       />
     </>
   );
