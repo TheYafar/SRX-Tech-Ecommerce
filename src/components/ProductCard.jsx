@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -8,6 +9,7 @@ import ProductDetailModal from './ProductDetailModal';
 import './ProductCard.css';
 
 export default function ProductCard({ product }) {
+  const { user, openAuthModalWithAction } = useAuth();
   const { addToCart } = useCart();
   const { toggleWishlist, isProductLiked } = useWishlist();
   const { formatUSD, formatVES, isLoading } = useCurrency();
@@ -83,6 +85,16 @@ export default function ProductCard({ product }) {
             whileTap={{ scale: 0.95 }}
             onClick={(e) => {
               e.stopPropagation();
+              if (!user) {
+                // No active session — open the auth modal and queue the wishlist action
+                openAuthModalWithAction(
+                  () => toggleWishlist(product),
+                  'Inicia sesión para guardar productos en tus favoritos',
+                  'login'
+                );
+                return;
+              }
+              // Active session — execute wishlist logic normally
               toggleWishlist(product);
             }}
             aria-label={isLiked ? "Quitar de favoritos" : "Añadir a favoritos"}

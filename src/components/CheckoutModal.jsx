@@ -789,33 +789,31 @@ export default function CheckoutModal({ isOpen, onClose }) {
                       />
                     )}
 
-                    <div className="form-group">
-                      <label className="form-label">
-                        {paymentMethod === 'binance' 
-                          ? 'ID de Transacción Binance' 
-                          : paymentMethod === 'pago-movil' 
-                            ? 'Número de Referencia Pago Móvil' 
-                            : 'Número de Referencia'}
-                      </label>
-                      <div className="input-with-icon">
-                        <Shield size={18} className="input-icon" />
-                        <input
-                          type="text"
-                          name="referenceNumber"
-                          value={formData.referenceNumber}
-                          onChange={handleInputChange}
-                          placeholder={
-                            paymentMethod === 'binance' 
-                              ? 'Ej: 284719284' 
-                              : paymentMethod === 'pago-movil' 
-                                ? 'Ej: 1234' 
-                                : 'Ej: 123456789'
-                          }
-                          className="form-input"
-                          required
-                        />
+                    {(paymentMethod === 'binance' || paymentMethod === 'pago-movil') && (
+                      <div className="form-group">
+                        <label className="form-label">
+                          {paymentMethod === 'binance' 
+                            ? 'ID de Transacción Binance' 
+                            : 'Número de Referencia Pago Móvil'}
+                        </label>
+                        <div className="input-with-icon">
+                          <Shield size={18} className="input-icon" />
+                          <input
+                            type="text"
+                            name="referenceNumber"
+                            value={formData.referenceNumber}
+                            onChange={handleInputChange}
+                            placeholder={
+                              paymentMethod === 'binance' 
+                                ? 'Ej: 284719284' 
+                                : 'Ej: 1234'
+                            }
+                            className="form-input"
+                            required
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="form-group">
                       <label className="form-label">Comprobante (Capture)</label>
@@ -839,7 +837,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <button 
                       type="submit"
                       className="checkout-submit-btn mt-4"
-                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile || !isContactInfoValid || finalTotal <= 0}
+                      disabled={isSubmitting || ((paymentMethod === 'binance' || paymentMethod === 'pago-movil') && !formData.referenceNumber) || !formData.receiptFile || !isContactInfoValid || finalTotal <= 0}
                     >
                       {isSubmitting ? (
                         <>
