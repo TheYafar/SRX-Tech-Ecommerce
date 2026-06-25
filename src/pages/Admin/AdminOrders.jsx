@@ -12,7 +12,42 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [ordersTab, setOrdersTab] = useState('active'); // 'active' | 'history'
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [paymentDetail, setPaymentDetail] = useState(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
   const navigate = useNavigate();
+
+  // Fetch payment detail dynamically when selectedOrder changes
+  useEffect(() => {
+    if (!selectedOrder) {
+      setPaymentDetail(null);
+      return;
+    }
+
+    const fetchPaymentDetail = async () => {
+      setLoadingPayment(true);
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .select('proof_image_url, reference_number')
+          .eq('order_id', selectedOrder.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('[AdminOrders] Error loading payment proof:', error);
+          setPaymentDetail(null);
+        } else {
+          setPaymentDetail(data);
+        }
+      } catch (err) {
+        console.error('[AdminOrders] Exception loading payment proof:', err);
+        setPaymentDetail(null);
+      } finally {
+        setLoadingPayment(false);
+      }
+    };
+
+    fetchPaymentDetail();
+  }, [selectedOrder?.id]);
 
   // Load orders from Supabase with JOIN to profiles, order_items and products
   useEffect(() => {
@@ -594,35 +629,53 @@ export default function AdminOrders() {
                         <span>Monto del Pago:</span>
                         <strong>{formatCurrency(payment.amount_paid)} {payment.currency}</strong>
                       </div>
-                      {payment.proof_image_url && (
-                        <div className="proof-image-container" style={{ marginTop: '12px' }}>
-                          <img
-                            src={payment.proof_image_url}
-                            alt="Comprobante de pago"
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: '220px',
-                              borderRadius: '8px',
-                              cursor: 'zoom-in',
-                              border: '1px solid #334155',
-                              display: 'block',
-                              marginTop: '8px'
-                            }}
-                            onClick={() => window.open(payment.proof_image_url, '_blank')}
-                          />
-                          <div className="proof-image-link-container" style={{ marginTop: '6px' }}>
-                            <a href={payment.proof_image_url} target="_blank" rel="noopener noreferrer" className="proof-image-link" style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.85rem', color: '#38bdf8' }}>
-                              <Eye size={14} style={{ marginRight: '4px' }} /> Ver comprobante completo
-                            </a>
-                          </div>
-                        </div>
-                      )}
+
                       {(order.status === 'pending_payment' || order.status === 'pending') && (
                         <button className="btn-modal-action verify-cta" onClick={() => handleVerifyPaymentRedirect(order)}>
                           <ExternalLink size={14} /> Ir a verificar en panel de pagos
                         </button>
                       )}
                     </div>
+                  )}
+                </div>
+
+                {/* COMPROBANTE DE PAGO */}
+                <div className="modal-info-card">
+                  <h3>COMPROBANTE DE PAGO</h3>
+                  {loadingPayment ? (
+                    <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
+                      <Loader className="animate-spin text-slate-500" size={16} />
+                      <span>Cargando comprobante...</span>
+                    </div>
+                  ) : paymentDetail?.proof_image_url ? (
+                    <div className="flex flex-col gap-3">
+                      {paymentDetail.reference_number && (
+                        <div className="info-item">
+                          <span>Referencia:</span>
+                          <strong className="reference-badge-inline">{paymentDetail.reference_number}</strong>
+                        </div>
+                      )}
+                      <div className="proof-image-container mt-2">
+                        <img
+                          src={paymentDetail.proof_image_url}
+                          alt="Comprobante de pago"
+                          className="w-full max-h-48 object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-90 transition"
+                          onClick={() => window.open(paymentDetail.proof_image_url, '_blank')}
+                        />
+                        <div className="proof-image-link-container mt-2">
+                          <button
+                            onClick={() => window.open(paymentDetail.proof_image_url, '_blank')}
+                            className="proof-image-link text-sky-400 hover:text-sky-300 text-sm font-semibold flex items-center gap-1 bg-sky-950/30 px-3 py-1.5 rounded-md border border-sky-900/30 transition w-fit cursor-pointer"
+                          >
+                            <Eye size={14} /> Ver comprobante completo
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 text-sm italic">
+                      No se cargó ningún comprobante para este encargo
+                    </span>
                   )}
                 </div>
 

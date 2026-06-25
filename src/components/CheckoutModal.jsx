@@ -165,13 +165,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
   };
 
-  const processCheckout = async () => {
+  const processCheckout = async (paypalDetails = null) => {
     setIsSubmitting(true);
     let uploadedReceiptUrl = null;
 
     try {
-      // Paso 1: Subir el comprobante a Supabase Storage
-      if (formData.receiptFile) {
+      // Paso 1: Subir el comprobante a Supabase Storage (omitir si es pago directo por PayPal)
+      if (formData.receiptFile && !paypalDetails) {
         uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
         if (!uploadedReceiptUrl) {
           throw new Error('No se pudo subir la imagen del comprobante o no se generó una dirección pública.');
@@ -182,7 +182,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
       const orderPayload = {
         user_id: user ? user.id : null,
         total_amount_usd: finalTotal,
-        status: 'pending_payment',
+        status: paypalDetails ? 'paid' : 'pending_payment',
         user_name: formData.name.trim() || (user ? (user.name || user.user_metadata?.full_name) : ''),
         user_email: (user ? user.email : formData.email) || formData.email || '',
         user_phone: formData.phone.trim()
@@ -198,10 +198,20 @@ export default function CheckoutModal({ isOpen, onClose }) {
       
       const newOrderId = orderData.id;
 
+      // Actualizar status de la orden correspondiente a 'paid' si es PayPal (acción consecutiva requerida)
+      if (paypalDetails) {
+        const { error: updateOrderError } = await supabase
+          .from('orders')
+          .update({ status: 'paid' })
+          .eq('id', newOrderId);
+        
+        if (updateOrderError) throw new Error(`Fallo al actualizar el estado de la orden a pagada: ${updateOrderError.message}`);
+      }
+
       // Paso 3: Insertar en order_items
       if (cartItems && cartItems.length > 0) {
         const orderItemsToInsert = cartItems.map(item => {
-          const isUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+          const isUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
           
           let realProductId = null;
           if (isUUID(item.product_id)) realProductId = item.product_id;
@@ -247,9 +257,9 @@ export default function CheckoutModal({ isOpen, onClose }) {
           payment_method_id: defaultPaymentMethodId,
           amount_paid: finalTotal,
           currency: 'USD',
-          reference_number: formData.referenceNumber || 'N/A',
+          reference_number: paypalDetails ? paypalDetails.id : (formData.referenceNumber || 'N/A'),
           proof_image_url: uploadedReceiptUrl,
-          status: 'pending_verification'
+          status: paypalDetails ? 'completed' : 'pending_verification'
         }]);
 
       if (paymentError) throw new Error(`Fallo al registrar el pago: ${paymentError.message}`);
@@ -368,14 +378,17 @@ export default function CheckoutModal({ isOpen, onClose }) {
     exit: { y: -20, opacity: 0, transition: { duration: 0.2 } }
   };
 
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "test";
+
   return (
-    <motion.div
-      className="checkout-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
+    <PayPalScriptProvider options={{ "client-id": paypalClientId, currency: "USD" }}>
+      <motion.div
+        className="checkout-overlay"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
       <motion.div
         className="checkout-container"
         variants={contentVariants}
@@ -594,37 +607,34 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <div className="payment-details-form">
                       {isContactInfoValid ? (
                         <div className="paypal-button-container">
-                          <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
-                            <PayPalButtons 
-                              style={{ layout: "vertical", shape: "pill" }}
-                              createOrder={(data, actions) => {
-                                return actions.order.create({
-                                  purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
-                                });
-                              }}
-                              onApprove={(data, actions) => {
-                                setIsSubmitting(true);
-                                return actions.order.capture()
-                                  .then(() => {
-                                    processCheckout();
-                                  })
-                                  .catch((err) => {
-                                    console.error('PayPal capture error:', err);
-                                    showError('Error al capturar el pago con PayPal.');
-                                    setIsSubmitting(false);
-                                  });
-                              }}
-                              onError={(err) => {
-                                console.error('PayPal error:', err);
-                                showError('Ocurrió un error con el servicio de PayPal.');
+                          <PayPalButtons 
+                            style={{ layout: "vertical", shape: "pill" }}
+                            createOrder={(data, actions) => {
+                              return actions.order.create({
+                                purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
+                              });
+                            }}
+                            onApprove={async (data, actions) => {
+                              setIsSubmitting(true);
+                              try {
+                                const details = await actions.order.capture();
+                                await processCheckout(details);
+                              } catch (err) {
+                                console.error('PayPal capture or database sync error:', err);
+                                showError('Error al procesar el pago con PayPal: ' + (err.message || err));
                                 setIsSubmitting(false);
-                              }}
-                              onCancel={() => {
-                                showError('El pago con PayPal fue cancelado.');
-                                setIsSubmitting(false);
-                              }}
-                            />
-                          </PayPalScriptProvider>
+                              }
+                            }}
+                            onError={(err) => {
+                              console.error('PayPal error:', err);
+                              showError('Ocurrió un error con el servicio de PayPal.');
+                              setIsSubmitting(false);
+                            }}
+                            onCancel={() => {
+                              showError('El pago con PayPal fue cancelado.');
+                              setIsSubmitting(false);
+                            }}
+                          />
                         </div>
                       ) : (
                         <div className="payment-validation-warning" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '8px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: '600', marginTop: '1rem' }}>
@@ -847,5 +857,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
         )}
       </motion.div>
     </motion.div>
+    </PayPalScriptProvider>
   );
 }
