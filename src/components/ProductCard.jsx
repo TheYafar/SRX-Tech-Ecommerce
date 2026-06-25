@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Eye, Heart, Star } from 'lucide-react';
+import { ShoppingCart, Heart, Star } from 'lucide-react';
 import ProductDetailModal from './ProductDetailModal';
 import './ProductCard.css';
 
@@ -17,18 +17,8 @@ export default function ProductCard({ product }) {
   const isOutOfStock = !product.stock || product.stock < 1;
   const [isAdded, setIsAdded] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const lastClosedTimeRef = useRef(0);
-  const closeTimeoutRef = useRef(null);
   
   const isLiked = isProductLiked(product.id);
-
-  useEffect(() => {
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -44,42 +34,6 @@ export default function ProductCard({ product }) {
 
   const handleCloseDetail = () => {
     setIsDetailOpen(false);
-    lastClosedTimeRef.current = Date.now();
-  };
-
-  const handleMouseEnter = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-      const now = Date.now();
-      // Impedimos que se vuelva a abrir inmediatamente si se acaba de cerrar (cooldown de 800ms)
-      if (now - lastClosedTimeRef.current > 800) {
-        handleQuickView();
-      }
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      closeTimeoutRef.current = setTimeout(() => {
-        setIsDetailOpen(false);
-      }, 300);
-    }
-  };
-
-  const handleModalMouseEnter = () => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-    }
-  };
-
-  const handleModalMouseLeave = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      closeTimeoutRef.current = setTimeout(() => {
-        setIsDetailOpen(false);
-      }, 300);
-    }
   };
 
   return (
@@ -89,8 +43,6 @@ export default function ProductCard({ product }) {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ y: -8 }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
       >
         <div className="card-image-container">
           {tieneOferta && (
@@ -104,37 +56,66 @@ export default function ProductCard({ product }) {
             </div>
           )}
 
-          <motion.img 
-            src={product.image} 
-            alt={product.name} 
-            className="card-image"
-            loading="lazy"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
-          />
+          {/* Heart button re-located to the top-right corner */}
+          <motion.button 
+            className="absolute top-3 right-3 z-10 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-sm hover:scale-105 transition"
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              zIndex: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              padding: '8px',
+              borderRadius: '50%',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none',
+              width: '36px',
+              height: '36px',
+              transition: 'transform 0.2s, background-color 0.2s'
+            }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(product);
+            }}
+            aria-label={isLiked ? "Quitar de favoritos" : "Añadir a favoritos"}
+          >
+            <Heart size={18} fill={isLiked ? "#ef4444" : "none"} style={{ color: isLiked ? '#ef4444' : '#374151', transition: 'color 0.2s' }} />
+          </motion.button>
 
-          {/* Quick Actions Overlay — desktop: hover | mobile: always visible corner badge */}
-          <div className="card-actions-overlay">
-            <motion.button 
-              className="quick-action-btn view-btn"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleQuickView}
-              aria-label="Ver detalles"
-            >
-              <Eye size={18} />
-            </motion.button>
-            
-            <motion.button 
-              className="quick-action-btn like-btn"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => toggleWishlist(product)}
-              aria-label={isLiked ? "Quitar de favoritos" : "Añadir a favoritos"}
-            >
-              <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-            </motion.button>
-          </div>
+          {/* Clickable Image area wrapper */}
+          <button 
+            onClick={handleQuickView}
+            className="absolute inset-0 w-full h-full block focus:outline-none cursor-pointer z-0 border-none bg-transparent p-0"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              cursor: 'pointer',
+              zIndex: 1
+            }}
+            aria-label={`Ver detalles de ${product.name}`}
+          >
+            <motion.img 
+              src={product.image} 
+              alt={product.name} 
+              className="card-image cursor-pointer"
+              loading="lazy"
+              whileHover={{ scale: 1.05, opacity: 0.95 }}
+              transition={{ duration: 0.3 }}
+            />
+          </button>
         </div>
 
         <div className="card-info">
@@ -208,9 +189,8 @@ export default function ProductCard({ product }) {
         product={product} 
         isOpen={isDetailOpen} 
         onClose={handleCloseDetail} 
-        onMouseEnter={handleModalMouseEnter}
-        onMouseLeave={handleModalMouseLeave}
       />
     </>
   );
 }
+
