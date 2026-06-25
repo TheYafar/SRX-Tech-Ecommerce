@@ -3,8 +3,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
-  padding: 2rem;
+  min-height: calc(100vh - var(--nav-height, 70px));
+  padding: calc(var(--nav-height, 70px) + 3rem) 2rem 3rem;
   text-align: center;
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -89,4 +89,12 @@
 .notfound-bg-decoration.dec-2 {
   bottom: 10%;
   right: 10%;
+}
+
+/* Responsive mobile adjustment */
+@media (max-width: 768px) {
+  .notfound-container {
+    min-height: calc(100vh - var(--nav-height, 70px) - 64px - 75px);
+    padding-top: calc(var(--nav-height, 70px) + 64px + 2rem) !important;
+  }
 }

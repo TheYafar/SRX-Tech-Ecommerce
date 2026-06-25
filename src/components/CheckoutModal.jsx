@@ -56,7 +56,7 @@ const renderPaymentIcon = (id) => {
 };
 
 export default function CheckoutModal({ isOpen, onClose }) {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal = 0, clearCart } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatVES, exchangeRate } = useCurrency();
   const { showSuccess, showError } = useNotifications();
@@ -82,8 +82,36 @@ export default function CheckoutModal({ isOpen, onClose }) {
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
 
-  const discountAmount = Number((cartTotal * (appliedDiscount / 100)).toFixed(2));
-  const finalTotal = Math.max(0, Number((cartTotal - discountAmount).toFixed(2)));
+  const isUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  const filteredCartItems = (cartItems || []).reduce((acc, item) => {
+    if (!item) return acc;
+    let realProductId = null;
+    const candidateId = item.id || item.product_id || item._id;
+    if (isUUID(candidateId)) realProductId = candidateId;
+    else if (isUUID(item.uuid)) realProductId = item.uuid;
+    
+    if (realProductId) {
+      acc.push({
+        ...item,
+        product_id: realProductId
+      });
+    }
+    return acc;
+  }, []);
+
+  // Subtotal calculado desde los ítems filtrados válidos.
+  // Si ningún ítem tiene UUID válido, recurrimos a cartTotal del contexto como fallback
+  // para evitar que el botón quede congelado en $0.00.
+  const calculatedSubtotal = filteredCartItems.length > 0
+    ? filteredCartItems.reduce((sum, item) => {
+        const price = item.salePrice || item.price || 0;
+        return sum + (price * (item.quantity || 1));
+      }, 0)
+    : (cartTotal || 0);
+
+  const discountAmount = Number((calculatedSubtotal * (appliedDiscount / 100)).toFixed(2));
+  const finalTotal = Math.max(0, Number((calculatedSubtotal - discountAmount).toFixed(2)));
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isContactInfoValid = 
@@ -209,33 +237,38 @@ export default function CheckoutModal({ isOpen, onClose }) {
       }
 
       // Paso 3: Insertar en order_items
-      if (cartItems && cartItems.length > 0) {
-        const orderItemsToInsert = cartItems.map(item => {
-          const isUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-          
-          let realProductId = null;
-          if (isUUID(item.product_id)) realProductId = item.product_id;
-          else if (isUUID(item.id)) realProductId = item.id;
-          else if (isUUID(item.uuid)) realProductId = item.uuid;
-          
-          if (!realProductId) {
-            throw new Error('Producto sin ID detectado');
-          }
+      // Reutilizamos filteredCartItems (ya calculado en el scope del componente) para
+      // evitar que una re-ejecución del filtro UUID falle y arroje "carrito vacío".
+      const cleanItems = filteredCartItems.length > 0
+        ? filteredCartItems
+        : (cartItems || []).reduce((acc, item) => {
+            if (!item) return acc;
+            let realProductId = null;
+            const candidateId = item.id || item.product_id || item._id;
+            if (isUUID(candidateId)) realProductId = candidateId;
+            else if (isUUID(item.uuid)) realProductId = item.uuid;
+            if (realProductId) acc.push({ ...item, product_id: realProductId });
+            return acc;
+          }, []);
 
-          return {
-            order_id: newOrderId,
-            product_id: realProductId,
-            quantity: item.quantity,
-            price_at_purchase_usd: item.salePrice || item.price
-          };
-        });
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItemsToInsert);
-
-        if (itemsError) throw new Error(`Fallo al insertar los productos de la orden: ${itemsError.message}`);
+      if (cleanItems.length === 0) {
+        throw new Error('El carrito no contiene productos válidos.');
       }
+
+      const orderItemsToInsert = cleanItems.map(item => {
+        return {
+          order_id: newOrderId,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_at_purchase_usd: item.salePrice || item.price
+        };
+      });
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsToInsert);
+
+      if (itemsError) throw new Error(`Fallo al insertar los productos de la orden: ${itemsError.message}`);
 
       // Paso 4: Insertar en payments
       let defaultPaymentMethodId = null;
@@ -354,6 +387,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Guard: no procesar si el monto final es cero o no está cargado.
+    if (finalTotal <= 0) {
+      showError('El monto total de la orden es cero. Revisa tu carrito antes de continuar.');
+      return;
+    }
     await processCheckout();
   };
 
@@ -381,7 +419,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
   const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "test";
 
   return (
-    <PayPalScriptProvider options={{ "client-id": paypalClientId, currency: "USD" }}>
+    <PayPalScriptProvider options={{
+      "client-id": paypalClientId,
+      currency: "USD",
+      components: "buttons",
+      intent: "capture"
+    }}>
       <motion.div
         className="checkout-overlay"
         initial={{ opacity: 0 }}
@@ -610,9 +653,75 @@ export default function CheckoutModal({ isOpen, onClose }) {
                           <PayPalButtons 
                             style={{ layout: "vertical", shape: "pill" }}
                             createOrder={(data, actions) => {
-                              return actions.order.create({
-                                purchase_units: [{ amount: { value: finalTotal.toFixed(2) } }]
-                              });
+                              try {
+                                const cleanItems = (cartItems || []).reduce((acc, item) => {
+                                  if (!item) return acc;
+                                  let realProductId = null;
+                                  const candidateId = item.id || item.product_id || item._id;
+                                  if (isUUID(candidateId)) realProductId = candidateId;
+                                  else if (isUUID(item.uuid)) realProductId = item.uuid;
+                                  
+                                  if (realProductId) {
+                                    acc.push({
+                                      ...item,
+                                      product_id: realProductId
+                                    });
+                                  }
+                                  return acc;
+                                }, []);
+
+                                if (cleanItems.length === 0) {
+                                  throw new Error('El carrito está vacío o no contiene productos válidos.');
+                                }
+
+                                const subtotal = cleanItems.reduce((sum, item) => {
+                                  const price = item.salePrice || item.price || 0;
+                                  return sum + (price * (item.quantity || 1));
+                                }, 0);
+
+                                const discountAmt = Number((subtotal * (appliedDiscount / 100)).toFixed(2));
+                                const totalAmount = Math.max(0, Number((subtotal - discountAmt).toFixed(2)));
+
+                                if (totalAmount <= 0) {
+                                  throw new Error('El monto total de la orden debe ser mayor a cero.');
+                                }
+
+                                const paypalItems = cleanItems.map(item => {
+                                  const price = item.salePrice || item.price || 0;
+                                  return {
+                                    name: item.name || 'Producto',
+                                    quantity: String(item.quantity || 1),
+                                    unit_amount: {
+                                      currency_code: 'USD',
+                                      value: price.toFixed(2)
+                                    }
+                                  };
+                                });
+
+                                return actions.order.create({
+                                  purchase_units: [{
+                                    amount: {
+                                      currency_code: 'USD',
+                                      value: totalAmount.toFixed(2),
+                                      breakdown: {
+                                        item_total: {
+                                          currency_code: 'USD',
+                                          value: subtotal.toFixed(2)
+                                        },
+                                        discount: appliedDiscount > 0 ? {
+                                          currency_code: 'USD',
+                                          value: discountAmt.toFixed(2)
+                                        } : undefined
+                                      }
+                                    },
+                                    items: paypalItems
+                                  }]
+                                });
+                              } catch (err) {
+                                console.error('PayPal createOrder error:', err);
+                                showError(err.message || 'Error al preparar el pago con PayPal.');
+                                throw err;
+                              }
                             }}
                             onApprove={async (data, actions) => {
                               setIsSubmitting(true);
@@ -730,12 +839,17 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <button 
                       type="submit"
                       className="checkout-submit-btn mt-4"
-                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile || !isContactInfoValid}
+                      disabled={isSubmitting || !formData.referenceNumber || !formData.receiptFile || !isContactInfoValid || finalTotal <= 0}
                     >
                       {isSubmitting ? (
                         <>
                           <span className="loading-spinner-small"></span>
                           <span>Procesando pago...</span>
+                        </>
+                      ) : finalTotal <= 0 ? (
+                        <>
+                          <AlertCircle size={20} />
+                          <span>Cargando monto...</span>
                         </>
                       ) : (
                         <>
@@ -765,10 +879,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
 
               <div className="summary-items">
-                {cartItems.map((item) => {
+                {filteredCartItems.map((item) => {
                   const price = item.salePrice || item.price;
                   return (
-                    <div key={item.id} className="summary-item">
+                    <div key={item.product_id} className="summary-item">
                       <div className="summary-item-info">
                         <img src={item.image} alt={item.name} className="summary-item-image" />
                         <div className="summary-item-details">
@@ -820,7 +934,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   <span>Subtotal</span>
                   <span className="price-container">
                     <span className="currency-symbol">$</span>
-                    <span className="price-value">{cartTotal.toFixed(2)}</span>
+                    <span className="price-value">{calculatedSubtotal.toFixed(2)}</span>
                   </span>
                 </div>
                 {appliedDiscount > 0 && (
