@@ -75,7 +75,8 @@ $expiresAt   = date('Y-m-d H:i:s', time() + 3600); // Expira en 1 hora
 //   $stmt = $pdo->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)");
 //   $stmt->execute([$email, hash('sha256', $resetToken), $expiresAt]);
 
-$resetLink = 'https://srxtech.net/reset-password?token=' . urlencode($resetToken);
+// HashRouter requiere el prefijo /# para que React maneje la ruta en cliente
+$resetLink = 'https://srxtech.net/#/reset-password?token=' . urlencode($resetToken);
 
 // ─────────────────────────────────────────────
 //  Configuración de Resend
