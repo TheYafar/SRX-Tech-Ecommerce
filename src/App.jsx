@@ -12,6 +12,7 @@ import Home from './pages/Home';
 import Store from './pages/Store';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+import ResetPassword from './pages/ResetPassword';
 import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminOrders from './pages/Admin/AdminOrders';
@@ -50,6 +51,7 @@ export default function App() {
                       <Route path="profile" element={<Profile />} />
                       <Route path="register" element={<RegisterRedirect />} />
                       <Route path="signup" element={<RegisterRedirect />} />
+                      <Route path="reset-password" element={<ResetPassword />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
                     <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>

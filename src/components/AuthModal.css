@@ -378,6 +378,96 @@
   font-weight: 500;
 }
 
+/* =====================================================
+   FORGOT PASSWORD VIEW
+   ===================================================== */
+
+.forgot-description {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.06);
+  border-left: 3px solid rgba(59, 130, 246, 0.4);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.forgot-back-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.back-to-login-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--nav-bg);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.back-to-login-link:hover {
+  color: var(--accent-light);
+  background: rgba(59, 130, 246, 0.08);
+  text-decoration: none;
+}
+
+/* ── Success state ── */
+.reset-success-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+  gap: 0.75rem;
+}
+
+.reset-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.05) 100%);
+  color: #28a745;
+  margin-bottom: 0.5rem;
+  animation: successPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes successPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.reset-success-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.reset-success-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 280px;
+}
+
+.reset-success-text strong {
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .auth-modal-container {

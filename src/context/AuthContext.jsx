@@ -234,6 +234,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        console.error('Reset password error:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('Unexpected error during password reset:', err);
+      return { success: false, error: err.message || 'Error inesperado' };
+    }
+  };
+
   const openAuthModal = (mode = 'login', email = '') => {
     setAuthMode(mode);
     setInitialEmail(email);
@@ -263,6 +281,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        resetPassword,
         openAuthModal,
         openAuthModalWithAction,
         closeAuthModal,
