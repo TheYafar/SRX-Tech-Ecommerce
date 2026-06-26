@@ -278,18 +278,24 @@
   background: none;
   border-radius: 0;
   margin-bottom: 0.25rem;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .price-container {
   display: flex;
   align-items: baseline;
+  justify-content: flex-start;
   gap: 1rem;
+  width: 100%;
 }
 
 .modal-price-group {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .original-price {
