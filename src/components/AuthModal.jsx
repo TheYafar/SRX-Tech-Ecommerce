@@ -9,7 +9,7 @@ import { loginSchema, registerSchema } from '../utils/validation';
 import './AuthModal.css';
 
 export default function AuthModal() {
-  const { isAuthModalOpen, authMode, closeAuthModal, login, register, resetPassword, setAuthMode, authContextHint, initialEmail } = useAuth();
+  const { isAuthModalOpen, authMode, closeAuthModal, login, register, setAuthMode, authContextHint, initialEmail } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -120,21 +120,28 @@ export default function AuthModal() {
     setForgotEmailError('');
 
     try {
-      const result = await resetPassword(forgotEmail);
-      if (result.success) {
+      const response = await fetch('https://srxtech.net/send-reset-email.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
         setResetEmailSent(true);
       } else {
-        // Map common Supabase error messages to friendly Spanish copy
-        const rawError = result.error || '';
+        const rawError = data.error || data.message || '';
         const friendlyError =
-          rawError.toLowerCase().includes('user not found') ||
+          rawError.toLowerCase().includes('not found') ||
+          rawError.toLowerCase().includes('no encontrado') ||
           rawError.toLowerCase().includes('invalid')
             ? 'No encontramos una cuenta con ese correo. Verifica que sea correcto.'
             : rawError || 'Error al enviar el enlace. Intenta de nuevo.';
         setForgotEmailError(friendlyError);
       }
     } catch {
-      setForgotEmailError('Error inesperado. Por favor, intenta de nuevo.');
+      setForgotEmailError('Error de conexión. Por favor, verifica tu internet e intenta de nuevo.');
     } finally {
       setIsSendingReset(false);
     }
