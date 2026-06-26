@@ -119,18 +119,31 @@ export default function AuthModal() {
     setIsSendingReset(true);
     setForgotEmailError('');
 
+    let response;
     try {
-      const response = await fetch('https://srxtech.net/send-reset-email.php', {
+      // ── Petición al backend PHP ──────────────────────────────────────────
+      response = await fetch('https://srxtech.net/send-reset-email.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail }),
       });
+    } catch {
+      // fetch() solo lanza excepción en fallos de red reales (sin conexión,
+      // DNS fallido, CORS bloqueado antes de recibir respuesta, etc.)
+      setForgotEmailError('Sin conexión. Verifica tu internet e intenta de nuevo.');
+      setIsSendingReset(false);
+      return;
+    }
 
+    try {
       const data = await response.json();
 
       if (data.success) {
+        setForgotEmailError('');
         setResetEmailSent(true);
       } else {
+        // Muestra el mensaje real del servidor; solo usa el genérico si el
+        // servidor no devolvió ningún detalle
         const rawError = data.error || data.message || '';
         const friendlyError =
           rawError.toLowerCase().includes('not found') ||
@@ -141,7 +154,8 @@ export default function AuthModal() {
         setForgotEmailError(friendlyError);
       }
     } catch {
-      setForgotEmailError('Error de conexión. Por favor, verifica tu internet e intenta de nuevo.');
+      // El servidor respondió pero el body no era JSON válido
+      setForgotEmailError(`Error inesperado del servidor (HTTP ${response.status}). Intenta de nuevo.`);
     } finally {
       setIsSendingReset(false);
     }
