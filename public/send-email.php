@@ -35,7 +35,7 @@ if (empty($to) || empty($subject) || empty($html)) {
     exit();
 }
 
-$resendApiKey = 're_S5Qwbugc_55eeDWJYcqYhZVRR5ePwKXqq'; 
+$resendApiKey = 're_BNAbqQWt_4mSs94vHKsF7MpGAU1Dyc9LZ';
 $resendUrl    = 'https://api.resend.com/emails';
 
 $payload = json_encode([
