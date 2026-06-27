@@ -93,13 +93,17 @@ $resendApiKey = $envVars['RESEND_API_KEY'] ?? $envVars['VITE_RESEND_API_KEY'] ??
 $resendUrl    = 'https://api.resend.com/emails';
 
 // ─────────────────────────────────────────────
-//  Paso 1: Buscar el id del usuario por su correo en auth.users
+//  Paso 1: Buscar el id del usuario por su correo
 // ─────────────────────────────────────────────
-$searchUrl = SUPABASE_URL . '/auth/v1/admin/users?filter=' . urlencode($email);
+$userId = null;
+$profileErrorDetails = null;
+
+// Intento A: Buscar en la tabla pública public.profiles usando la API REST (bypasseando RLS con el Service Role Key)
+$profileUrl = SUPABASE_URL . '/rest/v1/profiles?email=eq.' . urlencode($email) . '&select=id,email';
 
 $ch = curl_init();
 curl_setopt_array($ch, [
-    CURLOPT_URL            => $searchUrl,
+    CURLOPT_URL            => $profileUrl,
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_HTTPHEADER     => [
         'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
@@ -115,27 +119,71 @@ $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
 curl_close($ch);
 
-if ($curlError) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL al buscar usuario: ' . $curlError]);
-    exit();
+if (!$curlError && $httpCode >= 200 && $httpCode < 300) {
+    $profiles = json_decode($response, true);
+    if (is_array($profiles) && !empty($profiles)) {
+        $userId = $profiles[0]['id'] ?? null;
+    }
+} else {
+    $profileErrorDetails = [
+        'curl_error' => $curlError ? $curlError : null,
+        'http_code'  => $httpCode,
+        'response'   => json_decode($response, true)
+    ];
 }
 
-if ($httpCode < 200 || $httpCode >= 300) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error'   => 'Error al buscar el usuario en Supabase Auth.',
-        'details' => json_decode($response, true)
+// Intento B: Si no se encontró en profiles, consultar el Endpoint Administrativo de Supabase Auth
+if (!$userId) {
+    $adminUrl = SUPABASE_URL . '/auth/v1/admin/users';
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $adminUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
+            'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type: application/json'
+        ],
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_SSL_VERIFYPEER => true,
     ]);
-    exit();
-}
 
-$searchResult = json_decode($response, true);
-$userId = null;
+    $response  = curl_exec($ch);
+    $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
 
-if (isset($searchResult['users']) && is_array($searchResult['users'])) {
-    foreach ($searchResult['users'] as $user) {
+    if ($curlError) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Error de conexión cURL al buscar usuario en el endpoint administrativo: ' . $curlError,
+            'profile_search_details' => $profileErrorDetails
+        ]);
+        exit();
+    }
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Error al listar usuarios desde el endpoint administrativo de Supabase Auth.',
+            'details' => json_decode($response, true),
+            'profile_search_details' => $profileErrorDetails
+        ]);
+        exit();
+    }
+
+    $searchResult = json_decode($response, true);
+    $usersList = [];
+    if (isset($searchResult['users']) && is_array($searchResult['users'])) {
+        $usersList = $searchResult['users'];
+    } elseif (is_array($searchResult)) {
+        $usersList = $searchResult;
+    }
+
+    foreach ($usersList as $user) {
         if (isset($user['email']) && strcasecmp($user['email'], $email) === 0) {
             $userId = $user['id'];
             break;
@@ -144,8 +192,12 @@ if (isset($searchResult['users']) && is_array($searchResult['users'])) {
 }
 
 if (!$userId) {
-    http_response_code(444); // Usamos un código de error específico para notificar que no se encontró el usuario
-    echo json_encode(['success' => false, 'error' => 'El correo electrónico no está registrado.']);
+    http_response_code(444); // Código específico para notificar que no se encontró el usuario
+    echo json_encode([
+        'success' => false,
+        'error'   => 'El correo electrónico no está registrado.',
+        'profile_search_details' => $profileErrorDetails
+    ]);
     exit();
 }
 
