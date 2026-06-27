@@ -65,24 +65,145 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // ─────────────────────────────────────────────
+//  CONFIGURACIÓN — Carga de variables de entorno o constantes fallback
+// ─────────────────────────────────────────────
+$envPath = dirname(__DIR__) . '/.env';
+$envVars = [];
+if (file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            $envVars[trim($parts[0])] = trim($parts[1]);
+        }
+    }
+}
+
+// URL de Supabase (ej: https://wcnobggfbmpisahxihfu.supabase.co)
+$supabaseUrl = $envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? 'https://wcnobggfbmpisahxihfu.supabase.co';
+define('SUPABASE_URL', rtrim($supabaseUrl, '/'));
+
+// SERVICE ROLE KEY de Supabase (Settings → API → service_role)
+$serviceRoleKey = $envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? $envVars['VITE_SUPABASE_SERVICE_ROLE_KEY'] ?? 'TU_SERVICE_ROLE_KEY_AQUI';
+define('SUPABASE_SERVICE_ROLE_KEY', $serviceRoleKey);
+
+// Configuración de Resend
+$resendApiKey = $envVars['RESEND_API_KEY'] ?? $envVars['VITE_RESEND_API_KEY'] ?? 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T';
+$resendUrl    = 'https://api.resend.com/emails';
+
+// ─────────────────────────────────────────────
+//  Paso 1: Buscar el id del usuario por su correo en auth.users
+// ─────────────────────────────────────────────
+$searchUrl = SUPABASE_URL . '/auth/v1/admin/users?filter=' . urlencode($email);
+
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_URL            => $searchUrl,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
+        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type: application/json'
+    ],
+    CURLOPT_TIMEOUT        => 15,
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+
+$response  = curl_exec($ch);
+$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
+curl_close($ch);
+
+if ($curlError) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL al buscar usuario: ' . $curlError]);
+    exit();
+}
+
+if ($httpCode < 200 || $httpCode >= 300) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Error al buscar el usuario en Supabase Auth.',
+        'details' => json_decode($response, true)
+    ]);
+    exit();
+}
+
+$searchResult = json_decode($response, true);
+$userId = null;
+
+if (isset($searchResult['users']) && is_array($searchResult['users'])) {
+    foreach ($searchResult['users'] as $user) {
+        if (isset($user['email']) && strcasecmp($user['email'], $email) === 0) {
+            $userId = $user['id'];
+            break;
+        }
+    }
+}
+
+if (!$userId) {
+    http_response_code(444); // Usamos un código de error específico para notificar que no se encontró el usuario
+    echo json_encode(['success' => false, 'error' => 'El correo electrónico no está registrado.']);
+    exit();
+}
+
+// ─────────────────────────────────────────────
 //  Generación de token seguro + expiración
 // ─────────────────────────────────────────────
 $resetToken  = bin2hex(random_bytes(32));           // 64 caracteres hex criptográficamente seguros
 $expiresAt   = date('Y-m-d H:i:s', time() + 3600); // Expira en 1 hora
 
-// TODO: Guardar $resetToken, $email y $expiresAt en la base de datos.
-// Ejemplo (PDO):
-//   $stmt = $pdo->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)");
-//   $stmt->execute([$email, hash('sha256', $resetToken), $expiresAt]);
+// ─────────────────────────────────────────────
+//  Paso 2: Inserción en la tabla public.password_resets
+// ─────────────────────────────────────────────
+$insertUrl = SUPABASE_URL . '/rest/v1/password_resets';
+$insertPayload = json_encode([
+    'user_id'    => $userId,
+    'token'      => $resetToken,
+    'expires_at' => $expiresAt
+]);
+
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_URL            => $insertUrl,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $insertPayload,
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
+        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type: application/json',
+        'Prefer: return=minimal'
+    ],
+    CURLOPT_TIMEOUT        => 15,
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+
+$response  = curl_exec($ch);
+$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
+curl_close($ch);
+
+if ($curlError) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL al registrar token: ' . $curlError]);
+    exit();
+}
+
+if ($httpCode < 200 || $httpCode >= 300) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Error al guardar el token de recuperación.',
+        'details' => json_decode($response, true)
+    ]);
+    exit();
+}
 
 // HashRouter requiere el prefijo /# para que React maneje la ruta en cliente
 $resetLink = 'https://srxtech.net/#/reset-password?token=' . urlencode($resetToken);
-
-// ─────────────────────────────────────────────
-//  Configuración de Resend
-// ─────────────────────────────────────────────
-$resendApiKey = 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T';
-$resendUrl    = 'https://api.resend.com/emails';
 
 // ─────────────────────────────────────────────
 //  Plantilla HTML del correo

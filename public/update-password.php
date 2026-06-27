@@ -69,12 +69,7 @@ define('SUPABASE_URL', rtrim($supabaseUrl, '/'));
 $serviceRoleKey = $envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? 'TU_SERVICE_ROLE_KEY_AQUI';
 define('SUPABASE_SERVICE_ROLE_KEY', $serviceRoleKey);
 
-// 3. Credenciales de la Base de Datos MySQL
-define('DB_HOST',     $envVars['DB_HOST']     ?? 'localhost');
-define('DB_NAME',     $envVars['DB_NAME']     ?? 'TU_NOMBRE_DE_BASE_DE_DATOS');
-define('DB_USER',     $envVars['DB_USER']     ?? 'TU_USUARIO_DE_BD');
-define('DB_PASS',     $envVars['DB_PASS']     ?? 'TU_CONTRASEÑA_DE_BD');
-define('DB_CHARSET',  $envVars['DB_CHARSET']  ?? 'utf8mb4');
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  LECTURA Y VALIDACIÓN DEL BODY JSON
@@ -104,44 +99,49 @@ if (empty($nuevaContrasena) || strlen($nuevaContrasena) < 8) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  PASO 1 — Conectar a MySQL y validar el token
+//  PASO 1 — Validar el token en la base de datos de Supabase
 // ═══════════════════════════════════════════════════════════════════════════════
-$dsn = sprintf(
-    'mysql:host=%s;dbname=%s;charset=%s',
-    DB_HOST,
-    DB_NAME,
-    DB_CHARSET
-);
 
-try {
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
+$selectUrl = SUPABASE_URL . '/rest/v1/password_resets?token=eq.' . urlencode($token) . '&select=user_id,expires_at';
+
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_URL            => $selectUrl,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
+        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type: application/json'
+    ],
+    CURLOPT_TIMEOUT        => 15,
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+
+$response  = curl_exec($ch);
+$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
+curl_close($ch);
+
+if ($curlError) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL al validar el token: ' . $curlError]);
+    exit();
+}
+
+if ($httpCode < 200 || $httpCode >= 300) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Error al consultar el token en Supabase.',
+        'details' => json_decode($response, true)
     ]);
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'No se pudo conectar con la base de datos de recuperación.']);
     exit();
 }
 
-// Buscamos el hash SHA-256 del token recibido
-$tokenHash = hash('sha256', $token);
+$rows = json_decode($response, true);
 
-try {
-    $stmt = $pdo->prepare(
-        "SELECT user_id, expires_at FROM password_resets WHERE token = :token LIMIT 1"
-    );
-    $stmt->execute([':token' => $tokenHash]);
-    $row = $stmt->fetch();
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Error al consultar el token en la base de datos.']);
-    exit();
-}
-
-// ── VALIDACIÓN DEL TOKEN Y ASOCIACIÓN DE USUARIO (Requisito Crítico #2) ──
-if (!$row || empty($row['user_id'])) {
+// ── VALIDACIÓN DEL TOKEN Y ASOCIACIÓN DE USUARIO ──
+if (empty($rows) || !is_array($rows) || empty($rows[0]['user_id'])) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
@@ -150,15 +150,27 @@ if (!$row || empty($row['user_id'])) {
     exit();
 }
 
+$row = $rows[0];
+
 // ── Verificar que el token no haya expirado ──
 if (strtotime($row['expires_at']) < time()) {
     // Eliminación proactiva del token expirado
-    try {
-        $pdo->prepare("DELETE FROM password_resets WHERE token = :token")
-            ->execute([':token' => $tokenHash]);
-    } catch (PDOException $e) {
-        // Silencioso
-    }
+    $deleteUrl = SUPABASE_URL . '/rest/v1/password_resets?token=eq.' . urlencode($token);
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $deleteUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST  => 'DELETE',
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
+            'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type: application/json'
+        ],
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
 
     http_response_code(400);
     echo json_encode([
@@ -255,12 +267,22 @@ if ($isError) {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PASO 3 — Invalidador de token (One-Time Use)
 // ═══════════════════════════════════════════════════════════════════════════════
-try {
-    $pdo->prepare("DELETE FROM password_resets WHERE token = :token")
-        ->execute([':token' => $tokenHash]);
-} catch (PDOException $e) {
-    // Ignorar fallos de base de datos en esta fase para no bloquear la experiencia del usuario
-}
+$deleteUrl = SUPABASE_URL . '/rest/v1/password_resets?token=eq.' . urlencode($token);
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_URL            => $deleteUrl,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CUSTOMREQUEST  => 'DELETE',
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
+        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type: application/json'
+    ],
+    CURLOPT_TIMEOUT        => 10,
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+curl_exec($ch);
+curl_close($ch);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  RESPUESTA EXITOSA
