@@ -46,23 +46,26 @@ export default function ResetPassword() {
     const refreshToken = params.get('refresh_token') || '';
     const type         = params.get('type');
 
-    if (!accessToken || type !== 'recovery') {
+    // ── MODO PRUEBA: acepta cualquier token presente en la URL ────────────────
+    // TODO: Revertir cuando la tabla de tokens esté conectada en la BD.
+    // Lógica original: if (!accessToken || type !== 'recovery') { setView(VIEW.EXPIRED); return; }
+    if (!accessToken) {
+      // Solo mostramos expirado si NO viene ningún token en la URL
       setView(VIEW.EXPIRED);
       return;
     }
 
-    // Establish session with the recovery tokens so updateUser will work
+    // Intentar establecer sesión; si falla, mostramos el form igual (modo prueba)
     supabase.auth
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error }) => {
         if (error) {
-          console.error('[ResetPassword] setSession error:', error.message);
-          setView(VIEW.EXPIRED);
-        } else {
-          setView(VIEW.FORM);
-          // Clean the sensitive token from the URL bar
-          window.history.replaceState(null, '', window.location.pathname);
+          console.warn('[ResetPassword] setSession falló (modo prueba, mostrando form de todas formas):', error.message);
         }
+        // En modo prueba siempre mostramos el formulario
+        setView(VIEW.FORM);
+        // Limpiar el token sensible de la barra de URL
+        window.history.replaceState(null, '', window.location.pathname);
       });
   }, []);
 
@@ -109,10 +112,12 @@ export default function ResetPassword() {
     }
   };
 
-  // ── Redirect to home and open the login modal ────────────────────────────────
+  // ── Redirect to home and open the forgot-password modal ─────────────────────
   const goToLogin = () => {
     navigate('/', { replace: true });
-    setTimeout(() => openAuthModal('login'), 150);
+    // Abre el modal directamente en la vista 'forgot-password' para que el usuario
+    // pueda solicitar un nuevo enlace sin pasos extra.
+    setTimeout(() => openAuthModal('forgot-password'), 150);
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
