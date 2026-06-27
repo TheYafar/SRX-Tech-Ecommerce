@@ -1,57 +1,68 @@
 <?php
 // ═══════════════════════════════════════════════════════════════════════════════
 //  update-password.php
-//  Actualiza la contraseña de un usuario usando la Admin API de Supabase.
-//  No requiere sesión activa del cliente.
+//  Recibe token y nueva contraseña, verifica validez y expiración en la DB,
+//  actualiza la contraseña del usuario vía GoTrue Admin API y elimina el token.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ─────────────────────────────────────────────
-//  CORS — Dynamic Origin Whitelist
-// ─────────────────────────────────────────────
-$allowedOrigins = [
-    'http://localhost:5173',
-    'https://srxtech.net',
-];
-
+// 1. Cabeceras CORS
+$allowed_origins = ['http://localhost:5173', 'https://srxtech.net'];
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-
-if (in_array($origin, $allowedOrigins, true)) {
-    header("Access-Control-Allow-Origin: $origin");
+if (in_array($origin, $allowed_origins, true)) {
+    header("Access-Control-Allow-Origin: " . $origin);
     header("Access-Control-Allow-Credentials: true");
+} else {
+    header("Access-Control-Allow-Origin: https://srxtech.net");
 }
-
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=UTF-8");
 
-// ─────────────────────────────────────────────
-//  Preflight (OPTIONS) — respuesta inmediata
-// ─────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
+    exit(0);
 }
 
-// ─────────────────────────────────────────────
-//  Solo se acepta POST
-// ─────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Método no permitido. Solo se acepta POST.']);
-    exit();
+    echo json_encode(["success" => false, "error" => "Método no permitido. Solo se acepta POST."]);
+    exit;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  CONFIGURACIÓN — Carga de variables de entorno o constantes fallback
-// ═══════════════════════════════════════════════════════════════════════════════
+// 2. Leer Body JSON
+$rawBody = file_get_contents("php://input");
+$data = json_decode($rawBody, true);
 
-// Intentar cargar variables desde el archivo .env (un nivel arriba del directorio public)
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "Cuerpo de solicitud JSON inválido."]);
+    exit;
+}
+
+$token = isset($data['token']) ? trim($data['token']) : '';
+$nuevaContrasena = isset($data['nuevaContrasena']) ? $data['nuevaContrasena'] : '';
+
+if (empty($token)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "El token de recuperación es obligatorio."]);
+    exit;
+}
+
+if (empty($nuevaContrasena) || strlen($nuevaContrasena) < 8) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "La nueva contraseña debe tener al menos 8 caracteres."]);
+    exit;
+}
+
+// 3. Credenciales e Integración
+$supabase_url = 'https://wcnobggfbmpisahxihfu.supabase.co';
+$service_key  = 'sb_secret_AQUI_DEBES_PEGAR_TU_SERVICE_ROLE_KEY'; // Pegar aquí la clave sb_secret_
+
+// Carga dinámica de fallback desde archivo .env para máxima tolerancia
 $envPath = dirname(__DIR__) . '/.env';
 $envVars = [];
 if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        // Ignorar comentarios
         if (strpos(trim($line), '#') === 0) continue;
         $parts = explode('=', $line, 2);
         if (count($parts) === 2) {
@@ -60,235 +71,182 @@ if (file_exists($envPath)) {
     }
 }
 
-// 1. URL de Supabase (ej: https://wcnobggfbmpisahxihfu.supabase.co)
-$supabaseUrl = $envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? 'https://wcnobggfbmpisahxihfu.supabase.co';
-define('SUPABASE_URL', rtrim($supabaseUrl, '/'));
+// Cargar desde entornos locales/globales o fallback
+$supabase_url = getenv('SUPABASE_URL') ?: getenv('VITE_SUPABASE_URL') ?: ($envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? $supabase_url);
+$service_key  = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: getenv('VITE_SUPABASE_SERVICE_ROLE_KEY') ?: ($envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? $envVars['VITE_SUPABASE_SERVICE_ROLE_KEY'] ?? $service_key);
 
-// 2. SERVICE ROLE KEY de Supabase (Settings → API → service_role)
-// NUNCA uses la anon/public key. Esta clave tiene permisos de administrador.
-$serviceRoleKey = $envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? 'TU_SERVICE_ROLE_KEY_AQUI';
-define('SUPABASE_SERVICE_ROLE_KEY', $serviceRoleKey);
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  LECTURA Y VALIDACIÓN DEL BODY JSON
-// ═══════════════════════════════════════════════════════════════════════════════
-$rawBody = file_get_contents('php://input');
-$data    = json_decode($rawBody, true);
-
-if (json_last_error() !== JSON_ERROR_NONE || empty($data)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'JSON inválido o cuerpo de solicitud vacío.']);
-    exit();
+if ($service_key === 'sb_secret_AQUI_DEBES_PEGAR_TU_SERVICE_ROLE_KEY' || empty($service_key)) {
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "error" => "SUPABASE_SERVICE_ROLE_KEY no configurado. Reemplaza el placeholder directamente en update-password.php o en el archivo .env."
+    ]);
+    exit;
 }
 
-$token           = isset($data['token'])           ? trim($data['token'])     : '';
-$nuevaContrasena = isset($data['nuevaContrasena'])  ? $data['nuevaContrasena'] : '';
-
-if (empty($token)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'El campo "token" es obligatorio.']);
-    exit();
-}
-
-if (empty($nuevaContrasena) || strlen($nuevaContrasena) < 8) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'La nueva contraseña debe tener al menos 8 caracteres.']);
-    exit();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  PASO 1 — Validar el token en la base de datos de Supabase
-// ═══════════════════════════════════════════════════════════════════════════════
-
-$selectUrl = SUPABASE_URL . '/rest/v1/password_resets?token=eq.' . urlencode($token) . '&select=user_id,expires_at';
+// 4. Validar token en la tabla public.password_resets
+$select_url = rtrim($supabase_url, '/') . '/rest/v1/password_resets?token=eq.' . urlencode($token) . '&select=user_id,expires_at';
 
 $ch = curl_init();
 curl_setopt_array($ch, [
-    CURLOPT_URL            => $selectUrl,
+    CURLOPT_URL => $select_url,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER     => [
-        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
-        'Content-Type: application/json'
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . $service_key,
+        "apikey: " . $service_key,
+        "Content-Type: application/json"
     ],
-    CURLOPT_TIMEOUT        => 15,
-    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_SSL_VERIFYPEER => true
 ]);
-
-$response  = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
 curl_close($ch);
 
 if ($curlError) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL al validar el token: ' . $curlError]);
-    exit();
+    echo json_encode(["success" => false, "error" => "Error de conexión cURL al consultar token: " . $curlError]);
+    exit;
 }
 
-if ($httpCode < 200 || $httpCode >= 300) {
+if ($http_code < 200 || $http_code >= 300) {
     http_response_code(400);
     echo json_encode([
-        'success' => false,
-        'error'   => 'Error al consultar el token en Supabase.',
-        'details' => json_decode($response, true)
+        "success" => false,
+        "error" => "Error al consultar el token en la base de datos (Código HTTP $http_code).",
+        "details" => json_decode($response, true)
     ]);
-    exit();
+    exit;
 }
 
 $rows = json_decode($response, true);
 
-// ── VALIDACIÓN DEL TOKEN Y ASOCIACIÓN DE USUARIO ──
 if (empty($rows) || !is_array($rows) || empty($rows[0]['user_id'])) {
     http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error'   => 'Token inválido o no asociado a un usuario real'
-    ]);
-    exit();
+    echo json_encode(["success" => false, "error" => "Enlace de recuperación inválido, expirado o ya utilizado."]);
+    exit;
 }
 
 $row = $rows[0];
+$user_id = $row['user_id'];
+$expires_at = $row['expires_at'];
 
-// ── Verificar que el token no haya expirado ──
-if (strtotime($row['expires_at']) < time()) {
-    // Eliminación proactiva del token expirado
-    $deleteUrl = SUPABASE_URL . '/rest/v1/password_resets?token=eq.' . urlencode($token);
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => $deleteUrl,
+// Verificar expiración del token
+if (strtotime($expires_at) < time()) {
+    // Eliminación proactiva del token expirado para mantener limpia la DB
+    $delete_url = rtrim($supabase_url, '/') . '/rest/v1/password_resets?token=eq.' . urlencode($token);
+    $ch_del = curl_init();
+    curl_setopt_array($ch_del, [
+        CURLOPT_URL => $delete_url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST  => 'DELETE',
-        CURLOPT_HTTPHEADER     => [
-            'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-            'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
-            'Content-Type: application/json'
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer " . $service_key,
+            "apikey: " . $service_key,
+            "Content-Type: application/json"
         ],
-        CURLOPT_TIMEOUT        => 10,
-        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true
     ]);
-    curl_exec($ch);
-    curl_close($ch);
+    curl_exec($ch_del);
+    curl_close($ch_del);
 
     http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error'   => 'El enlace de recuperación ha expirado. Solicita uno nuevo.'
-    ]);
-    exit();
+    echo json_encode(["success" => false, "error" => "El enlace de recuperación ha expirado. Por favor, solicita uno nuevo."]);
+    exit;
 }
 
-$userId = $row['user_id'];
+// 5. PUT a Supabase Auth Admin para actualizar la clave del usuario
+$admin_url = rtrim($supabase_url, '/') . '/auth/v1/admin/users/' . $user_id;
+$update_payload = json_encode(["password" => $nuevaContrasena]);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  PASO 2 — Actualizar la contraseña vía GoTrue Admin API de Supabase (Requisito Crítico #1)
-// ═══════════════════════════════════════════════════════════════════════════════
-$supabaseAdminUrl = SUPABASE_URL . '/auth/v1/admin/users/' . $userId;
-$payload = json_encode(['password' => $nuevaContrasena]);
-
-$ch = curl_init();
-curl_setopt_array($ch, [
-    CURLOPT_URL            => $supabaseAdminUrl,
+$ch2 = curl_init();
+curl_setopt_array($ch2, [
+    CURLOPT_URL => $admin_url,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_CUSTOMREQUEST  => 'PUT', // Obligatorio: PUT para actualizar usuarios en GoTrue Admin API
-    CURLOPT_POSTFIELDS     => $payload,
-    CURLOPT_HTTPHEADER     => [
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-        'apikey: '              . SUPABASE_SERVICE_ROLE_KEY,
+    CURLOPT_CUSTOMREQUEST => 'PUT',
+    CURLOPT_POSTFIELDS => $update_payload,
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . $service_key,
+        "apikey: " . $service_key,
+        "Content-Type: application/json"
     ],
-    CURLOPT_TIMEOUT        => 15,
-    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_SSL_VERIFYPEER => true
 ]);
+$update_response = curl_exec($ch2);
+$update_code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+$update_error = curl_error($ch2);
+curl_close($ch2);
 
-// Capturar respuesta cruda de Supabase (Requisito Crítico #3)
-$supabaseResponse = curl_exec($ch);
-$httpCode         = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError        = curl_error($ch);
-curl_close($ch);
-
-// Error de conexión / de red
-if ($curlError) {
+if ($update_error) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error'   => 'Error de red al conectar con Supabase Auth: ' . $curlError,
-    ]);
-    exit();
+    echo json_encode(["success" => false, "error" => "Error de conexión cURL al actualizar contraseña: " . $update_error]);
+    exit;
 }
 
-// ── INSPECCIÓN DE LA RESPUESTA DE SUPABASE ──
-$supabaseData = json_decode($supabaseResponse, true);
-$isError = false;
+$update_data = json_decode($update_response, true);
+$isError = ($update_code < 200 || $update_code >= 300);
 $errorMessage = '';
 
-// Si la respuesta HTTP es un código de error (no 2xx)
-if ($httpCode < 200 || $httpCode >= 300) {
-    $isError = true;
-}
-
-// Analizar la respuesta JSON buscando errores devueltos por Supabase
-if (is_array($supabaseData)) {
-    if (isset($supabaseData['error'])) {
+// Inspeccionar respuesta buscando estructuras de error en la API de GoTrue
+if (is_array($update_data)) {
+    if (isset($update_data['error'])) {
         $isError = true;
-        if (is_array($supabaseData['error'])) {
-            $errorMessage = $supabaseData['error']['message'] ?? json_encode($supabaseData['error']);
+        if (is_array($update_data['error'])) {
+            $errorMessage = $update_data['error']['message'] ?? json_encode($update_data['error']);
         } else {
-            $errorMessage = $supabaseData['error'];
-            if (isset($supabaseData['error_description'])) {
-                $errorMessage .= ': ' . $supabaseData['error_description'];
+            $errorMessage = $update_data['error'];
+            if (isset($update_data['error_description'])) {
+                $errorMessage .= ': ' . $update_data['error_description'];
             }
         }
-    } elseif (isset($supabaseData['msg'])) {
+    } elseif (isset($update_data['msg'])) {
         $isError = true;
-        $errorMessage = $supabaseData['msg'];
-    } elseif (isset($supabaseData['message'])) {
+        $errorMessage = $update_data['msg'];
+    } elseif (isset($update_data['message'])) {
         $isError = true;
-        $errorMessage = $supabaseData['message'];
+        $errorMessage = $update_data['message'];
     }
 }
 
 if ($isError) {
     if (empty($errorMessage)) {
-        $errorMessage = 'Error desconocido de Supabase Auth (HTTP ' . $httpCode . ').';
+        $errorMessage = "Error desconocido de Supabase Auth Admin API (Código HTTP $update_code).";
     }
-    
-    http_response_code($httpCode >= 400 && $httpCode < 600 ? $httpCode : 400);
+    http_response_code($update_code >= 400 && $update_code < 600 ? $update_code : 400);
     echo json_encode([
-        'success' => false,
-        'error'   => $errorMessage,
-        'details' => $supabaseData
+        "success" => false,
+        "error" => $errorMessage,
+        "details" => $update_data
     ]);
-    exit();
+    exit;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  PASO 3 — Invalidador de token (One-Time Use)
-// ═══════════════════════════════════════════════════════════════════════════════
-$deleteUrl = SUPABASE_URL . '/rest/v1/password_resets?token=eq.' . urlencode($token);
-$ch = curl_init();
-curl_setopt_array($ch, [
-    CURLOPT_URL            => $deleteUrl,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_CUSTOMREQUEST  => 'DELETE',
-    CURLOPT_HTTPHEADER     => [
-        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
-        'Content-Type: application/json'
-    ],
-    CURLOPT_TIMEOUT        => 10,
-    CURLOPT_SSL_VERIFYPEER => true,
-]);
-curl_exec($ch);
-curl_close($ch);
+// 6. Eliminar token usado de la tabla password_resets (One-Time Use)
+$delete_url = rtrim($supabase_url, '/') . '/rest/v1/password_resets?token=eq.' . urlencode($token);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  RESPUESTA EXITOSA
-// ═══════════════════════════════════════════════════════════════════════════════
+$ch3 = curl_init();
+curl_setopt_array($ch3, [
+    CURLOPT_URL => $delete_url,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CUSTOMREQUEST => 'DELETE',
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . $service_key,
+        "apikey: " . $service_key,
+        "Content-Type: application/json"
+    ],
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_SSL_VERIFYPEER => true
+]);
+curl_exec($ch3);
+$delete_code = curl_getinfo($ch3, CURLINFO_HTTP_CODE);
+curl_close($ch3);
+
+// 7. Respuesta Exitosa
 http_response_code(200);
 echo json_encode([
-    'success' => true,
-    'message' => 'Contraseña actualizada con éxito.',
+    "success" => true,
+    "message" => "Contraseña actualizada con éxito."
 ]);
