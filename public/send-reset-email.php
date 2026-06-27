@@ -1,72 +1,27 @@
 <?php
-// ─────────────────────────────────────────────
-//  CORS — Dynamic Origin Whitelist
-// ─────────────────────────────────────────────
-$allowedOrigins = [
-    'http://localhost:5173',
-    'https://srxtech.net',
-];
-
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-
-if (in_array($origin, $allowedOrigins, true)) {
-    header("Access-Control-Allow-Origin: $origin");
-    header("Access-Control-Allow-Credentials: true");
+// 1. Cabeceras CORS
+$allowed_origins = ['http://localhost:5173', 'https://srxtech.net'];
+if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
+    header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
 }
-
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
-// ─────────────────────────────────────────────
-//  Preflight (OPTIONS) — respuesta inmediata
-// ─────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
-// ─────────────────────────────────────────────
-//  Solo se acepta POST
-// ─────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Método no permitido. Solo se acepta POST.']);
-    exit();
-}
-
-// ─────────────────────────────────────────────
-//  Lectura y decodificación del body JSON
-// ─────────────────────────────────────────────
-$rawBody = file_get_contents('php://input');
-$data    = json_decode($rawBody, true);
-
-if (json_last_error() !== JSON_ERROR_NONE || empty($data)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'JSON inválido o cuerpo de solicitud vacío.']);
-    exit();
-}
-
-// ─────────────────────────────────────────────
-//  Validación del campo email
-// ─────────────────────────────────────────────
+// 2. Leer Email
+$data = json_decode(file_get_contents("php://input"), true);
 $email = isset($data['email']) ? trim($data['email']) : '';
 
 if (empty($email)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'El campo "email" es obligatorio.']);
-    exit();
+    echo json_encode(["success" => false, "error" => "Email requerido."]);
+    exit;
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'El correo electrónico no tiene un formato válido.']);
-    exit();
-}
-
-// ─────────────────────────────────────────────
-//  CONFIGURACIÓN — Carga de variables de entorno o constantes fallback
-// ─────────────────────────────────────────────
+// CONFIGURACIÓN - Carga dinámica desde entorno o archivo .env para proteger credenciales
 $envPath = dirname(__DIR__) . '/.env';
 $envVars = [];
 if (file_exists($envPath)) {
@@ -80,348 +35,151 @@ if (file_exists($envPath)) {
     }
 }
 
-// URL de Supabase (ej: https://wcnobggfbmpisahxihfu.supabase.co)
-$supabaseUrl = $envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? 'https://wcnobggfbmpisahxihfu.supabase.co';
-define('SUPABASE_URL', rtrim($supabaseUrl, '/'));
+// Asignar variables buscando en getenv() primero, luego en el archivo .env cargado, y finalmente con valores fallback
+$supabase_url = getenv('SUPABASE_URL') ?: getenv('VITE_SUPABASE_URL') ?: ($envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? 'https://wcnobggfbmpisahxihfu.supabase.co');
+$service_key  = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: getenv('VITE_SUPABASE_SERVICE_ROLE_KEY') ?: ($envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? $envVars['VITE_SUPABASE_SERVICE_ROLE_KEY'] ?? 'TU_SERVICE_ROLE_KEY_AQUI');
+$resend_key   = getenv('RESEND_API_KEY') ?: getenv('VITE_RESEND_API_KEY') ?: ($envVars['RESEND_API_KEY'] ?? $envVars['VITE_RESEND_API_KEY'] ?? 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T');
 
-// SERVICE ROLE KEY de Supabase (Settings → API → service_role)
-$serviceRoleKey = $envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? $envVars['VITE_SUPABASE_SERVICE_ROLE_KEY'] ?? 'TU_SERVICE_ROLE_KEY_AQUI';
-define('SUPABASE_SERVICE_ROLE_KEY', $serviceRoleKey);
-
-// Configuración de Resend
-$resendApiKey = $envVars['RESEND_API_KEY'] ?? $envVars['VITE_RESEND_API_KEY'] ?? 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T';
-$resendUrl    = 'https://api.resend.com/emails';
-
-// ─────────────────────────────────────────────
-//  Paso 1: Buscar el id del usuario por su correo
-// ─────────────────────────────────────────────
-$userId = null;
-$profileErrorDetails = null;
-
-// Intento A: Buscar en la tabla pública public.profiles usando la API REST (bypasseando RLS con el Service Role Key)
-$profileUrl = SUPABASE_URL . '/rest/v1/profiles?email=eq.' . urlencode($email) . '&select=id,email';
-
-$ch = curl_init();
-curl_setopt_array($ch, [
-    CURLOPT_URL            => $profileUrl,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER     => [
-        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
-        'Content-Type: application/json'
-    ],
-    CURLOPT_TIMEOUT        => 15,
-    CURLOPT_SSL_VERIFYPEER => true,
-]);
-
-$response  = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
-
-if (!$curlError && $httpCode >= 200 && $httpCode < 300) {
-    $profiles = json_decode($response, true);
-    if (is_array($profiles) && !empty($profiles)) {
-        $userId = $profiles[0]['id'] ?? null;
-    }
-} else {
-    $profileErrorDetails = [
-        'curl_error' => $curlError ? $curlError : null,
-        'http_code'  => $httpCode,
-        'response'   => json_decode($response, true)
-    ];
-}
-
-// Intento B: Si no se encontró en profiles, consultar el Endpoint Administrativo de Supabase Auth
-if (!$userId) {
-    $adminUrl = SUPABASE_URL . '/auth/v1/admin/users';
-
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => $adminUrl,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => [
-            'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-            'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
-            'Content-Type: application/json'
-        ],
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_SSL_VERIFYPEER => true,
-    ]);
-
-    $response  = curl_exec($ch);
-    $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-
-    if ($curlError) {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'error'   => 'Error de conexión cURL al buscar usuario en el endpoint administrativo: ' . $curlError,
-            'profile_search_details' => $profileErrorDetails
-        ]);
-        exit();
-    }
-
-    if ($httpCode < 200 || $httpCode >= 300) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error'   => 'Error al listar usuarios desde el endpoint administrativo de Supabase Auth.',
-            'details' => json_decode($response, true),
-            'profile_search_details' => $profileErrorDetails
-        ]);
-        exit();
-    }
-
-    $searchResult = json_decode($response, true);
-    $usersList = [];
-    if (isset($searchResult['users']) && is_array($searchResult['users'])) {
-        $usersList = $searchResult['users'];
-    } elseif (is_array($searchResult)) {
-        $usersList = $searchResult;
-    }
-
-    foreach ($usersList as $user) {
-        if (isset($user['email']) && strcasecmp($user['email'], $email) === 0) {
-            $userId = $user['id'];
-            break;
-        }
-    }
-}
-
-if (!$userId) {
-    http_response_code(444); // Código específico para notificar que no se encontró el usuario
+if (empty($supabase_url) || $service_key === 'TU_SERVICE_ROLE_KEY_AQUI' || empty($service_key)) {
+    http_response_code(500);
     echo json_encode([
-        'success' => false,
-        'error'   => 'El correo electrónico no está registrado.',
-        'profile_search_details' => $profileErrorDetails
+        "success" => false,
+        "error" => "Configuración incompleta en el servidor. Asegúrate de configurar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en las variables de entorno o archivo .env."
     ]);
-    exit();
+    exit;
 }
 
-// ─────────────────────────────────────────────
-//  Generación de token seguro + expiración
-// ─────────────────────────────────────────────
-$resetToken  = bin2hex(random_bytes(32));           // 64 caracteres hex criptográficamente seguros
-$expiresAt   = date('Y-m-d H:i:s', time() + 3600); // Expira en 1 hora
-
-// ─────────────────────────────────────────────
-//  Paso 2: Inserción en la tabla public.password_resets
-// ─────────────────────────────────────────────
-$insertUrl = SUPABASE_URL . '/rest/v1/password_resets';
-$insertPayload = json_encode([
-    'user_id'    => $userId,
-    'token'      => $resetToken,
-    'expires_at' => $expiresAt
-]);
+// 3. Buscar usuario usando el filtro oficial de Supabase Admin API
+// Nota: Pasamos el filtro por email en la URL para evitar listar todo de golpe
+$url = rtrim($supabase_url, '/') . '/auth/v1/admin/users?email=' . urlencode($email);
 
 $ch = curl_init();
 curl_setopt_array($ch, [
-    CURLOPT_URL            => $insertUrl,
+    CURLOPT_URL => $url,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $insertPayload,
-    CURLOPT_HTTPHEADER     => [
-        'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY,
-        'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
-        'Content-Type: application/json',
-        'Prefer: return=minimal'
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . $service_key,
+        "apikey: " . $service_key,
+        "Content-Type: application/json"
     ],
-    CURLOPT_TIMEOUT        => 15,
-    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_SSL_VERIFYPEER => true
 ]);
-
-$response  = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
 curl_close($ch);
 
 if ($curlError) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL al registrar token: ' . $curlError]);
-    exit();
+    echo json_encode([
+        "success" => false,
+        "error" => "Error de conexión cURL al buscar usuario: " . $curlError
+    ]);
+    exit;
 }
 
-if ($httpCode < 200 || $httpCode >= 300) {
+$res_data = json_decode($response, true);
+
+// Si falla la API de Supabase, escupimos el error real para saber qué pasa
+if ($http_code !== 200) {
     http_response_code(400);
     echo json_encode([
-        'success' => false,
-        'error'   => 'Error al guardar el token de recuperación.',
-        'details' => json_decode($response, true)
+        "success" => false, 
+        "error" => "Error en Supabase Admin API (Código $http_code)", 
+        "details" => $res_data
     ]);
-    exit();
+    exit;
 }
 
-// HashRouter requiere el prefijo /# para que React maneje la ruta en cliente
-$resetLink = 'https://srxtech.net/#/reset-password?token=' . urlencode($resetToken);
+// Verificar si encontramos al usuario en el arreglo devuelto
+$user = null;
+if (isset($res_data['users']) && count($res_data['users']) > 0) {
+    $user = $res_data['users'][0];
+} elseif (isset($res_data[0])) {
+    $user = $res_data[0];
+}
 
-// ─────────────────────────────────────────────
-//  Plantilla HTML del correo
-// ─────────────────────────────────────────────
-$htmlBody = <<<HTML
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Restablecer contraseña — SRX Tech</title>
-</head>
-<body style="margin:0;padding:0;background-color:#0f172a;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;padding:40px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0"
-               style="background-color:#1e293b;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+if (!$user) {
+    http_response_code(404);
+    echo json_encode(["success" => false, "error" => "No se encontró ningún usuario con ese correo."]);
+    exit;
+}
 
-          <!-- Header -->
-          <tr>
-            <td style="padding:36px 40px 28px;border-bottom:1px solid #334155;text-align:center;">
-              <span style="font-size:26px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;">
-                <span style="color:#3b82f6;">SRX</span>
-                <span style="color:#64748b;margin:0 6px;">|</span>
-                <span>Tech</span>
-              </span>
-              <p style="margin:10px 0 0;font-size:13px;color:#94a3b8;letter-spacing:0.5px;text-transform:uppercase;">
-                Tienda Oficial
-              </p>
-            </td>
-          </tr>
+$user_id = $user['id'];
+$token = bin2hex(random_bytes(32));
+$expires_at = date('c', strtotime('+1 hour'));
 
-          <!-- Body -->
-          <tr>
-            <td style="padding:40px 40px 32px;">
-              <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.3;">
-                ¿Olvidaste tu contraseña?
-              </h1>
-              <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.7;">
-                Recibimos una solicitud para restablecer la contraseña de la cuenta asociada a
-                <strong style="color:#e2e8f0;">{$email}</strong>.
-                Si fuiste tú, haz clic en el botón de abajo para crear una nueva contraseña.
-              </p>
-
-              <!-- CTA Button -->
-              <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
-                <tr>
-                  <td align="center"
-                      style="background:linear-gradient(135deg,#3b82f6,#2563eb);
-                             border-radius:10px;
-                             box-shadow:0 4px 14px rgba(59,130,246,0.4);">
-                    <a href="{$resetLink}"
-                       target="_blank"
-                       style="display:inline-block;
-                              padding:14px 36px;
-                              font-size:15px;
-                              font-weight:700;
-                              color:#ffffff;
-                              text-decoration:none;
-                              letter-spacing:0.3px;">
-                      Restablecer contraseña &rarr;
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Fallback link -->
-              <p style="margin:0 0 8px;font-size:13px;color:#64748b;line-height:1.6;">
-                Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:
-              </p>
-              <p style="margin:0 0 28px;font-size:12px;word-break:break-all;">
-                <a href="{$resetLink}" style="color:#60a5fa;text-decoration:underline;">{$resetLink}</a>
-              </p>
-
-              <!-- Warning -->
-              <div style="background-color:#0f172a;border-left:3px solid #f59e0b;border-radius:6px;padding:14px 18px;">
-                <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6;">
-                  ⚠️ &nbsp;Este enlace es válido por <strong style="color:#fbbf24;">1 hora</strong>.
-                  Si no solicitaste este cambio, puedes ignorar este correo de forma segura.
-                </p>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding:24px 40px;border-top:1px solid #334155;text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#475569;">
-                © 2025 SRX Tech — Todos los derechos reservados.
-              </p>
-              <p style="margin:0;font-size:12px;color:#334155;">
-                Este es un correo automático, por favor no respondas a este mensaje.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-HTML;
-
-// ─────────────────────────────────────────────
-//  Construcción del payload para Resend
-// ─────────────────────────────────────────────
-$payload = json_encode([
-    'from'    => 'SRX Tech | Tienda Oficial <info@srxtech.net>',
-    'to'      => [$email],
-    'subject' => 'Restablece tu contraseña — SRX Tech',
-    'html'    => $htmlBody,
+// 4. Insertar en la tabla public.password_resets
+$insert_url = rtrim($supabase_url, '/') . '/rest/v1/password_resets';
+$insert_payload = json_encode([
+    "user_id" => $user_id,
+    "token" => $token,
+    "expires_at" => $expires_at
 ]);
 
-// ─────────────────────────────────────────────
-//  Envío vía cURL hacia la API de Resend
-// ─────────────────────────────────────────────
-$ch = curl_init();
-curl_setopt_array($ch, [
-    CURLOPT_URL            => $resendUrl,
+$ch2 = curl_init();
+curl_setopt_array($ch2, [
+    CURLOPT_URL => $insert_url,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $insert_payload,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $payload,
-    CURLOPT_HTTPHEADER     => [
-        'Authorization: Bearer ' . $resendApiKey,
-        'Content-Type: application/json',
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . $service_key,
+        "apikey: " . $service_key,
+        "Content-Type: application/json",
+        "Prefer: return=minimal"
     ],
-    CURLOPT_TIMEOUT        => 30,
-    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_SSL_VERIFYPEER => true
 ]);
+$ins_response = curl_exec($ch2);
+$ins_code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+$ins_error = curl_error($ch2);
+curl_close($ch2);
 
-$response  = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
-
-// ─────────────────────────────────────────────
-//  Manejo de errores de cURL
-// ─────────────────────────────────────────────
-if ($curlError) {
+if ($ins_error) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Error de conexión cURL: ' . $curlError]);
-    exit();
-}
-
-// ─────────────────────────────────────────────
-//  Evaluación de la respuesta de Resend
-// ─────────────────────────────────────────────
-$resendResponse = json_decode($response, true);
-
-if ($httpCode < 200 || $httpCode >= 300) {
-    http_response_code($httpCode);
     echo json_encode([
-        'success' => false,
-        'error'   => 'Resend devolvió un error.',
-        'details' => $resendResponse,
+        "success" => false,
+        "error" => "Error de conexión cURL al registrar token: " . $ins_error
     ]);
-    exit();
+    exit;
 }
 
-// ─────────────────────────────────────────────
-//  Respuesta exitosa
-// ─────────────────────────────────────────────
-http_response_code(200);
-echo json_encode([
-    'success' => true,
-    'message' => 'Correo de recuperación enviado exitosamente.',
+if ($ins_code < 200 || $ins_code >= 300) {
+    http_response_code(400);
+    echo json_encode([
+        "success" => false,
+        "error" => "Error al registrar el token en password_resets.",
+        "details" => json_decode($ins_response, true)
+    ]);
+    exit;
+}
+
+// 5. Enviar Email con Resend
+$resetLink = "https://srxtech.net/#/reset-password?token=" . $token;
+$email_payload = json_encode([
+    "from" => "SRX Tech | Tienda Oficial <info@srxtech.net>",
+    "to" => [$email],
+    "subject" => "Restablecer tu contraseña - SRX Tech",
+    "html" => "<div style='font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#0f172a;color:#ffffff;border-radius:8px;'><h2 style='color:#3b82f6;text-align:center;'>SRX Tech</h2><p>Haz clic abajo para restablecer tu clave:</p><br><a href='{$resetLink}' style='background-color:#3b82f6;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;'>Restablecer Contraseña</a></div>"
 ]);
+
+$ch3 = curl_init();
+curl_setopt_array($ch3, [
+    CURLOPT_URL => 'https://api.resend.com/emails',
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $email_payload,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . $resend_key,
+        "Content-Type: application/json"
+    ],
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_SSL_VERIFYPEER => true
+]);
+curl_exec($ch3);
+curl_close($ch3);
+
+echo json_encode(["success" => true, "message" => "Enlace enviado con éxito."]);
