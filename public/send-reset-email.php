@@ -46,9 +46,8 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// 3. Credenciales e Integración
 $supabase_url = 'https://wcnobggfbmpisahxihfu.supabase.co';
-$service_key  = 'sb_secret_AQUI_DEBES_PEGAR_TU_SERVICE_ROLE_KEY'; // Pegar aquí la clave sb_secret_
+$service_key  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjbm9iZ2dmYm1waXNhaHhpaGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ1NzgxOCwiZXhwIjoyMDk1MDMzODE4fQ.GlGdzK1LUB13BhRHOaRRfCu5BAZ_JOVYkh4o9UmZA_s'; // Clave de administrador de producción
 $resend_key   = 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T';
 
 // Carga dinámica de fallback desde archivo .env para máxima tolerancia
