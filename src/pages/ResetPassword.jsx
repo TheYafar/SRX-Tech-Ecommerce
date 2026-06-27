@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle } from 'lucide-react';
 import './ResetPassword.css';
 
@@ -14,13 +14,16 @@ const VIEW = {
   EXPIRED: 'expired',  // Token missing / expired
 };
 
+// URL del backend PHP que actualiza la contraseña
+const UPDATE_PASSWORD_URL = 'https://srxtech.net/update-password.php';
+
 export default function ResetPassword() {
   const navigate = useNavigate();
   const { openAuthModal } = useAuth();
+  const { showSuccess } = useNotifications();
 
-  // ── MODO PRUEBA: el formulario siempre es visible al cargar ────────────────
-  // TODO: Revertir a VIEW.LOADING cuando la validación de token esté estable.
   const [view,            setView]            = useState(VIEW.FORM);
+  const [token,           setToken]           = useState('');
   const [newPassword,     setNewPassword]     = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNew,         setShowNew]         = useState(false);
@@ -29,51 +32,43 @@ export default function ResetPassword() {
   const [fieldError,      setFieldError]      = useState('');
   const [apiError,        setApiError]        = useState('');
 
-  // ── On mount: intentar cargar sesión desde el token de la URL (no bloqueante) ─
+  // ── On mount: extraer el token de la URL del HashRouter ──────────────────────
   // Con HashRouter la URL luce así:
-  //   http://host/#/reset-password#access_token=...&type=recovery
-  // El formulario se muestra SIEMPRE (estado inicial = VIEW.FORM).
-  // Esta lógica solo intenta hidratar la sesión de Supabase si hay token.
+  //   https://srxtech.net/#/reset-password?token=XXXXXXXX
+  // window.location.hash contiene todo el fragmento, p.ej.:
+  //   #/reset-password?token=XXXXXXXX
+  // Por eso tomamos la parte después de '?' para parsear los query params.
   useEffect(() => {
-    const rawHash = window.location.hash;
+    const hash = window.location.hash; // ej. "#/reset-password?token=abc123"
+    const queryStart = hash.indexOf('?');
 
-    // Extraer los parámetros de auth que Supabase añade tras el segundo '#'
-    const lastHash = rawHash.lastIndexOf('#access_token');
-    const paramString = lastHash !== -1
-      ? rawHash.slice(lastHash + 1)
-      : rawHash.includes('access_token=')
-        ? rawHash.slice(rawHash.indexOf('access_token='))
-        : '';
+    if (queryStart !== -1) {
+      const params       = new URLSearchParams(hash.slice(queryStart + 1));
+      const tokenFromUrl = params.get('token');
 
-    const params       = new URLSearchParams(paramString);
-    const accessToken  = params.get('access_token');
-    const refreshToken = params.get('refresh_token') || '';
-
-    if (accessToken) {
-      // Hidratar sesión en background; el formulario ya está visible
-      supabase.auth
-        .setSession({ access_token: accessToken, refresh_token: refreshToken })
-        .then(({ error }) => {
-          if (error) {
-            console.warn('[ResetPassword] setSession falló (el usuario puede intentar igual):', error.message);
-          }
-          // Limpiar el token sensible de la barra de URL
-          window.history.replaceState(null, '', window.location.pathname);
-        });
+      if (tokenFromUrl) {
+        setToken(tokenFromUrl);
+        // Limpiar el token sensible de la barra de URL sin romper la ruta de React
+        window.history.replaceState(
+          null,
+          '',
+          window.location.pathname + '#/reset-password'
+        );
+      } else {
+        console.warn('[ResetPassword] Parámetro "token" no encontrado en la URL.');
+      }
     } else {
-      // Sin token en URL: el formulario sigue visible en modo prueba
-      console.info('[ResetPassword] Sin token en URL — mostrando formulario en modo prueba.');
+      console.info('[ResetPassword] Sin query string en la URL.');
     }
-    // En ningún caso cambiamos el view a EXPIRED aquí.
-    // TODO: Restaurar validación estricta una vez que el flujo de Supabase esté estable.
   }, []);
 
-  // ── Form submission ──────────────────────────────────────────────────────────
+  // ── Form submission → POST al backend PHP personalizado ─────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFieldError('');
     setApiError('');
 
+    // Validaciones locales
     if (newPassword.length < 8) {
       setFieldError('La contraseña debe tener al menos 8 caracteres.');
       return;
@@ -82,30 +77,48 @@ export default function ResetPassword() {
       setFieldError('Las contraseñas no coinciden. Verifica e intenta de nuevo.');
       return;
     }
+    if (!token) {
+      setApiError('No se encontró el token de recuperación. Solicita un nuevo enlace.');
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      // ── Llamada al backend PHP (sin sesión de Supabase requerida) ────────────
+      const response = await fetch(UPDATE_PASSWORD_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ token, nuevaContrasena: newPassword }),
+      });
 
-      if (error) {
-        console.error('[ResetPassword] updateUser error:', error.message);
+      const result = await response.json();
+
+      if (result.success) {
+        // Limpiar campos del formulario
+        setNewPassword('');
+        setConfirmPassword('');
+        // Mostrar notificación global de éxito
+        showSuccess('¡Contraseña actualizada correctamente!', 4000);
+        // Cambiar vista a pantalla de éxito
+        setView(VIEW.SUCCESS);
+      } else {
+        // Error devuelto por el servidor (token inválido, expirado, etc.)
+        const serverMsg = result.error || result.message || 'Error al actualizar la contraseña.';
         const isExpired =
-          error.message?.toLowerCase().includes('expired') ||
-          error.message?.toLowerCase().includes('invalid');
+          serverMsg.toLowerCase().includes('expir') ||
+          serverMsg.toLowerCase().includes('inválid') ||
+          serverMsg.toLowerCase().includes('invalid');
 
         if (isExpired) {
           setView(VIEW.EXPIRED);
         } else {
-          setApiError(error.message || 'Error al actualizar la contraseña. Intenta de nuevo.');
+          setApiError(serverMsg);
         }
-      } else {
-        await supabase.auth.signOut(); // Force fresh login with new password
-        setView(VIEW.SUCCESS);
       }
     } catch (err) {
-      console.error('[ResetPassword] unexpected error:', err);
-      setApiError('Error inesperado. Por favor, intenta de nuevo.');
+      console.error('[ResetPassword] fetch error:', err);
+      setApiError('No se pudo conectar con el servidor. Intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
