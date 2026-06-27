@@ -18,7 +18,9 @@ export default function ResetPassword() {
   const navigate = useNavigate();
   const { openAuthModal } = useAuth();
 
-  const [view,            setView]            = useState(VIEW.LOADING);
+  // ── MODO PRUEBA: el formulario siempre es visible al cargar ────────────────
+  // TODO: Revertir a VIEW.LOADING cuando la validación de token esté estable.
+  const [view,            setView]            = useState(VIEW.FORM);
   const [newPassword,     setNewPassword]     = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNew,         setShowNew]         = useState(false);
@@ -27,13 +29,15 @@ export default function ResetPassword() {
   const [fieldError,      setFieldError]      = useState('');
   const [apiError,        setApiError]        = useState('');
 
-  // ── On mount: Supabase appends auth params after the path in the URL hash ───
-  // With HashRouter the URL looks like:
+  // ── On mount: intentar cargar sesión desde el token de la URL (no bloqueante) ─
+  // Con HashRouter la URL luce así:
   //   http://host/#/reset-password#access_token=...&type=recovery
+  // El formulario se muestra SIEMPRE (estado inicial = VIEW.FORM).
+  // Esta lógica solo intenta hidratar la sesión de Supabase si hay token.
   useEffect(() => {
     const rawHash = window.location.hash;
 
-    // Grab everything after the last '#' where auth params live
+    // Extraer los parámetros de auth que Supabase añade tras el segundo '#'
     const lastHash = rawHash.lastIndexOf('#access_token');
     const paramString = lastHash !== -1
       ? rawHash.slice(lastHash + 1)
@@ -41,32 +45,27 @@ export default function ResetPassword() {
         ? rawHash.slice(rawHash.indexOf('access_token='))
         : '';
 
-    const params      = new URLSearchParams(paramString);
+    const params       = new URLSearchParams(paramString);
     const accessToken  = params.get('access_token');
     const refreshToken = params.get('refresh_token') || '';
-    const type         = params.get('type');
 
-    // ── MODO PRUEBA: acepta cualquier token presente en la URL ────────────────
-    // TODO: Revertir cuando la tabla de tokens esté conectada en la BD.
-    // Lógica original: if (!accessToken || type !== 'recovery') { setView(VIEW.EXPIRED); return; }
-    if (!accessToken) {
-      // Solo mostramos expirado si NO viene ningún token en la URL
-      setView(VIEW.EXPIRED);
-      return;
+    if (accessToken) {
+      // Hidratar sesión en background; el formulario ya está visible
+      supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[ResetPassword] setSession falló (el usuario puede intentar igual):', error.message);
+          }
+          // Limpiar el token sensible de la barra de URL
+          window.history.replaceState(null, '', window.location.pathname);
+        });
+    } else {
+      // Sin token en URL: el formulario sigue visible en modo prueba
+      console.info('[ResetPassword] Sin token en URL — mostrando formulario en modo prueba.');
     }
-
-    // Intentar establecer sesión; si falla, mostramos el form igual (modo prueba)
-    supabase.auth
-      .setSession({ access_token: accessToken, refresh_token: refreshToken })
-      .then(({ error }) => {
-        if (error) {
-          console.warn('[ResetPassword] setSession falló (modo prueba, mostrando form de todas formas):', error.message);
-        }
-        // En modo prueba siempre mostramos el formulario
-        setView(VIEW.FORM);
-        // Limpiar el token sensible de la barra de URL
-        window.history.replaceState(null, '', window.location.pathname);
-      });
+    // En ningún caso cambiamos el view a EXPIRED aquí.
+    // TODO: Restaurar validación estricta una vez que el flujo de Supabase esté estable.
   }, []);
 
   // ── Form submission ──────────────────────────────────────────────────────────
