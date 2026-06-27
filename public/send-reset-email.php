@@ -116,17 +116,36 @@ if ($http_code !== 200) {
     exit;
 }
 
-// Extraer el usuario correspondiente
+// ─── Filtrado estricto por email ──────────────────────────────────────────────
+// La API de Supabase puede devolver toda la lista de usuarios; nunca asumimos
+// que el primer elemento de la lista es el correcto. Comparamos email a email.
 $user = null;
-if (isset($res_data['users']) && count($res_data['users']) > 0) {
-    $user = $res_data['users'][0];
-} elseif (isset($res_data[0])) {
-    $user = $res_data[0];
+
+if (isset($res_data['users']) && is_array($res_data['users'])) {
+    foreach ($res_data['users'] as $u) {
+        if (strcasecmp(trim($u['email'] ?? ''), trim($email)) === 0) {
+            $user = $u;
+            break;
+        }
+    }
+} elseif (is_array($res_data)) {
+    // Formato alternativo: array plano de usuarios
+    foreach ($res_data as $u) {
+        if (is_array($u) && strcasecmp(trim($u['email'] ?? ''), trim($email)) === 0) {
+            $user = $u;
+            break;
+        }
+    }
 }
 
-if (!$user) {
+// Si después del recorrido completo no hay coincidencia real, detenemos aquí.
+// Nunca se debe tomar el primer ID por defecto.
+if ($user === null) {
     http_response_code(404);
-    echo json_encode(["success" => false, "error" => "No se encontró ningún usuario con ese correo electrónico."]);
+    echo json_encode([
+        "success" => false,
+        "error"   => "El correo ingresado no coincide con ningún usuario registrado."
+    ]);
     exit;
 }
 
