@@ -68,6 +68,31 @@ export default function ResetPassword() {
     setFieldError('');
     setApiError('');
 
+    // ── PASO 1: Captura manual del token (HashRouter-safe) ───────────────────
+    // Con HashRouter la URL es: https://dominio/#/reset-password?token=XXXXX
+    // window.location.hash contiene: "#/reset-password?token=XXXXX"
+    // Usamos el estado guardado en mount; si fue borrado de la URL usamos el estado.
+    // Como fallback adicional, re-leemos desde el hash actual por si el estado falló.
+    let tokenReal = token;
+
+    if (!tokenReal) {
+      const hash = window.location.hash; // ej. "#/reset-password?token=abc123"
+      const urlParams = new URLSearchParams(hash.split('?')[1]);
+      tokenReal = urlParams.get('token');
+      console.log('[ResetPassword] Token capturado en React (fallback hash):', tokenReal);
+    } else {
+      console.log('[ResetPassword] Token capturado en React (desde estado):', tokenReal);
+    }
+
+    // ── PASO 2: Alerta visible si el token es nulo o vacío ───────────────────
+    if (!tokenReal) {
+      const msg = 'Error: No se pudo leer el token de la URL. Solicita un nuevo enlace de recuperación.';
+      console.error('[ResetPassword]', msg);
+      alert(msg); // Alerta de emergencia para confirmar el fallo
+      setApiError('No se encontró el token de recuperación. Solicita un nuevo enlace.');
+      return;
+    }
+
     // Validaciones locales
     if (newPassword.length < 8) {
       setFieldError('La contraseña debe tener al menos 8 caracteres.');
@@ -77,24 +102,24 @@ export default function ResetPassword() {
       setFieldError('Las contraseñas no coinciden. Verifica e intenta de nuevo.');
       return;
     }
-    if (!token) {
-      setApiError('No se encontró el token de recuperación. Solicita un nuevo enlace.');
-      return;
-    }
 
     setIsSubmitting(true);
 
     try {
-      // ── Llamada al backend PHP (sin sesión de Supabase requerida) ────────────
-      const response = await fetch(UPDATE_PASSWORD_URL, {
+      // ── PASO 3: Petición Fetch blindada con URL absoluta ─────────────────────
+      const payload = { token: tokenReal, nuevaContrasena: newPassword };
+      console.log('[ResetPassword] Enviando al servidor PHP:', UPDATE_PASSWORD_URL, payload);
+
+      const response = await fetch('https://srxtech.net/update-password.php', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ token, nuevaContrasena: newPassword }),
+        body:    JSON.stringify(payload),
       });
 
-      const result = await response.json();
+      const data = await response.json();
+      console.log('[ResetPassword] Respuesta del servidor PHP:', data);
 
-      if (result.success) {
+      if (data.success) {
         // Limpiar campos del formulario
         setNewPassword('');
         setConfirmPassword('');
@@ -104,7 +129,8 @@ export default function ResetPassword() {
         setView(VIEW.SUCCESS);
       } else {
         // Error devuelto por el servidor (token inválido, expirado, etc.)
-        const serverMsg = result.error || result.message || 'Error al actualizar la contraseña.';
+        const serverMsg = data.error || data.message || 'Error al actualizar la contraseña.';
+        console.warn('[ResetPassword] Error del servidor:', serverMsg);
         const isExpired =
           serverMsg.toLowerCase().includes('expir') ||
           serverMsg.toLowerCase().includes('inválid') ||
