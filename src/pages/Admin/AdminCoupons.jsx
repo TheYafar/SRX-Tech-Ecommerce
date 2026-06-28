@@ -1,30 +1,148 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../utils/supabaseClient';
+import { useState, useEffect, useRef } from 'react';
+import { supabase, uploadBannerCoupon } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
-import { Ticket, Percent, Calendar, Loader2, Power, AlertTriangle, Mail, Send, Rocket } from 'lucide-react';
-import { getAllUserEmails, dispatchMassCampaign } from '../../services/couponService';
+import {
+  Ticket, Percent, Calendar, Loader2, Power, AlertTriangle,
+  Mail, Rocket, Image, UploadCloud, LayoutTemplate, Eye
+} from 'lucide-react';
 import './AdminCoupons.css';
 
+// ── Constantes de diseño ─────────────────────────────────────────────────────
+const DESIGN_OPTIONS = [
+  {
+    value: 'banner_arriba',
+    label: 'Banner arriba · Cupón abajo',
+    icon: '🖼️',
+    description: 'La imagen de temporada encabeza el correo y el cupón aparece debajo.',
+  },
+  {
+    value: 'cupon_arriba',
+    label: 'Cupón arriba · Banner abajo',
+    icon: '🎟️',
+    description: 'El código de descuento destaca primero y el banner decorativo va al final.',
+  },
+];
+
+const DEFAULT_BANNER = 'https://srxtech.net/srx3.jpg';
+
+// ── Componente Vista Previa ──────────────────────────────────────────────────
+function EmailPreview({ bannerPreviewUrl, designOrder, code, discount, expiresAt }) {
+  const isBannerFirst = designOrder === 'banner_arriba';
+  const couponCode  = code.trim().toUpperCase() || 'CÓDIGO';
+  const discountVal = discount || '??';
+
+  const expiryLine = (() => {
+    if (!expiresAt) return 'Sin fecha de vencimiento';
+    const d = new Date(expiresAt + 'T23:59:59');
+    return `Válido hasta el ${d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+  })();
+
+  const bannerBlock = (
+    <div className="ep-banner-block">
+      <img
+        src={bannerPreviewUrl || DEFAULT_BANNER}
+        alt="Banner de temporada"
+        className="ep-banner-img"
+        onError={(e) => { e.target.src = DEFAULT_BANNER; }}
+      />
+    </div>
+  );
+
+  const couponBlock = (
+    <div className="ep-coupon-block">
+      <p className="ep-coupon-label">Descuento Exclusivo</p>
+      <p className="ep-coupon-percent">{discountVal}<span>%</span></p>
+      <p className="ep-coupon-hint">Ingresa este código al hacer checkout</p>
+      <div className="ep-code-box">
+        <span className="ep-code-text">{couponCode}</span>
+      </div>
+      <p className="ep-expiry">{expiryLine}</p>
+    </div>
+  );
+
+  return (
+    <div className="email-preview-wrapper animate-fade-in">
+      <div className="email-preview-header">
+        <Eye size={15} />
+        <span>Vista Previa del Correo</span>
+        <span className="ep-tag">{isBannerFirst ? '🖼️ Banner ↑' : '🎟️ Cupón ↑'}</span>
+      </div>
+      <div className="email-preview-card">
+        {/* Header del email simulado */}
+        <div className="ep-email-header">
+          <img
+            src="https://srxtech.net/Renovacion_logo_SRX_1a_2.png"
+            alt="SRX Tech"
+            className="ep-logo"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          <p className="ep-brand-tagline">Tu tienda de tecnología de confianza</p>
+        </div>
+
+        <div className="ep-email-body">
+          {isBannerFirst ? (
+            <>
+              {bannerBlock}
+              <p className="ep-headline">🎁 ¡Tenemos un regalo para ti!</p>
+              {couponBlock}
+            </>
+          ) : (
+            <>
+              <p className="ep-headline">🎁 ¡Tenemos un regalo para ti!</p>
+              {couponBlock}
+              {bannerBlock}
+            </>
+          )}
+        </div>
+
+        <div className="ep-email-footer">
+          <div className="ep-cta-btn">🛒 Ir a la Tienda</div>
+          <p className="ep-footer-text">© 2026 SRX Tech · srxtech.net</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Componente Principal ─────────────────────────────────────────────────────
 export default function AdminCoupons() {
   const { showSuccess, showError } = useNotifications();
+  const fileInputRef = useRef(null);
 
-  // Form states
-  const [code, setCode] = useState('');
+  // ── Estados del formulario ──
+  const [code, setCode]                     = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expiresAt, setExpiresAt]           = useState('');
+  const [isSingleUse, setIsSingleUse]       = useState(false);
+  const [isSubmitting, setIsSubmitting]     = useState(false);
 
-  // Automation / Email states
-  const [sendEmail, setSendEmail] = useState(false);
-  const [isMassEmail, setIsMassEmail] = useState(false);
-  const [customerEmail, setCustomerEmail] = useState('');
+  // ── Email / campaña ──
+  const [sendEmail, setSendEmail]           = useState(false);
+  const [isMassEmail, setIsMassEmail]       = useState(false);
+  const [customerEmail, setCustomerEmail]   = useState('');
 
-  // List states
-  const [coupons, setCoupons] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [actioningId, setActioningId] = useState(null); // to show loading on individual toggle buttons
+  // ── Banner & orden visual ──
+  const [bannerFile, setBannerFile]         = useState(null);      // archivo local
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState('');    // blob URL para preview
+  const [bannerUrl, setBannerUrl]           = useState('');        // URL pública de Supabase
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [designOrder, setDesignOrder]       = useState('banner_arriba');
 
-  // Fetch coupons from Supabase
+  // ── Lista ──
+  const [coupons, setCoupons]       = useState([]);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [actioningId, setActioningId] = useState(null);
+
+  // Limpiar el blob URL al desmontar o cuando cambie el archivo
+  useEffect(() => {
+    return () => {
+      if (bannerPreviewUrl && bannerPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(bannerPreviewUrl);
+      }
+    };
+  }, [bannerPreviewUrl]);
+
+  // ── Fetch cupones ────────────────────────────────────────────────────────
   const fetchCoupons = async () => {
     setIsLoading(true);
     try {
@@ -32,7 +150,6 @@ export default function AdminCoupons() {
         .from('coupons')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setCoupons(data || []);
     } catch (err) {
@@ -43,18 +160,65 @@ export default function AdminCoupons() {
     }
   };
 
-  useEffect(() => {
-    fetchCoupons();
-  }, []);
+  useEffect(() => { fetchCoupons(); }, []);
 
-  // Form submit (create coupon & send emails if activated)
+  // ── Manejo de selección de archivo ──────────────────────────────────────
+  const handleBannerFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      showError('Solo se permiten archivos de imagen (JPG, PNG, WEBP, etc.).');
+      return;
+    }
+    // Validar tamaño: max 5 MB
+    if (file.size > 5 * 1024 * 1024) {
+      showError('La imagen no puede superar los 5 MB.');
+      return;
+    }
+
+    // Preview local instantánea
+    if (bannerPreviewUrl && bannerPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(bannerPreviewUrl);
+    }
+    const previewBlob = URL.createObjectURL(file);
+    setBannerFile(file);
+    setBannerPreviewUrl(previewBlob);
+    setBannerUrl(''); // resetear URL pública anterior
+
+    // Subir inmediatamente a Supabase Storage
+    setIsUploadingBanner(true);
+    try {
+      const publicUrl = await uploadBannerCoupon(file);
+      setBannerUrl(publicUrl);
+      showSuccess('Banner subido correctamente al bucket de Supabase.');
+    } catch (err) {
+      showError(err.message || 'No se pudo subir el banner. Verifica el bucket banners_cupones.');
+      setBannerFile(null);
+      setBannerPreviewUrl('');
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleRemoveBanner = () => {
+    if (bannerPreviewUrl && bannerPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(bannerPreviewUrl);
+    }
+    setBannerFile(null);
+    setBannerPreviewUrl('');
+    setBannerUrl('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // ── Submit formulario ───────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanCode = code.trim().toUpperCase();
-    const percent = parseInt(discountPercent);
+    const percent   = parseInt(discountPercent);
 
-    // Validation
     if (!cleanCode) {
       showError('El código del cupón es obligatorio.');
       return;
@@ -63,9 +227,12 @@ export default function AdminCoupons() {
       showError('El descuento debe ser un número entre 1 y 100.');
       return;
     }
-
     if (sendEmail && !isMassEmail && (!customerEmail || !customerEmail.trim())) {
       showError('Por favor introduce el correo electrónico del cliente.');
+      return;
+    }
+    if (sendEmail && bannerFile && !bannerUrl) {
+      showError('El banner aún se está subiendo. Por favor espera unos segundos.');
       return;
     }
 
@@ -73,56 +240,52 @@ export default function AdminCoupons() {
     try {
       const expiresIso = expiresAt ? new Date(expiresAt + 'T23:59:59').toISOString() : null;
 
-      // 1. Insert in database
-      const { data, error } = await supabase
+      // 1. Insertar en base de datos
+      const { error } = await supabase
         .from('coupons')
-        .insert([
-          {
-            code: cleanCode,
-            discount_percent: percent,
-            expires_at: expiresIso,
-            is_active: true
-          }
-        ])
+        .insert([{
+          code: cleanCode,
+          discount_percent: percent,
+          expires_at: expiresIso,
+          is_active: true,
+          is_single_use: isSingleUse,
+        }])
         .select();
 
       if (error) {
-        if (error.code === '23505') {
-          throw new Error('Ya existe un cupón con este código.');
-        }
+        if (error.code === '23505') throw new Error('Ya existe un cupón con este código.');
         throw error;
       }
 
-      // 2. Send emails if option is active
+      // 2. Enviar correo si está activado
       if (sendEmail) {
-        if (isMassEmail) {
-          const emailsList = await getAllUserEmails();
-          if (emailsList.length === 0) {
-            throw new Error('No se encontraron usuarios en la base de datos para enviar la campaña.');
-          }
-          await dispatchMassCampaign(cleanCode, percent, emailsList);
-        } else {
-          // Petición reactiva usando fetch apuntando a la ruta relativa /api/send-email utilizando el método POST
-          const response = await fetch('/api/send-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: customerEmail.trim(),
-              couponCode: cleanCode,
-              discount: percent,
-            }),
-          });
+        const emailPayload = {
+          code: cleanCode,
+          discount: percent,
+          expiration: expiresIso,
+          banner_url: bannerUrl || null,
+          design_order: designOrder,
+          ...(isMassEmail ? {} : { single_recipient: customerEmail.trim() }),
+        };
 
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || `Error al enviar correo (Status ${response.status})`);
-          }
+        const response = await fetch('/send-coupon-email.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emailPayload),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Error en envío de correo (Status ${response.status})`);
+        }
+
+        const resData = await response.json();
+        if (!resData.success) {
+          throw new Error(resData.error || 'Error desconocido en el servidor PHP.');
         }
       }
 
-      // 3. Show success notifications
+      // 3. Notificación de éxito
       if (sendEmail) {
         showSuccess(isMassEmail
           ? `Cupón "${cleanCode}" registrado y campaña masiva enviada a todos los usuarios.`
@@ -131,16 +294,18 @@ export default function AdminCoupons() {
       } else {
         showSuccess(`Cupón "${cleanCode}" creado exitosamente.`);
       }
-      
-      // Reset form
+
+      // 4. Reset
       setCode('');
       setDiscountPercent('');
       setExpiresAt('');
+      setIsSingleUse(false);
       setSendEmail(false);
       setIsMassEmail(false);
       setCustomerEmail('');
+      handleRemoveBanner();
+      setDesignOrder('banner_arriba');
 
-      // Refresh list
       await fetchCoupons();
     } catch (err) {
       console.error('Error creating/sending coupon in AdminCoupons:', err);
@@ -150,25 +315,18 @@ export default function AdminCoupons() {
     }
   };
 
-  // Toggle active status
+  // ── Toggle estado activo ────────────────────────────────────────────────
   const handleToggleActive = async (coupon) => {
     const nextState = !coupon.is_active;
     setActioningId(coupon.id);
-
     try {
       const { error } = await supabase
         .from('coupons')
         .update({ is_active: nextState })
         .eq('id', coupon.id);
-
       if (error) throw error;
-
       showSuccess(`Cupón "${coupon.code}" ${nextState ? 'habilitado' : 'deshabilitado'} correctamente.`);
-      
-      // Update local state to avoid full re-fetch if possible
-      setCoupons(prev =>
-        prev.map(c => (c.id === coupon.id ? { ...c, is_active: nextState } : c))
-      );
+      setCoupons(prev => prev.map(c => (c.id === coupon.id ? { ...c, is_active: nextState } : c)));
     } catch (err) {
       console.error('Error toggling coupon state in AdminCoupons:', err);
       showError('No se pudo actualizar el estado del cupón.');
@@ -177,22 +335,14 @@ export default function AdminCoupons() {
     }
   };
 
-  // Helper formats
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  const formatDate = (d) => {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
+  const isExpired = (d) => d ? new Date() > new Date(d) : false;
 
-  const isExpired = (expiresAtString) => {
-    if (!expiresAtString) return false;
-    return new Date() > new Date(expiresAtString);
-  };
-
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="admin-coupons-container animate-fade-in">
       <div className="admin-coupons-header">
@@ -202,10 +352,12 @@ export default function AdminCoupons() {
         </p>
       </div>
 
-      {/* ── Formulario de Alta (Crear Cupones) ── */}
+      {/* ── Formulario de Alta ── */}
       <section className="admin-coupons-form-section">
         <h2 className="section-title">Gestión y Emisión de Cupones</h2>
         <form onSubmit={handleSubmit} className="admin-coupons-form">
+
+          {/* Grid principal */}
           <div className="form-grid">
             <div className="form-group">
               <label htmlFor="coupon-code">Código del Cupón</label>
@@ -254,7 +406,23 @@ export default function AdminCoupons() {
             </div>
           </div>
 
-          {/* Interruptor de Automatización */}
+          {/* Switch: un solo uso */}
+          <div className="automation-switch-group">
+            <div className="switch-container">
+              <label className="switch-label">
+                <input
+                  type="checkbox"
+                  className="switch-input"
+                  checked={isSingleUse}
+                  onChange={(e) => setIsSingleUse(e.target.checked)}
+                />
+                <div className="switch-track"><div className="switch-thumb" /></div>
+                <span className="switch-label-text">¿Es cupón de un solo uso?</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Switch: enviar correo */}
           <div className="automation-switch-group">
             <div className="switch-container">
               <label className="switch-label">
@@ -267,22 +435,23 @@ export default function AdminCoupons() {
                     if (!e.target.checked) {
                       setIsMassEmail(false);
                       setCustomerEmail('');
+                      handleRemoveBanner();
+                      setDesignOrder('banner_arriba');
                     }
                   }}
                 />
-                <div className="switch-track">
-                  <div className="switch-thumb" />
-                </div>
+                <div className="switch-track"><div className="switch-thumb" /></div>
                 <span className="switch-label-text">¿Deseas enviar este cupón por correo electrónico?</span>
               </label>
             </div>
           </div>
 
-          {/* Campos Condicionales con Despliegue Suave */}
+          {/* Campos condicionales */}
           <div className={`conditional-fields ${sendEmail ? 'expanded' : ''}`}>
             {sendEmail && (
               <div className="conditional-fields-content animate-slide-down">
-                {/* Switch de campaña masiva */}
+
+                {/* Switch campaña masiva */}
                 <div className="form-group mass-email-switch-group">
                   <div className="switch-container">
                     <label className="switch-label">
@@ -292,20 +461,16 @@ export default function AdminCoupons() {
                         checked={isMassEmail}
                         onChange={(e) => {
                           setIsMassEmail(e.target.checked);
-                          if (e.target.checked) {
-                            setCustomerEmail('');
-                          }
+                          if (e.target.checked) setCustomerEmail('');
                         }}
                       />
-                      <div className="switch-track">
-                        <div className="switch-thumb" />
-                      </div>
+                      <div className="switch-track"><div className="switch-thumb" /></div>
                       <span className="switch-label-text">¿Enviar campaña masiva a todos los usuarios?</span>
                     </label>
                   </div>
                 </div>
 
-                {/* Input de correo cliente (se oculta automáticamente si es masivo) */}
+                {/* Email individual */}
                 {!isMassEmail && (
                   <div className="form-group email-input-group">
                     <label htmlFor="customer-email">Correo Electrónico del Cliente</label>
@@ -323,20 +488,126 @@ export default function AdminCoupons() {
                     </div>
                   </div>
                 )}
+
+                {/* ────────────────────────────────────────────────────── */}
+                {/* CARGA DE BANNER */}
+                {/* ────────────────────────────────────────────────────── */}
+                <div className="form-group email-input-group">
+                  <label>
+                    <Image size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                    Imagen del Banner de Temporada
+                  </label>
+
+                  {!bannerFile ? (
+                    /* Zona de drop / click */
+                    <div
+                      className="banner-upload-zone"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <UploadCloud size={32} className="upload-zone-icon" />
+                      <p className="upload-zone-title">Haz clic para subir una imagen</p>
+                      <p className="upload-zone-hint">JPG, PNG, WEBP — máx. 5 MB</p>
+                      <p className="upload-zone-note">
+                        Se subirá automáticamente al bucket <code>banners_cupones</code> de Supabase
+                      </p>
+                    </div>
+                  ) : (
+                    /* Thumbnail con estado de carga */
+                    <div className="banner-thumb-wrapper">
+                      <img
+                        src={bannerPreviewUrl}
+                        alt="Preview del banner"
+                        className="banner-thumb-img"
+                      />
+                      <div className="banner-thumb-overlay">
+                        {isUploadingBanner ? (
+                          <div className="banner-uploading-badge">
+                            <Loader2 size={14} className="spin" />
+                            <span>Subiendo…</span>
+                          </div>
+                        ) : bannerUrl ? (
+                          <div className="banner-ready-badge">✅ Listo</div>
+                        ) : (
+                          <div className="banner-error-badge">❌ Error</div>
+                        )}
+                        <button
+                          type="button"
+                          className="banner-remove-btn"
+                          onClick={handleRemoveBanner}
+                          title="Eliminar banner"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="banner-file-input-hidden"
+                    onChange={handleBannerFileChange}
+                  />
+                  <p className="field-hint">
+                    Si no subes una imagen se usará el banner por defecto de SRX Tech.
+                  </p>
+                </div>
+
+                {/* ────────────────────────────────────────────────────── */}
+                {/* SELECTOR DE ORDEN VISUAL */}
+                {/* ────────────────────────────────────────────────────── */}
+                <div className="form-group email-input-group">
+                  <label>
+                    <LayoutTemplate size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                    Orden Visual del Correo
+                  </label>
+                  <div className="design-order-selector">
+                    {DESIGN_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`design-order-btn ${designOrder === opt.value ? 'active' : ''}`}
+                        onClick={() => setDesignOrder(opt.value)}
+                      >
+                        <span className="dob-icon">{opt.icon}</span>
+                        <span className="dob-label">{opt.label}</span>
+                        <span className="dob-desc">{opt.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             )}
           </div>
 
+          {/* ── VISTA PREVIA DINÁMICA ── */}
+          {sendEmail && (
+            <EmailPreview
+              bannerPreviewUrl={bannerPreviewUrl || bannerUrl}
+              designOrder={designOrder}
+              code={code}
+              discount={discountPercent}
+              expiresAt={expiresAt}
+            />
+          )}
+
           <div className="form-submit-row">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingBanner}
               className={`generate-coupon-btn ${sendEmail ? 'btn-send-email' : ''}`}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="spin" size={18} />
-                  <span>Procesando...</span>
+                  <span>Procesando…</span>
+                </>
+              ) : isUploadingBanner ? (
+                <>
+                  <Loader2 className="spin" size={18} />
+                  <span>Subiendo banner…</span>
                 </>
               ) : sendEmail ? (
                 <>
@@ -354,14 +625,14 @@ export default function AdminCoupons() {
         </form>
       </section>
 
-      {/* ── Tabla de Gestión en Tiempo Real ── */}
+      {/* ── Tabla de Gestión ── */}
       <section className="admin-coupons-list-section">
         <h2 className="section-title">Listado de Cupones</h2>
 
         {isLoading ? (
           <div className="admin-coupons-loading">
             <Loader2 className="spin" size={36} />
-            <p>Cargando cupones registrados...</p>
+            <p>Cargando cupones registrados…</p>
           </div>
         ) : coupons.length === 0 ? (
           <div className="admin-coupons-empty">
@@ -375,6 +646,7 @@ export default function AdminCoupons() {
                 <tr>
                   <th>Código</th>
                   <th>Descuento</th>
+                  <th>Tipo</th>
                   <th>Creado el</th>
                   <th>Expira el</th>
                   <th>Estado</th>
@@ -384,8 +656,7 @@ export default function AdminCoupons() {
               <tbody>
                 {coupons.map((coupon) => {
                   const expired = isExpired(coupon.expires_at);
-                  const active = coupon.is_active && !expired;
-                  
+                  const active  = coupon.is_active && !expired;
                   return (
                     <tr key={coupon.id} className={expired ? 'coupon-row-expired' : ''}>
                       <td className="coupon-code-cell">
@@ -393,6 +664,12 @@ export default function AdminCoupons() {
                       </td>
                       <td className="coupon-discount-cell">
                         <span className="discount-value">{coupon.discount_percent}%</span>
+                      </td>
+                      <td>
+                        {coupon.is_single_use
+                          ? <span className="badge-single-use">Un solo uso</span>
+                          : <span className="badge-multi-use">Múltiple</span>
+                        }
                       </td>
                       <td>{formatDate(coupon.created_at)}</td>
                       <td>
@@ -410,28 +687,22 @@ export default function AdminCoupons() {
                         )}
                       </td>
                       <td>
-                        {active ? (
-                          <span className="status-badge status-active">Activo</span>
-                        ) : (
-                          <span className="status-badge status-inactive">
-                            {expired ? 'Expirado' : 'Inactivo'}
-                          </span>
-                        )}
+                        {active
+                          ? <span className="status-badge status-active">Activo</span>
+                          : <span className="status-badge status-inactive">{expired ? 'Expirado' : 'Inactivo'}</span>
+                        }
                       </td>
                       <td>
                         <button
                           onClick={() => handleToggleActive(coupon)}
                           disabled={actioningId === coupon.id || expired}
-                          className={`action-toggle-btn ${
-                            coupon.is_active ? 'btn-disable' : 'btn-enable'
-                          }`}
+                          className={`action-toggle-btn ${coupon.is_active ? 'btn-disable' : 'btn-enable'}`}
                           title={expired ? 'El cupón ha expirado y no se puede habilitar' : ''}
                         >
-                          {actioningId === coupon.id ? (
-                            <Loader2 className="spin" size={14} />
-                          ) : (
-                            <Power size={14} />
-                          )}
+                          {actioningId === coupon.id
+                            ? <Loader2 className="spin" size={14} />
+                            : <Power size={14} />
+                          }
                           <span>{coupon.is_active ? 'Deshabilitar' : 'Habilitar'}</span>
                         </button>
                       </td>

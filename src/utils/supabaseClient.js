@@ -6,8 +6,9 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: false, // Evita que guarde el token en localStorage/sessionStorage
-    autoRefreshToken: false // Desactiva el refresco automático de tokens entre recargas
+    persistSession: true,   // Guarda el token en localStorage para sobrevivir recargas
+    autoRefreshToken: true, // Refresca el token automáticamente antes de que expire
+    detectSessionInUrl: true // Detecta tokens de recuperación de contraseña en la URL
   }
 });
 
@@ -52,6 +53,51 @@ export async function uploadReceipt(file) {
   } catch (error) {
     console.error('Unexpected exception when uploading file:', error);
     throw new Error(error.message || 'Error inesperado al intentar subir el comprobante de pago.', { cause: error });
+  }
+}
+
+/**
+ * Subir una imagen de banner de cupón al bucket banners_cupones
+ * @param {File} file El archivo de imagen a subir
+ * @returns {Promise<string|null>} La URL pública del banner subido o null en caso de error
+ */
+export async function uploadBannerCoupon(file) {
+  if (!file) {
+    console.warn('[uploadBannerCoupon] No image provided for upload.');
+    return null;
+  }
+
+  // Bucket name configurable via env; must be created manually in Supabase Storage
+  const bucketName = import.meta.env.VITE_SUPABASE_BANNERS_BUCKET || 'banners_cupones';
+
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `banner-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `banners/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucketName)
+      .upload(filePath, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      console.error('Error from Supabase when uploading coupon banner:', uploadError);
+      if (uploadError.message?.toLowerCase().includes('bucket not found')) {
+        throw new Error(
+          `El bucket de almacenamiento "${bucketName}" no existe en Supabase. ` +
+          `Créalo en Supabase Dashboard → Storage → New bucket, o configura VITE_SUPABASE_BANNERS_BUCKET en tu .env`
+        );
+      }
+      throw new Error(`Error de Supabase: ${uploadError.message || 'Fallo al subir el banner'}`);
+    }
+
+    const { data } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  } catch (error) {
+    console.error('Unexpected exception when uploading coupon banner:', error);
+    throw new Error(error.message || 'Error inesperado al intentar subir el banner de cupón.', { cause: error });
   }
 }
 

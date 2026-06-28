@@ -4,9 +4,14 @@
 // Envía todos los correos a través del puente PHP en Hostinger:
 // https://srxtech.net/send-email.php
 // El servidor PHP inyecta la API Key de Resend de forma segura.
+//
+// URL relativa: en producción resuelve al mismo dominio.
+// En desarrollo, Vite hace proxy de /send-email.php → srxtech.net
+// (ver vite.config.js → server.proxy)
 // ─────────────────────────────────────────────────────────────
 
-const PHP_BRIDGE_URL = 'https://srxtech.net/send-email.php';
+const PHP_BRIDGE_URL = '/send-email.php';
+
 
 // ─── Utilidades ───────────────────────────────────────────────
 function getShortId(id) {

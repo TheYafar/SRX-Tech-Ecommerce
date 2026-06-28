@@ -70,9 +70,9 @@ const formatUser = async (sessionUser, previousRole = null) => {
 export const AuthProvider = ({ children }) => {
   const { showSuccess, showInfo, showError } = useNotifications();
 
-  // Start with clean state checking auth session
+  // Start with true so the UI waits for the session check before rendering
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [authContextHint, setAuthContextHint] = useState(null);
@@ -88,7 +88,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Listen to authentication changes
+    // ── PASO 1: Restaurar sesión persistida en localStorage al recargar la página ──
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        const formattedUser = await formatUser(session.user);
+        if (mounted) setUser(formattedUser);
+      }
+      if (mounted) setIsLoading(false);
+    });
+
+    // ── PASO 2: Escuchar cambios de autenticación en tiempo real ──
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         if (session?.user) {
@@ -97,9 +107,7 @@ export const AuthProvider = ({ children }) => {
           const hasMatchingUser = currentUser && currentUser.id === session.user.id;
 
           if (isTokenRefresh && hasMatchingUser) {
-            if (mounted) {
-              setIsLoading(false);
-            }
+            if (mounted) setIsLoading(false);
             return;
           }
 
@@ -116,9 +124,7 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.error('Error inside onAuthStateChange listener:', err);
-        if (mounted) {
-          setIsLoading(false);
-        }
+        if (mounted) setIsLoading(false);
       }
     });
 
@@ -164,6 +170,8 @@ export const AuthProvider = ({ children }) => {
 
       setIsAuthModalOpen(false);
       showSuccess('¡Bienvenido de nuevo!', 2000);
+      // Notifica a WishlistContext para que migre favoritos anónimos al usuario
+      window.dispatchEvent(new CustomEvent('srx-login', { detail: { userId: data.user?.id } }));
       executePendingAction();
       return { success: true, user: formattedUser };
     } catch (error) {
@@ -224,7 +232,11 @@ export const AuthProvider = ({ children }) => {
     const { error } = await supabase.auth.signOut();
 
     if (!error) {
+      // Limpiar TODOS los favoritos del localStorage al cerrar sesión
+      localStorage.removeItem('srx_wishlist');
+      localStorage.removeItem('srx_wishlist_anon');
       showInfo('Sesión cerrada correctamente', 2000);
+      // Notifica a WishlistContext para que vacíe el estado en memoria
       window.dispatchEvent(new Event('srx-logout'));
     } else {
       console.error('Logout error:', {

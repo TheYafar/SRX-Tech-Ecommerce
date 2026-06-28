@@ -448,7 +448,7 @@
 }
 
 .conditional-fields.expanded {
-  max-height: 200px;
+  max-height: 2400px;
   opacity: 1;
   padding: 1.25rem 0;
   border-top: 1px dashed rgba(255, 255, 255, 0.1);
@@ -513,5 +513,446 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ── Badges de tipo de cupón ── */
+.badge-single-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge-multi-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Hint de campo ── */
+.field-hint {
+  color: #64748b;
+  font-size: 0.78rem;
+  margin: 5px 0 0 0;
+  padding-left: 2px;
+  font-style: italic;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ZONA DE SUBIDA DE BANNER
+   ══════════════════════════════════════════════════════════ */
+
+.banner-file-input-hidden {
+  display: none;
+}
+
+.banner-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2rem 1.5rem;
+  border: 2px dashed #334155;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a 0%, #1a2540 100%);
+  cursor: pointer;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.2s ease;
+  text-align: center;
+}
+
+.banner-upload-zone:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #0c1a30 0%, #1e3158 100%);
+  transform: translateY(-2px);
+}
+
+.upload-zone-icon {
+  color: #3b82f6;
+  margin-bottom: 0.25rem;
+  opacity: 0.85;
+}
+
+.upload-zone-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.upload-zone-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.upload-zone-note {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.upload-zone-note code {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+/* Thumbnail del banner seleccionado */
+.banner-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #334155;
+  background: #0f172a;
+  max-height: 160px;
+}
+
+.banner-thumb-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.banner-thumb-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 50%);
+}
+
+.banner-uploading-badge,
+.banner-ready-badge,
+.banner-error-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.banner-uploading-badge {
+  background: rgba(59, 130, 246, 0.85);
+  color: #fff;
+}
+
+.banner-ready-badge {
+  background: rgba(16, 185, 129, 0.85);
+  color: #fff;
+}
+
+.banner-error-badge {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+}
+
+.banner-remove-btn {
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.banner-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+}
+
+/* ══════════════════════════════════════════════════════════
+   SELECTOR DE ORDEN VISUAL
+   ══════════════════════════════════════════════════════════ */
+
+.design-order-selector {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.design-order-btn {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  position: relative;
+}
+
+.design-order-btn:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+.design-order-btn.active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #0c2040 0%, #1e3a6e 100%);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 6px 20px rgba(59, 130, 246, 0.15);
+}
+
+.design-order-btn.active::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #fff;
+  font-weight: 900;
+  line-height: 20px;
+  text-align: center;
+}
+
+.dob-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.dob-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.dob-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ══════════════════════════════════════════════════════════
+   VISTA PREVIA DINÁMICA DEL CORREO
+   ══════════════════════════════════════════════════════════ */
+
+.email-preview-wrapper {
+  margin: 1.5rem 0 0.5rem;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #1e3a6e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.email-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, #0c1a35 0%, #1e3158 100%);
+  border-bottom: 1px solid #1e3a6e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ep-tag {
+  margin-left: auto;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  color: #60a5fa;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.email-preview-card {
+  background: #0f172a;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ep-email-header {
+  background: linear-gradient(180deg, #060d1a 0%, #0f172a 100%);
+  text-align: center;
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ep-logo {
+  height: 36px;
+  width: auto;
+  display: inline-block;
+  margin: 0 auto 6px;
+}
+
+.ep-brand-tagline {
+  margin: 0;
+  font-size: 0.65rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.ep-email-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ep-headline {
+  margin: 16px 20px 4px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.02em;
+}
+
+/* Banner dentro de la preview */
+.ep-banner-block {
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.ep-banner-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+/* Tarjeta del cupón dentro de la preview */
+.ep-coupon-block {
+  margin: 12px 16px;
+  background: linear-gradient(135deg, #0c2340 0%, #1e293b 50%, #0c2340 100%);
+  border: 1.5px dashed #3b82f6;
+  border-radius: 12px;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.ep-coupon-label {
+  margin: 0 0 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.ep-coupon-percent {
+  margin: 0 0 8px;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #3b82f6;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.ep-coupon-percent span {
+  font-size: 1.4rem;
+  vertical-align: middle;
+}
+
+.ep-coupon-hint {
+  margin: 0 0 10px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.ep-code-box {
+  display: inline-block;
+  background: #060d1a;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 8px 20px;
+  margin: 0 auto;
+}
+
+.ep-code-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #f1f5f9;
+  letter-spacing: 0.2em;
+}
+
+.ep-expiry {
+  margin: 10px 0 0;
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.ep-email-footer {
+  background: #060d1a;
+  border-top: 1px solid #1e293b;
+  padding: 14px 20px;
+  text-align: center;
+}
+
+.ep-cta-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #fff;
+  padding: 10px 28px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.ep-footer-text {
+  margin: 0;
+  font-size: 0.65rem;
+  color: #334155;
 }
 
