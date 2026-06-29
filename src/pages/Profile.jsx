@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -18,7 +19,13 @@ import './Profile.css';
 export default function Profile() {
   const { user, logout, openAuthModal } = useAuth();
   const { wishlistItems, toggleWishlist } = useWishlist();
+  const { products } = useProducts();
   const { cartCount } = useCart();
+
+  // Enriquecer los IDs del wishlist con los datos reales del catálogo
+  const resolvedWishlistItems = wishlistItems
+    .map((item) => products.find((p) => p.id === item.id))
+    .filter(Boolean); // descartar los que aún no cargaron o no existen
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -116,9 +123,9 @@ export default function Profile() {
               >
                 <Heart size={18} />
                 <span>Lista de Deseos</span>
-                {wishlistItems.length > 0 && (
+                {resolvedWishlistItems.length > 0 && (
                   <span className="cart-badge" style={{ position: 'relative', top: 0, right: -5 }}>
-                    {wishlistItems.length}
+                    {resolvedWishlistItems.length}
                   </span>
                 )}
               </button>
@@ -171,7 +178,7 @@ export default function Profile() {
 
                   <div className="profile-stats-box">
                     <div className="stat-item glass-card">
-                      <div className="stat-num">{wishlistItems.length}</div>
+                      <div className="stat-num">{resolvedWishlistItems.length}</div>
                       <div className="stat-label">Favoritos</div>
                     </div>
                     <div className="stat-item glass-card">
@@ -310,7 +317,7 @@ export default function Profile() {
                     <h2 className="tab-title">Lista de Deseos</h2>
                   </div>
 
-                  {wishlistItems.length === 0 ? (
+                  {resolvedWishlistItems.length === 0 ? (
                     <div className="wishlist-empty">
                       <div className="wishlist-empty-icon">
                         <Heart size={32} />
@@ -325,7 +332,7 @@ export default function Profile() {
                     </div>
                   ) : (
                     <div className="wishlist-grid">
-                      {wishlistItems.map((product) => (
+                      {resolvedWishlistItems.map((product) => (
                         <div key={product.id} className="wishlist-item-wrapper" style={{ position: 'relative' }}>
                           <ProductCard product={product} />
                           <button 
