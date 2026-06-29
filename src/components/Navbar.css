@@ -23,6 +23,7 @@
 }
 
 .navbar-container {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -144,7 +145,7 @@
 
 /* ── Mega Menu Trigger ── */
 .mega-trigger-wrapper {
-  position: relative;
+  position: static;
   display: inline-flex;
   align-items: center;
 }

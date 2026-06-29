@@ -18,13 +18,15 @@
   pointer-events: all;
   position: absolute;
   top: calc(var(--nav-height, 64px) + 4px);
-  left: 50%;
-  transform: translateX(-50%);
+  right: 40px;
+  left: auto;
+  transform: none;
 
-  display: flex;
-  gap: 0;
-  min-width: 680px;
-  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 28px;
+  min-width: 600px;
+  max-width: min(900px, 90vw);
 
   /* Estética glassmorphism dark */
   background: rgba(15, 23, 42, 0.97);
@@ -44,22 +46,18 @@
 @keyframes megaMenuIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-10px) scale(0.97);
+    transform: translateY(-10px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
 /* ── Columna individual ── */
 .mega-col {
-  flex: 1;
-  padding: 0 20px;
+  width: 100%;
 }
-
-.mega-col:first-child { padding-left: 0; }
-.mega-col:last-child  { padding-right: 0; }
 
 /* ── Encabezado de columna ── */
 .mega-col-header {
@@ -127,10 +125,7 @@
 
 /* ── Divisor vertical entre columnas ── */
 .mega-divider {
-  width: 1px;
-  background: rgba(255, 255, 255, 0.07);
-  flex-shrink: 0;
-  margin: 4px 0;
+  display: none;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
