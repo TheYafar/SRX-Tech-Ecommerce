@@ -17,7 +17,7 @@ export default function AdminLayout() {
     { id: 'orders', icon: ShoppingBag, label: 'Encargos', path: '/admin/orders' },
     { id: 'products', icon: Package, label: 'Catálogo', path: '/admin/products' },
     { id: 'coupons', icon: Ticket, label: 'Cupones', path: '/admin/coupons' },
-    { id: 'payments', icon: DollarSign, label: 'Pagos normales al contado', path: '/admin/payments' },
+    { id: 'payments', icon: DollarSign, label: 'Pedidos al contado', path: '/admin/pedidos-contado' },
     { id: 'categories', icon: Layers, label: 'Gestionar Categorías', path: '/admin/categories' },
     { id: 'banners', icon: ImageIcon, label: 'Gestión de Banners', path: '/admin/banners' },
   ];

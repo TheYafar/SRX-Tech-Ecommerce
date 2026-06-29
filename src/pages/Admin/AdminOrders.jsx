@@ -116,7 +116,7 @@ export default function AdminOrders() {
   const handleVerifyPaymentRedirect = (order) => {
     setSelectedOrder(null);
     const isCompleted = ['paid', 'ready', 'shipped', 'delivered', 'cancelled'].includes(order.status);
-    navigate('/admin/payments', { 
+    navigate('/admin/pedidos-contado', { 
       state: { 
         searchOrderId: order.id, 
         paymentsFilter: isCompleted ? 'history' : 'pending' 
@@ -713,7 +713,7 @@ export default function AdminOrders() {
 
                       {(order.status === 'pending_payment' || order.status === 'pending') && (
                         <button className="btn-modal-action verify-cta" onClick={() => handleVerifyPaymentRedirect(order)}>
-                          <ExternalLink size={14} /> Ir a verificar en panel de pagos
+                          <ExternalLink size={14} /> Ir a verificar en Pedidos al contado
                         </button>
                       )}
                     </div>

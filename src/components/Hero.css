@@ -39,13 +39,21 @@
   width: 100%;
   height: 100%;
   z-index: 1;
+  overflow: hidden;
 }
 
-/* Cada slide individual ocupa el 100% del wrapper */
+/* Contenedor que alinea los slides en horizontal para el efecto slide */
+.hero-slides-slider {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
+/* Cada slide individual ocupa el 100% del slider flex */
 .hero-slide-bg-container {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
+  flex: 0 0 100%;
   width: 100%;
   height: 100%;
 }
@@ -519,10 +527,18 @@
        barra de búsqueda superior del Navbar
      - object-position ajustado para centrar el producto
      ---------------------------------------------------------- */
-  .hero-slide-bg-container {
-    padding-top: 0;
+  .hero-slides-slider {
     top: calc(var(--nav-height, 70px) + 64px) !important; /* Despejado de la barra de búsqueda */
     height: calc(100% - (var(--nav-height, 70px) + 64px)) !important;
+    position: absolute;
+    left: 0;
+    width: 100%;
+  }
+
+  .hero-slide-bg-container {
+    padding-top: 0;
+    top: 0 !important;
+    height: 100% !important;
   }
 
   .hero-slide-bg-container picture {
@@ -798,11 +814,24 @@
 
   /* Estructura del contenedor interno de cada slide */
   .hero-background-wrapper,
+  .hero-slides-slider,
   .hero-slide-bg-container {
     position: relative !important;
     width: 100% !important;
     height: auto !important;
+  }
+
+  .hero-background-wrapper {
     display: block !important;
+  }
+
+  .hero-slides-slider {
+    display: flex !important;
+  }
+
+  .hero-slide-bg-container {
+    display: block !important;
+    flex: 0 0 100% !important;
   }
 
   .hero-slide-bg-container picture {

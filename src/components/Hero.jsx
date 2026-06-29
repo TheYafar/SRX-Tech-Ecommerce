@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { products } from '../data/products';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
@@ -50,6 +50,8 @@ export default function Hero() {
   }
 
   const slide = slides[currentSlide];
+  const targetUrl = slide?.redirect_url || slide?.link_url || '/tienda';
+  const isExternal = targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('//');
 
   // Dynamic product mapping to fix the data rendering inconsistency
   const currentProduct = products?.find(p => p.id === slide.productId) || {
@@ -74,27 +76,30 @@ export default function Hero() {
     <section className="hero-wrapper hero-section hero-slider-container">
       {/* === Background Image — <picture> responsivo === */}
       <div className="hero-background-wrapper">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={slide.id}
-            className="hero-slide-bg-container"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
-          >
-            <picture>
-              {slide.image_url_mobile && (
-                <source media="(max-width: 768px)" srcSet={slide.image_url_mobile} />
-              )}
-              <img
-                src={slide.image_url}
-                alt={slide.title}
-                className="hero-background-img"
-              />
-            </picture>
-          </motion.div>
-        </AnimatePresence>
+        <div
+          className="hero-slides-slider"
+          style={{
+            transform: `translateX(-${currentSlide * 100}%)`
+          }}
+        >
+          {slides.map((s) => (
+            <div
+              key={s.id}
+              className="hero-slide-bg-container"
+            >
+              <picture>
+                {s.image_url_mobile && (
+                  <source media="(max-width: 768px)" srcSet={s.image_url_mobile} />
+                )}
+                <img
+                  src={s.image_url}
+                  alt={s.title}
+                  className="hero-background-img"
+                />
+              </picture>
+            </div>
+          ))}
+        </div>
         {/* === Cinematic Gradient Overlay === */}
         <div className="hero-bg-overlay" />
       </div>
@@ -118,23 +123,48 @@ export default function Hero() {
         {/* === Bottom Controls Container === */}
         <div className="bottom-controls-container">
           {/* === Bottom Tagline Pill === */}
-          <Link to={slide.link_url || '/tienda'} style={{ textDecoration: 'none', pointerEvents: 'auto' }}>
-            <motion.div
-              className="cta-button-pill"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
-              whileHover={{ scale: 1.05 }}
+          {isExternal ? (
+            <a
+              href={targetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none', pointerEvents: 'auto' }}
             >
-              <span>{slide.subtitle}</span>
               <motion.div
-                animate={{ x: [0, 6, 0] }}
-                transition={{ duration: 1.6, repeat: Infinity }}
+                className="cta-button-pill"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
+                whileHover={{ scale: 1.05 }}
               >
-                <ArrowRight size={16} />
+                <span>{slide.subtitle}</span>
+                <motion.div
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 1.6, repeat: Infinity }}
+                >
+                  <ArrowRight size={16} />
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </Link>
+            </a>
+          ) : (
+            <Link to={targetUrl} style={{ textDecoration: 'none', pointerEvents: 'auto' }}>
+              <motion.div
+                className="cta-button-pill"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <span>{slide.subtitle}</span>
+                <motion.div
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 1.6, repeat: Infinity }}
+                >
+                  <ArrowRight size={16} />
+                </motion.div>
+              </motion.div>
+            </Link>
+          )}
 
           {/* === Slide Indicators / Pagination Dots === */}
           <div className="pagination-dots">

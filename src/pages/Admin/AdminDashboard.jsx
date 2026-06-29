@@ -78,6 +78,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     title: '',
     subtitle: '',
     link_url: '/tienda',
+    redirect_url: '',
     order_index: 0
   });
   const [bannerImagePc, setBannerImagePc] = useState(null);
@@ -682,6 +683,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
           image_url: publicUrlPc,
           image_url_mobile: publicUrlMobile,
           link_url: bannerData.link_url || '/tienda',
+          redirect_url: bannerData.redirect_url.trim() || '/tienda',
           order_index: bannerData.order_index
         }]);
 
@@ -695,6 +697,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         title: '',
         subtitle: '',
         link_url: '/tienda',
+        redirect_url: '',
         order_index: 0
       });
       setBannerImagePc(null);
@@ -968,7 +971,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
           <div className="admin-section">
               <div className="admin-payments-header-row">
                 <h2 className="admin-section-title">
-                  {paymentsFilter === 'pending' ? 'Pagos al Contado Pendientes' : 'Historial de Pagos al Contado'}
+                  {paymentsFilter === 'pending' ? 'Pedidos al Contado Pendientes' : 'Historial de Pedidos al Contado'}
                 </h2>
                 
                 <div className="payments-subtabs">
@@ -984,7 +987,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                     className={`subtab-btn ${paymentsFilter === 'history' ? 'active' : ''}`}
                     onClick={() => setPaymentsFilter('history')}
                   >
-                    Historial de Pagos
+                    Historial de Pedidos
                   </button>
                 </div>
               </div>
@@ -1006,21 +1009,21 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
               {isLoadingPayments ? (
                 <div className="admin-loading-state">
                   <Loader2 size={32} className="spin" />
-                  <p>{paymentsFilter === 'pending' ? 'Cargando pagos pendientes...' : 'Cargando historial de pagos...'}</p>
+                  <p>{paymentsFilter === 'pending' ? 'Cargando pedidos al contado pendientes...' : 'Cargando historial de pedidos al contado...'}</p>
                 </div>
               ) : pendingPayments.length === 0 ? (
                 <div className="admin-empty-state">
                   <CheckCircle size={48} className="empty-icon text-green" />
                   <p>
                     {paymentsFilter === 'pending' 
-                      ? '¡Todo al día! No hay pagos pendientes por verificar.' 
-                      : 'No hay registros en el historial de pagos.'}
+                      ? '¡Todo al día! No hay pedidos al contado pendientes por verificar.' 
+                      : 'No hay registros en el historial de pedidos al contado.'}
                   </p>
                 </div>
               ) : filteredPayments.length === 0 ? (
                 <div className="admin-empty-state">
                   <Search size={48} className="empty-icon text-slate-400" style={{ color: '#64748b' }} />
-                  <p>No se encontraron pagos que coincidan con la búsqueda.</p>
+                  <p>No se encontraron pedidos que coincidan con la búsqueda.</p>
                 </div>
               ) : (
                 <div className="payments-grid">
@@ -1418,6 +1421,17 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 />
               </div>
 
+              <div className="form-group">
+                <label>Enlace de redirección (URL)</label>
+                <input
+                  type="text"
+                  name="redirect_url"
+                  value={bannerData.redirect_url}
+                  onChange={handleBannerInputChange}
+                  placeholder="Ej: /tienda, https://google.com, o enlace de producto (dejar vacío para /tienda)"
+                />
+              </div>
+
 
 
               <div className="form-group">
@@ -1509,7 +1523,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                         <h4 style={{ fontWeight: '600', fontSize: '1rem', color: 'var(--text-primary, #f8fafc)' }}>{banner.title}</h4>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)', margin: '0.25rem 0' }}>{banner.subtitle}</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
-                          <span>Enlace: {banner.link_url}</span>
+                          <span>Enlace: {banner.redirect_url || banner.link_url || '/tienda'}</span>
                           <span>Orden: {banner.order_index}</span>
                         </div>
                       </div>
