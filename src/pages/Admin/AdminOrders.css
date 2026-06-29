@@ -866,6 +866,53 @@
   }
 }
 
+/* ================================================================
+   HISTORY INTERNAL FILTERS
+   ================================================================ */
+.admin-toolbar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-toolbar-container .admin-toolbar {
+  margin-bottom: 0;
+}
+
+.history-subfilter-bar {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.35rem;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.subfilter-pill {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.45rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subfilter-pill:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.subfilter-pill.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #34d399; /* Emerald accent */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 
 
 

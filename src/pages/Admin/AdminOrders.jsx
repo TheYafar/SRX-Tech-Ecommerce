@@ -10,7 +10,8 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [ordersTab, setOrdersTab] = useState('active'); // 'active' | 'history'
+  const [ordersTab, setOrdersTab] = useState('requests'); // 'requests' | 'active' | 'history'
+  const [historySubFilter, setHistorySubFilter] = useState('all'); // 'all' | 'delivered' | 'cancelled'
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [paymentDetail, setPaymentDetail] = useState(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
@@ -378,8 +379,10 @@ export default function AdminOrders() {
     return config;
   };
 
-  // Calculate active orders count for badge
-  const activeOrdersCount = orders.filter(o => !['paid', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].includes(o.status)).length;
+  // Calculate orders counts for badges
+  const requestsCount = orders.filter(o => ['pending_payment', 'pending'].includes(o.status)).length;
+  const activeCount = orders.filter(o => ['processing', 'paid', 'shipped', 'ready'].includes(o.status)).length;
+  const historyCount = orders.filter(o => ['delivered', 'cancelled'].includes(o.status)).length;
 
   // ── Filtrado por búsqueda, pestaña y estado ──
   const filteredOrders = orders.filter(order => {
@@ -391,16 +394,30 @@ export default function AdminOrders() {
       getCustomerName(order).toLowerCase().includes(searchTerm.toLowerCase()) ||
       firstItemName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // active: pending_payment, pending
-    // history: paid, processing, ready, shipped, delivered, cancelled
-    const isHistoryStatus = ['paid', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].includes(order.status);
-    const matchesTab = ordersTab === 'history' ? isHistoryStatus : !isHistoryStatus;
+    let matchesTab = false;
+    if (ordersTab === 'requests') {
+      matchesTab = ['pending_payment', 'pending'].includes(order.status);
+    } else if (ordersTab === 'active') {
+      matchesTab = ['processing', 'paid', 'shipped', 'ready'].includes(order.status);
+    } else if (ordersTab === 'history') {
+      matchesTab = ['delivered', 'cancelled'].includes(order.status);
+    }
+
+    // Filtrado interno para el historial
+    let matchesHistorySubFilter = true;
+    if (ordersTab === 'history') {
+      if (historySubFilter === 'delivered') {
+        matchesHistorySubFilter = order.status === 'delivered';
+      } else if (historySubFilter === 'cancelled') {
+        matchesHistorySubFilter = order.status === 'cancelled';
+      }
+    }
 
     const matchesStatus = statusFilter === 'all' || 
       (statusConfig[order.status]?.className === statusFilter) ||
       order.status === statusFilter;
 
-    return matchesSearch && matchesTab && matchesStatus;
+    return matchesSearch && matchesTab && matchesHistorySubFilter && matchesStatus;
   });
 
   return (
@@ -414,41 +431,76 @@ export default function AdminOrders() {
         <div className="orders-subtabs">
           <button
             type="button"
+            className={`subtab-btn ${ordersTab === 'requests' ? 'active' : ''}`}
+            onClick={() => setOrdersTab('requests')}
+          >
+            Solicitudes de Encargo ({requestsCount})
+          </button>
+          <button
+            type="button"
             className={`subtab-btn ${ordersTab === 'active' ? 'active' : ''}`}
             onClick={() => setOrdersTab('active')}
           >
-            Encargos Activos ({activeOrdersCount})
+            Encargos Activos ({activeCount})
           </button>
           <button
             type="button"
             className={`subtab-btn ${ordersTab === 'history' ? 'active' : ''}`}
             onClick={() => setOrdersTab('history')}
           >
-            Historial de Encargos
+            Historial ({historyCount})
           </button>
         </div>
       </div>
 
-      <div className="admin-toolbar">
-        <div className="admin-search-box">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por ID o cliente..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="admin-toolbar-container">
+        <div className="admin-toolbar">
+          <div className="admin-search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Buscar por ID o cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="admin-filters">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">Todos los estados</option>
+              <option value="pending">Pendientes</option>
+              <option value="approved">Aprobados</option>
+              <option value="shipped">Enviados</option>
+              <option value="delivered">Entregados</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+          </div>
         </div>
-        <div className="admin-filters">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">Todos los estados</option>
-            <option value="pending">Pendientes</option>
-            <option value="approved">Aprobados</option>
-            <option value="shipped">Enviados</option>
-            <option value="delivered">Entregados</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
-        </div>
+
+        {ordersTab === 'history' && (
+          <div className="history-subfilter-bar">
+            <button
+              type="button"
+              className={`subfilter-pill ${historySubFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setHistorySubFilter('all')}
+            >
+              Todos los Finalizados
+            </button>
+            <button
+              type="button"
+              className={`subfilter-pill ${historySubFilter === 'delivered' ? 'active' : ''}`}
+              onClick={() => setHistorySubFilter('delivered')}
+            >
+              Entregados
+            </button>
+            <button
+              type="button"
+              className={`subfilter-pill ${historySubFilter === 'cancelled' ? 'active' : ''}`}
+              onClick={() => setHistorySubFilter('cancelled')}
+            >
+              Rechazados
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="admin-orders-container">
@@ -507,8 +559,8 @@ export default function AdminOrders() {
                       <Eye size={16} /> Detalles
                     </button>
 
-                    {isEncargo ? (
-                      (order.status === 'pending_payment' || order.status === 'pending') && (
+                    {ordersTab === 'requests' && (
+                      isEncargo ? (
                         <>
                           <button className="btn-action approve-encargo" title="Aprobar Encargo" onClick={() => handleApproveEncargo(order.id)}>
                             <CheckCircle size={16} /> Aprobar Encargo
@@ -517,42 +569,27 @@ export default function AdminOrders() {
                             <XCircle size={16} /> Rechazar Encargo
                           </button>
                         </>
-                      )
-                    ) : (
-                      <>
-                        {(order.status === 'pending_payment' || order.status === 'pending') && (
-                          <>
-                            {order.payments?.[0] ? (
-                              <button className="btn-action verify" title="Verificar Pago" onClick={() => handleVerifyPaymentRedirect(order)}>
-                                <Search size={16} /> Verificar Pago
-                              </button>
-                            ) : (
-                              <button className="btn-action approve" title="Aprobar Pago" onClick={() => handleApproveOrder(order.id)}>
-                                <CheckCircle size={16} /> Aprobar Pago
-                              </button>
-                            )}
-                            <button className="btn-action reject" title="Rechazar Encargo" onClick={() => handleRejectOrder(order.id)}>
-                              <XCircle size={16} /> Rechazar
+                      ) : (
+                        <>
+                          {order.payments?.[0] ? (
+                            <button className="btn-action verify" title="Verificar Pago" onClick={() => handleVerifyPaymentRedirect(order)}>
+                              <Search size={16} /> Verificar Pago
                             </button>
-                          </>
-                        )}
-                        {order.status === 'paid' && (
-                          <button className="btn-action deliver" title="Entregar Encargo" onClick={() => handleMarkDelivered(order.id)}>
-                            <CheckCircle size={16} /> Entregar
+                          ) : (
+                            <button className="btn-action approve" title="Aprobar Pago" onClick={() => handleApproveOrder(order.id)}>
+                              <CheckCircle size={16} /> Aprobar Pago
+                            </button>
+                          )}
+                          <button className="btn-action reject" title="Rechazar Encargo" onClick={() => handleRejectOrder(order.id)}>
+                            <XCircle size={16} /> Rechazar
                           </button>
-                        )}
-                      </>
+                        </>
+                      )
                     )}
-                    {/* Botón común para entregar pedidos listos */}
-                    {order.status === 'ready' && (
+
+                    {ordersTab === 'active' && (
                       <button className="btn-action deliver" title="Entregar Encargo" onClick={() => handleMarkDelivered(order.id)}>
-                        <CheckCircle size={16} /> Entregar
-                      </button>
-                    )}
-                    {/* Botón para encargos en proceso */}
-                    {isEncargo && order.status === 'processing' && (
-                      <button className="btn-action deliver" title="Entregar Encargo" onClick={() => handleMarkDelivered(order.id)}>
-                        <CheckCircle size={16} /> Entregar
+                        <CheckCircle size={16} /> Entregado
                       </button>
                     )}
                   </div>
@@ -711,8 +748,8 @@ export default function AdminOrders() {
 
               <div className="order-modal-footer">
                 <div className="footer-actions-left">
-                  {isEncargo ? (
-                    (order.status === 'pending_payment' || order.status === 'pending') && (
+                  {ordersTab === 'requests' && (
+                    isEncargo ? (
                       <>
                         <button className="btn-action approve-encargo" onClick={() => { handleApproveEncargo(order.id); setSelectedOrder(null); }}>
                           Aprobar Encargo
@@ -721,9 +758,7 @@ export default function AdminOrders() {
                           Rechazar Encargo
                         </button>
                       </>
-                    )
-                  ) : (
-                    (order.status === 'pending_payment' || order.status === 'pending') && (
+                    ) : (
                       <>
                         {payment ? (
                           <button className="btn-action verify" onClick={() => handleVerifyPaymentRedirect(order)}>
@@ -740,19 +775,9 @@ export default function AdminOrders() {
                       </>
                     )
                   )}
-                  {order.status === 'paid' && (
+                  {ordersTab === 'active' && (
                     <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
-                      Entregar Encargo
-                    </button>
-                  )}
-                  {isEncargo && order.status === 'processing' && (
-                    <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
-                      Entregar Encargo
-                    </button>
-                  )}
-                  {order.status === 'ready' && (
-                    <button className="btn-action deliver" onClick={() => { handleMarkDelivered(order.id); setSelectedOrder(null); }}>
-                      Entregar Encargo
+                      Entregar Pedido
                     </button>
                   )}
                 </div>

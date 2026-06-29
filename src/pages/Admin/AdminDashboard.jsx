@@ -1062,6 +1062,30 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                             )}
                           </div>
 
+                          {/* LISTA DE PRODUCTOS COMPRADOS */}
+                          {order?.order_items && order.order_items.length > 0 && (
+                            <div className="payment-products-list">
+                              <h4 className="payment-products-title">Productos en Pedido:</h4>
+                              {order.order_items.map(item => {
+                                const product = item.products;
+                                const mainImage = product?.images_urls?.[0] || 'https://via.placeholder.com/80';
+                                return (
+                                  <div key={item.id} className="payment-product-item">
+                                    <img src={mainImage} alt={product?.name} className="payment-product-img" />
+                                    <div className="payment-product-details">
+                                      <p className="payment-product-name" title={product?.name}>
+                                        {product?.name || 'Producto Desconocido'}
+                                      </p>
+                                      <span className="payment-product-qty-price">
+                                        Cant: {item.quantity} × ${Number(item.price_at_purchase_usd || product?.price_usd || 0).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
                           <div className="payment-proof">
                             {payment.proof_image_url ? (
                               <div className="proof-image-container">
