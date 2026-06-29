@@ -23,8 +23,8 @@
   right: auto;
 
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.5rem;
   width: 95vw;
   max-width: 1200px;
 
@@ -102,7 +102,8 @@
   border: none;
   cursor: pointer;
   transition: all 0.25s ease;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
   display: block;
 }
 
