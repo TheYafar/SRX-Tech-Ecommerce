@@ -18,15 +18,15 @@
   pointer-events: all;
   position: absolute;
   top: calc(var(--nav-height, 64px) + 4px);
-  right: 40px;
-  left: auto;
-  transform: none;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
 
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 28px;
-  min-width: 600px;
-  max-width: min(900px, 90vw);
+  width: 95vw;
+  max-width: 1200px;
 
   /* Estética glassmorphism dark */
   background: rgba(15, 23, 42, 0.97);
@@ -46,11 +46,11 @@
 @keyframes megaMenuIn {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.97);
+    transform: translateX(-50%) translateY(-10px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
