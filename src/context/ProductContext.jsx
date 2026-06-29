@@ -15,6 +15,7 @@ export const useProducts = () => {
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProductId, setSelectedProductId] = useState(null);
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
@@ -59,7 +60,7 @@ export const ProductProvider = ({ children }) => {
   };
 
   return (
-    <ProductContext.Provider value={{ products, isLoading, fetchProducts, addProductToState, setProducts }}>
+    <ProductContext.Provider value={{ products, isLoading, fetchProducts, addProductToState, setProducts, selectedProductId, setSelectedProductId }}>
       {children}
     </ProductContext.Provider>
   );

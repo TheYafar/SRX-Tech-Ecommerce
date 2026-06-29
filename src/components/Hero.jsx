@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { products } from '../data/products';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
+import { useProducts } from '../context/ProductContext';
 import './Hero.css';
 
 export default function Hero() {
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { products, setSelectedProductId } = useProducts();
 
   // Fetch banners on mount
   useEffect(() => {
@@ -54,7 +55,8 @@ export default function Hero() {
   const isExternal = targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('//');
 
   // Dynamic product mapping to fix the data rendering inconsistency
-  const currentProduct = products?.find(p => p.id === slide.productId) || {
+  const bannerProductId = slide?.product_id || slide?.productId;
+  const currentProduct = products?.find(p => p.id === bannerProductId) || {
     price: 0,
     salePrice: 0,
     rating: slide.rating || 5.0,
@@ -123,7 +125,28 @@ export default function Hero() {
         {/* === Bottom Controls Container === */}
         <div className="bottom-controls-container">
           {/* === Bottom Tagline Pill === */}
-          {isExternal ? (
+          {slide?.product_id ? (
+            <button
+              onClick={() => setSelectedProductId(slide.product_id)}
+              style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'none', pointerEvents: 'auto', cursor: 'pointer', display: 'block' }}
+            >
+              <motion.div
+                className="cta-button-pill"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 120, damping: 18 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <span>{slide.subtitle}</span>
+                <motion.div
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 1.6, repeat: Infinity }}
+                >
+                  <ArrowRight size={16} />
+                </motion.div>
+              </motion.div>
+            </button>
+          ) : isExternal ? (
             <a
               href={targetUrl}
               target="_blank"

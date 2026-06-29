@@ -79,6 +79,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     subtitle: '',
     link_url: '/tienda',
     redirect_url: '',
+    product_id: '',
     order_index: 0
   });
   const [bannerImagePc, setBannerImagePc] = useState(null);
@@ -86,6 +87,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const [isSubmittingBanner, setIsSubmittingBanner] = useState(false);
   const [existingBanners, setExistingBanners] = useState([]);
   const [isLoadingBanners, setIsLoadingBanners] = useState(false);
+  const [productsList, setProductsList] = useState([]);
 
 
 
@@ -198,11 +200,25 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     }
   }, [showError]);
 
+  const fetchProductsForBanners = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setProductsList(data || []);
+    } catch (err) {
+      console.error('Error al cargar productos para el select de banners:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'banners') {
       fetchBanners();
+      fetchProductsForBanners();
     }
-  }, [activeTab, fetchBanners]);
+  }, [activeTab, fetchBanners, fetchProductsForBanners]);
 
   // ── Product handlers ────────────────────────────────────
   const handleProductInputChange = (e) => {
@@ -684,6 +700,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
           image_url_mobile: publicUrlMobile,
           link_url: bannerData.link_url || '/tienda',
           redirect_url: bannerData.redirect_url.trim() || '/tienda',
+          product_id: bannerData.product_id || null,
           order_index: bannerData.order_index
         }]);
 
@@ -698,6 +715,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         subtitle: '',
         link_url: '/tienda',
         redirect_url: '',
+        product_id: '',
         order_index: 0
       });
       setBannerImagePc(null);
@@ -1432,6 +1450,25 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 />
               </div>
 
+              <div className="form-group">
+                <label>Vincular a Producto (Opcional)</label>
+                <select
+                  name="product_id"
+                  value={bannerData.product_id || ''}
+                  onChange={handleBannerInputChange}
+                >
+                  <option value="">-- No vincular a ningún producto (Banner General) --</option>
+                  {productsList.map((prod) => (
+                    <option key={prod.id} value={prod.id}>
+                      {prod.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="file-upload-tip" style={{ marginTop: '0.25rem', display: 'block' }}>
+                  Si seleccionas un producto, al hacer clic en el banner se abrirá el modal de detalle del producto automáticamente sin cambiar de página.
+                </span>
+              </div>
+
 
 
               <div className="form-group">
@@ -1523,7 +1560,13 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                         <h4 style={{ fontWeight: '600', fontSize: '1rem', color: 'var(--text-primary, #f8fafc)' }}>{banner.title}</h4>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)', margin: '0.25rem 0' }}>{banner.subtitle}</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
-                          <span>Enlace: {banner.redirect_url || banner.link_url || '/tienda'}</span>
+                          <span>
+                            {banner.product_id ? (
+                              `Vínculo a Producto: ${productsList.find(p => p.id === banner.product_id)?.name || 'Cargando...'}`
+                            ) : (
+                              `Enlace: ${banner.redirect_url || banner.link_url || '/tienda'}`
+                            )}
+                          </span>
                           <span>Orden: {banner.order_index}</span>
                         </div>
                       </div>

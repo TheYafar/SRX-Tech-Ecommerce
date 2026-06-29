@@ -98,34 +98,36 @@ function DynamicTagInput({ title, placeholder, tags = [], onChange }) {
 function CategoryModal({ onClose, onCreated }) {
   const [categoryName, setCategoryName] = useState('');
   const [slug, setSlug]         = useState('');
-  const [groupType, setGroupType] = useState('por-producto');
+  const [groupType, setGroupType] = useState('');
+  const [groupingTypes, setGroupingTypes] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError]       = useState('');
 
-  // IDs de las categorías raíz (cargados en el mount)
-  const parentIds = useState({ 'por-producto': null, 'para-tu-equipo': null })[0];
-
-  // ── Precarga de IDs raíz ──────────────────────────────────────────
+  // ── Carga dinámica de Tipos de Agrupación (Categorías Raíz) ────────
   useEffect(() => {
-    const loadParentIds = async () => {
+    const loadGroupingTypes = async () => {
       try {
         const { data, error: fetchError } = await supabase
           .from('categories')
-          .select('id, slug')
-          .in('slug', ['por-producto', 'para-tu-equipo']);
+          .select('id, name')
+          .is('parent_id', null)
+          .order('name', { ascending: true });
 
         if (fetchError) throw fetchError;
 
-        (data || []).forEach((row) => {
-          if (row.slug === 'por-producto')   parentIds['por-producto']   = row.id;
-          if (row.slug === 'para-tu-equipo') parentIds['para-tu-equipo'] = row.id;
-        });
+        const activeTypes = data || [];
+        setGroupingTypes(activeTypes);
+
+        if (activeTypes.length > 0) {
+          // Intentar preseleccionar 'Para tu Equipo' o la primera por defecto
+          const defaultOpt = activeTypes.find(t => t.name.toLowerCase() === 'para tu equipo') || activeTypes[0];
+          setGroupType(defaultOpt.id);
+        }
       } catch (err) {
-        console.warn('[CategoryModal] No se pudieron cargar los IDs raíz:', err);
+        console.warn('[CategoryModal] No se pudieron cargar los tipos de agrupación:', err);
       }
     };
-    loadParentIds();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadGroupingTypes();
   }, []);
 
   const handleNameChange = (e) => {
@@ -142,15 +144,13 @@ function CategoryModal({ onClose, onCreated }) {
     setIsSaving(true);
     setError('');
 
-    const selectedParentId = parentIds[groupType] ?? null;
-
     try {
       const { data, error: insertError } = await supabase
         .from('categories')
         .insert([{
           name:      categoryName.trim(),
           slug,
-          parent_id: selectedParentId,
+          parent_id: groupType || null,
         }])
         .select()
         .single();
@@ -222,8 +222,11 @@ function CategoryModal({ onClose, onCreated }) {
                 value={groupType}
                 onChange={(e) => setGroupType(e.target.value)}
               >
-                <option value="por-producto">Por Producto</option>
-                <option value="para-tu-equipo">Para tu Equipo</option>
+                {groupingTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
