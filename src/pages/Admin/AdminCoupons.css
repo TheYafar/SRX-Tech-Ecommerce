@@ -956,3 +956,39 @@
   color: #334155;
 }
 
+/* ── Textarea de Mensaje Personalizado ── */
+.email-message-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  min-height: 110px;
+}
+
+.email-message-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.email-message-textarea::placeholder {
+  color: #475569;
+  font-style: italic;
+}
+
+/* ── Hint / nota auxiliar debajo de los inputs ── */
+.field-hint {
+  margin: 4px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+

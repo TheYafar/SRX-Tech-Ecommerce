@@ -3,7 +3,8 @@ import { supabase, uploadBannerCoupon } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import {
   Ticket, Percent, Calendar, Loader2, Power, AlertTriangle,
-  Mail, Rocket, Image, UploadCloud, LayoutTemplate, Eye
+  Mail, Rocket, Image, UploadCloud, LayoutTemplate, Eye,
+  MessageSquare, Type
 } from 'lucide-react';
 import './AdminCoupons.css';
 
@@ -120,6 +121,8 @@ export default function AdminCoupons() {
   const [sendEmail, setSendEmail]           = useState(false);
   const [isMassEmail, setIsMassEmail]       = useState(false);
   const [customerEmail, setCustomerEmail]   = useState('');
+  const [emailSubject, setEmailSubject]     = useState('');
+  const [emailMessage, setEmailMessage]     = useState('');
 
   // ── Banner & orden visual ──
   const [bannerFile, setBannerFile]         = useState(null);      // archivo local
@@ -265,6 +268,8 @@ export default function AdminCoupons() {
           expiration: expiresIso,
           banner_url: bannerUrl || null,
           design_order: designOrder,
+          email_subject: emailSubject.trim(),
+          email_message: emailMessage.trim(),
           ...(isMassEmail ? {} : { single_recipient: customerEmail.trim() }),
         };
 
@@ -303,6 +308,8 @@ export default function AdminCoupons() {
       setSendEmail(false);
       setIsMassEmail(false);
       setCustomerEmail('');
+      setEmailSubject('');
+      setEmailMessage('');
       handleRemoveBanner();
       setDesignOrder('banner_arriba');
 
@@ -435,6 +442,8 @@ export default function AdminCoupons() {
                     if (!e.target.checked) {
                       setIsMassEmail(false);
                       setCustomerEmail('');
+                      setEmailSubject('');
+                      setEmailMessage('');
                       handleRemoveBanner();
                       setDesignOrder('banner_arriba');
                     }
@@ -488,6 +497,48 @@ export default function AdminCoupons() {
                     </div>
                   </div>
                 )}
+
+                {/* ────────────────────────────────────────────────────── */}
+                {/* ASUNTO Y MENSAJE PERSONALIZADO */}
+                {/* ────────────────────────────────────────────────────── */}
+                <div className="form-group email-input-group">
+                  <label htmlFor="email-subject">
+                    <Type size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                    Asunto del Correo
+                  </label>
+                  <div className="input-icon-wrapper">
+                    <Type className="input-icon" size={18} />
+                    <input
+                      id="email-subject"
+                      type="text"
+                      placeholder="Ej: 🎁 ¡Cupón exclusivo para ti, {nombre}!"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="coupon-text-input"
+                    />
+                  </div>
+                  <p className="field-hint">
+                    Si lo dejas vacío se usará el asunto corporativo por defecto.
+                  </p>
+                </div>
+
+                <div className="form-group email-input-group">
+                  <label htmlFor="email-message">
+                    <MessageSquare size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                    Mensaje Personalizado
+                  </label>
+                  <textarea
+                    id="email-message"
+                    rows={5}
+                    placeholder={`Ej: Hola,\n\nComo agradecimiento por tu fidelidad, te regalamos este cupón exclusivo para tu próxima compra en SRX Tech.\n\n¡Esperamos verte pronto!`}
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    className="email-message-textarea"
+                  />
+                  <p className="field-hint">
+                    Los saltos de línea se respetarán en el correo. Si lo dejas vacío se usará el texto corporativo por defecto.
+                  </p>
+                </div>
 
                 {/* ────────────────────────────────────────────────────── */}
                 {/* CARGA DE BANNER */}

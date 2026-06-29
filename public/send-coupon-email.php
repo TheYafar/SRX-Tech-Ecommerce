@@ -46,6 +46,18 @@ $bannerUrl    = isset($data['banner_url'])       ? trim($data['banner_url'])    
 $singleRcpt   = isset($data['single_recipient']) ? trim($data['single_recipient'])  : '';
 $designOrder  = isset($data['design_order'])     ? trim($data['design_order'])      : 'banner_arriba';
 
+// Asunto y mensaje personalizados (con fallback corporativo)
+$emailSubjectRaw = isset($data['email_subject']) ? trim($data['email_subject']) : '';
+$emailMessageRaw = isset($data['email_message']) ? trim($data['email_message']) : '';
+
+$email_subject = !empty($emailSubjectRaw)
+    ? $emailSubjectRaw
+    : "\xF0\x9F\x8E\x81 " . $discount . "% de descuento — Cupón " . strtoupper(trim($data['code'] ?? '')) . " | SRX Tech";
+
+$email_message_html = !empty($emailMessageRaw)
+    ? nl2br(htmlspecialchars($emailMessageRaw, ENT_QUOTES, 'UTF-8'))
+    : 'Preparamos este cupón exclusivo para tu próxima compra en<br><strong style="color:#60a5fa;">SRX Tech</strong>.';
+
 // Normalizar: solo valores permitidos
 if (!in_array($designOrder, ['banner_arriba', 'cupon_arriba'], true)) {
     $designOrder = 'banner_arriba';
@@ -221,7 +233,7 @@ $couponBlock = '
             </td>
           </tr>
 
-          <!-- ░░ HEADLINE ░░ -->
+          <!-- ░░ HEADLINE Y MENSAJE PERSONALIZADO ░░ -->
           <tr>
             <td align="center" style="padding:28px 40px 8px 40px;">
               <h1 style="margin:0 0 10px 0;font-size:32px;font-weight:800;color:#ffffff;
@@ -229,8 +241,7 @@ $couponBlock = '
                 🎁 ¡Tenemos un regalo para ti!
               </h1>
               <p style="margin:0;color:#94a3b8;font-size:15px;line-height:1.75;">
-                Preparamos este cupón exclusivo para tu próxima compra en<br>
-                <strong style="color:#60a5fa;">SRX Tech</strong>.
+                ' . $email_message_html . '
               </p>
             </td>
           </tr>
@@ -419,7 +430,7 @@ foreach ($recipients as $recipientEmail) {
     $emailPayload = json_encode([
         "from"    => "SRX Tech | Ofertas Exclusivas <info@srxtech.net>",
         "to"      => [$recipientEmail],
-        "subject" => "\xF0\x9F\x8E\x81 " . $discount . "% de descuento — Cupón " . $couponCode . " | SRX Tech",
+        "subject" => $email_subject,
         "html"    => $htmlContent
     ], JSON_UNESCAPED_UNICODE);
 
