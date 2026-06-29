@@ -529,6 +529,17 @@
   letter-spacing: 0.05em;
 }
 
+.badge-contado-inline {
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .btn-modal-close {
   background: transparent;
   border: none;

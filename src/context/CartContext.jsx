@@ -95,9 +95,17 @@ export const CartProvider = ({ children }) => {
     const mapped = dbCartItems.map(dbItem => {
       const product = availableProducts.find(p => p.id === dbItem.product_id);
       if (product) {
+        const stock = product.stock !== undefined && product.stock !== null ? product.stock : 0;
+        let qty = dbItem.quantity;
+        if (stock > 0 && qty > stock) {
+          qty = stock;
+        }
+        if (qty < 1) {
+          qty = 1;
+        }
         return {
           ...product,
-          quantity: dbItem.quantity
+          quantity: qty
         };
       }
       return null;
@@ -122,15 +130,31 @@ export const CartProvider = ({ children }) => {
   const addToCart = useCallback(async (product, qty = 1) => {
     const quantityToAdd = product.quantity || qty;
 
+    // Get latest stock from availableProducts or fallback to product.stock
+    const latestProduct = availableProducts.find(p => p.id === product.id) || product;
+    const stock = latestProduct.stock !== undefined && latestProduct.stock !== null ? latestProduct.stock : 0;
+
     // 1. Snappy UI: update local state immediately
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
+      let newQty = quantityToAdd;
+      if (existingItem) {
+        newQty = existingItem.quantity + quantityToAdd;
+      }
+
+      if (stock > 0 && newQty > stock) {
+        newQty = stock;
+      }
+      if (newQty < 1) {
+        newQty = 1;
+      }
+
       if (existingItem) {
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
+          item.id === product.id ? { ...item, quantity: newQty } : item
         );
       }
-      return [...prevItems, { ...product, quantity: quantityToAdd }];
+      return [...prevItems, { ...product, quantity: newQty }];
     });
 
     setIsCartOpen(true);
@@ -141,12 +165,24 @@ export const CartProvider = ({ children }) => {
       // Optimistically update dbCartItems state
       setDbCartItems((prevDbItems) => {
         const existing = prevDbItems.find(item => item.product_id === product.id);
+        let newQty = quantityToAdd;
+        if (existing) {
+          newQty = existing.quantity + quantityToAdd;
+        }
+
+        if (stock > 0 && newQty > stock) {
+          newQty = stock;
+        }
+        if (newQty < 1) {
+          newQty = 1;
+        }
+
         if (existing) {
           return prevDbItems.map(item =>
-            item.product_id === product.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
+            item.product_id === product.id ? { ...item, quantity: newQty } : item
           );
         }
-        return [...prevDbItems, { product_id: product.id, quantity: quantityToAdd }];
+        return [...prevDbItems, { product_id: product.id, quantity: newQty }];
       });
 
       try {
@@ -162,11 +198,22 @@ export const CartProvider = ({ children }) => {
           return;
         }
 
+        let dbQty = quantityToAdd;
         if (data) {
-          const newQty = data.quantity + quantityToAdd;
+          dbQty = data.quantity + quantityToAdd;
+        }
+
+        if (stock > 0 && dbQty > stock) {
+          dbQty = stock;
+        }
+        if (dbQty < 1) {
+          dbQty = 1;
+        }
+
+        if (data) {
           const { error: updateError } = await supabase
             .from('cart_items')
-            .update({ quantity: newQty })
+            .update({ quantity: dbQty })
             .eq('user_id', user.id)
             .eq('product_id', product.id);
           if (updateError) console.error('Error updating cart quantity in DB:', updateError);
@@ -176,7 +223,7 @@ export const CartProvider = ({ children }) => {
             .insert({
               user_id: user.id,
               product_id: product.id,
-              quantity: quantityToAdd
+              quantity: dbQty
             });
           if (insertError) console.error('Error inserting cart item in DB:', insertError);
         }
@@ -184,7 +231,7 @@ export const CartProvider = ({ children }) => {
         console.error('Unexpected error during database sync inside addToCart:', err);
       }
     }
-  }, [user, showSuccess]);
+  }, [user, showSuccess, availableProducts]);
 
   const removeFromCart = useCallback(async (productId) => {
     // 1. Snappy UI: update local state immediately
@@ -209,7 +256,19 @@ export const CartProvider = ({ children }) => {
   }, [user]);
 
   const updateQuantity = useCallback(async (productId, quantity) => {
-    if (quantity <= 0) {
+    // Find the product to get its stock
+    const product = availableProducts.find(p => p.id === productId);
+    let stock = 0;
+    if (product) {
+      stock = product.stock !== undefined && product.stock !== null ? product.stock : 0;
+    }
+
+    let targetQuantity = quantity;
+    if (stock > 0 && targetQuantity > stock) {
+      targetQuantity = stock;
+    }
+
+    if (targetQuantity <= 0) {
       removeFromCart(productId);
       return;
     }
@@ -217,7 +276,7 @@ export const CartProvider = ({ children }) => {
     // 1. Snappy UI: update local state immediately
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
+        item.id === productId ? { ...item, quantity: targetQuantity } : item
       )
     );
 
@@ -226,14 +285,14 @@ export const CartProvider = ({ children }) => {
       // Optimistically update dbCartItems
       setDbCartItems((prevDbItems) =>
         prevDbItems.map(item =>
-          item.product_id === productId ? { ...item, quantity } : item
+          item.product_id === productId ? { ...item, quantity: targetQuantity } : item
         )
       );
 
       try {
         const { error } = await supabase
           .from('cart_items')
-          .update({ quantity })
+          .update({ quantity: targetQuantity })
           .eq('user_id', user.id)
           .eq('product_id', productId);
         if (error) console.error('Error updating cart quantity in DB:', error);
@@ -241,7 +300,7 @@ export const CartProvider = ({ children }) => {
         console.error('Unexpected error updating cart quantity in DB:', err);
       }
     }
-  }, [user, removeFromCart]);
+  }, [user, removeFromCart, availableProducts]);
 
   const clearCart = useCallback(async () => {
     // 1. Snappy UI: update local state immediately

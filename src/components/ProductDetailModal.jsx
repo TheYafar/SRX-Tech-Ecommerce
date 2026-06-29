@@ -58,7 +58,7 @@ function SpecTabs({ compatibleDevices = [], useScenarios = [] }) {
 
 // ── Componente Principal ────────────────────────────────────────────────────
 export default function ProductDetailModal({ product, isOpen, onClose, onMouseEnter, onMouseLeave }) {
-  const { addToCart } = useCart();
+  const { addToCart, setIsCartOpen } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const { showSuccess, showError } = useNotifications();
@@ -136,6 +136,8 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
 
   if (!product) return null;
 
+  const isOutOfStock = product.stock === null || product.stock === undefined || product.stock <= 0;
+
   const priceUSD = Number(product.price_usd || product.price || 0);
   const compareAtPriceUSD = Number(product.compare_at_price_usd || product.compareAtPrice || 0);
   
@@ -166,8 +168,20 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
       setIsAdding(false);
       onClose();
       // Auto-open cart
-      const cartEvent = new CustomEvent('open-cart');
-      window.dispatchEvent(cartEvent);
+      setIsCartOpen(true);
+    }, 1000);
+  };
+
+  const handleHacerEncargo = () => {
+    setIsAdding(true);
+    const productWithQuantity = { ...product, quantity };
+    addToCart(productWithQuantity);
+    
+    setTimeout(() => {
+      setIsAdding(false);
+      onClose();
+      // Auto-open cart for pre-orders
+      setIsCartOpen(true);
     }, 1000);
   };
 
@@ -442,39 +456,61 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 }}
                 >
-                  <motion.button 
-                    className="btn-add-to-cart"
-                    onClick={handleAddToCart}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={isAdding}
-                  >
-                    {isAdding ? (
-                      <span className="loading-spinner-small"></span>
-                    ) : (
-                      <>
-                        <ShoppingCart size={20} />
-                        <span>Añadir al Carrito</span>
-                      </>
-                    )}
-                  </motion.button>
+                  {isOutOfStock ? (
+                    <motion.button 
+                      className="btn-add-to-cart btn-hacer-encargo"
+                      onClick={handleHacerEncargo}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={isAdding}
+                      style={{ width: '100%', gridColumn: 'span 2' }}
+                    >
+                      {isAdding ? (
+                        <span className="loading-spinner-small"></span>
+                      ) : (
+                        <>
+                          <ShoppingCart size={20} />
+                          <span>Hacer Encargo</span>
+                        </>
+                      )}
+                    </motion.button>
+                  ) : (
+                    <>
+                      <motion.button 
+                        className="btn-add-to-cart"
+                        onClick={handleAddToCart}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        disabled={isAdding}
+                      >
+                        {isAdding ? (
+                          <span className="loading-spinner-small"></span>
+                        ) : (
+                          <>
+                            <ShoppingCart size={20} />
+                            <span>Añadir al Carrito</span>
+                          </>
+                        )}
+                      </motion.button>
 
-                  <motion.button 
-                    className="btn-buy-now"
-                    onClick={handleBuyNow}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={isAdding}
-                  >
-                    {isAdding ? (
-                      <span className="loading-spinner-small"></span>
-                    ) : (
-                      <>
-                        <span>Comprar Ahora</span>
-                        <ChevronRight size={18} />
-                      </>
-                    )}
-                  </motion.button>
+                      <motion.button 
+                        className="btn-buy-now"
+                        onClick={handleBuyNow}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        disabled={isAdding}
+                      >
+                        {isAdding ? (
+                          <span className="loading-spinner-small"></span>
+                        ) : (
+                          <>
+                            <span>Comprar al contado</span>
+                            <ChevronRight size={18} />
+                          </>
+                        )}
+                      </motion.button>
+                    </>
+                  )}
                 </motion.div>
 
                 {/* Trust Badges */}

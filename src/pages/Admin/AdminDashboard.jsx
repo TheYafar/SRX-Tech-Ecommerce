@@ -156,16 +156,11 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Filtrar para mostrar solo pagos que NO sean por encargo
+      // Filtrar para mostrar solo pagos que sean 'contado'
       const normalPayments = (data || []).filter(payment => {
         const order = payment.orders;
-        if (!order) return true;
-        const hasOutOfStockItem = order.order_items?.some(item => {
-          const stock = item.products?.stock;
-          return stock === null || stock === undefined || stock <= 0;
-        });
-        const isEncargo = order.status === 'pending' || hasOutOfStockItem;
-        return !isEncargo;
+        if (!order) return false;
+        return order.order_type === 'contado';
       });
 
       setPendingPayments(normalPayments);

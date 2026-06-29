@@ -206,39 +206,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
         }
       }
 
-      // Paso 2: Insertar en orders con payload condicional
-      const orderPayload = {
-        user_id: user ? user.id : null,
-        total_amount_usd: finalTotal,
-        status: paypalDetails ? 'paid' : 'pending_payment',
-        user_name: formData.name.trim() || (user ? (user.name || user.user_metadata?.full_name) : ''),
-        user_email: (user ? user.email : formData.email) || formData.email || '',
-        user_phone: formData.phone.trim()
-      };
-
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert([orderPayload])
-        .select()
-        .single();
-
-      if (orderError) throw new Error(`Fallo al crear la orden: ${orderError.message}`);
-      
-      const newOrderId = orderData.id;
-
-      // Actualizar status de la orden correspondiente a 'paid' si es PayPal (acción consecutiva requerida)
-      if (paypalDetails) {
-        const { error: updateOrderError } = await supabase
-          .from('orders')
-          .update({ status: 'paid' })
-          .eq('id', newOrderId);
-        
-        if (updateOrderError) throw new Error(`Fallo al actualizar el estado de la orden a pagada: ${updateOrderError.message}`);
-      }
-
-      // Paso 3: Insertar en order_items
-      // Reutilizamos filteredCartItems (ya calculado en el scope del componente) para
-      // evitar que una re-ejecución del filtro UUID falle y arroje "carrito vacío".
+      // Paso 1.5: Calcular items del carrito válidos
       const cleanItems = filteredCartItems.length > 0
         ? filteredCartItems
         : (cartItems || []).reduce((acc, item) => {
@@ -255,55 +223,202 @@ export default function CheckoutModal({ isOpen, onClose }) {
         throw new Error('El carrito no contiene productos válidos.');
       }
 
-      const orderItemsToInsert = cleanItems.map(item => {
-        return {
-          order_id: newOrderId,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          price_at_purchase_usd: item.salePrice || item.price
-        };
-      });
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItemsToInsert);
-
-      if (itemsError) throw new Error(`Fallo al insertar los productos de la orden: ${itemsError.message}`);
-
-      // Paso 4: Insertar en payments
-      let defaultPaymentMethodId = null;
+      // Paso 1.6: Obtener el stock real en Supabase para clasificar los productos
+      let dbProducts = null;
       try {
-        const { data: pmData } = await supabase
-          .from('payment_methods')
-          .select('id')
-          .eq('name', paymentMethod)
-          .maybeSingle();
-        if (pmData) defaultPaymentMethodId = pmData.id;
-      } catch (e) {
-        console.warn('Could not retrieve payment_method_id:', e);
+        const productIds = cleanItems.map(item => item.product_id);
+        const { data, error: dbProductsError } = await supabase
+          .from('products')
+          .select('id, stock')
+          .in('id', productIds);
+
+        if (dbProductsError) throw dbProductsError;
+        dbProducts = data;
+      } catch (stockErr) {
+        console.error('Error al determinar el tipo de pedido basado en el stock de Supabase:', stockErr);
       }
 
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert([{
-          order_id: newOrderId,
-          payment_method_id: defaultPaymentMethodId,
-          amount_paid: finalTotal,
-          currency: 'USD',
-          reference_number: paypalDetails ? paypalDetails.id : (formData.referenceNumber || 'N/A'),
-          proof_image_url: uploadedReceiptUrl,
-          status: paypalDetails ? 'completed' : 'pending_verification'
-        }]);
+      // Evaluar el Carrito: Clasificar los productos en contado y encargo
+      const itemsContado = [];
+      const itemsEncargo = [];
 
-      if (paymentError) throw new Error(`Fallo al registrar el pago: ${paymentError.message}`);
+      cleanItems.forEach(item => {
+        const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
+        const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null)
+          ? matchedDbProduct.stock
+          : (item.stock !== undefined && item.stock !== null ? item.stock : 0);
+
+        if (stockValue >= 1) {
+          itemsContado.push(item);
+        } else {
+          itemsEncargo.push(item);
+        }
+      });
+
+      // Validación de Cantidad Máxima al Contado
+      if (itemsContado.length > 0) {
+        const exceedsStock = itemsContado.some(item => {
+          const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
+          const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null) ? matchedDbProduct.stock : item.stock;
+          return item.quantity > stockValue;
+        });
+
+        if (exceedsStock) {
+          const errorMsg = "No se puede pedir más de este producto, solo queda 1 unidad disponible. Si quiere pedir otra, compre 1 y pida las demás por encargo.";
+          showError(errorMsg);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Función interna auxiliar para procesar e insertar cada orden de forma independiente
+      const createSingleOrder = async (items, orderType, totalAmount) => {
+        const orderPayload = {
+          user_id: user ? user.id : null,
+          total_amount_usd: totalAmount,
+          status: paypalDetails ? 'paid' : 'pending_payment',
+          user_name: formData.name.trim() || (user ? (user.name || user.user_metadata?.full_name) : ''),
+          user_email: (user ? user.email : formData.email) || formData.email || '',
+          user_phone: formData.phone.trim(),
+          order_type: orderType
+        };
+
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .insert([orderPayload])
+          .select()
+          .single();
+
+        if (orderError) throw new Error(`Fallo al crear la orden (${orderType}): ${orderError.message}`);
+        
+        const newOrderId = orderData.id;
+
+        // Descuento de Inventario si se inició como "contado"
+        if (orderType === 'contado') {
+          try {
+            await Promise.all(
+              items.map(async (item) => {
+                const { data: prodData, error: prodError } = await supabase
+                  .from('products')
+                  .select('stock')
+                  .eq('id', item.product_id)
+                  .single();
+
+                if (!prodError && prodData) {
+                  const currentStock = prodData.stock != null ? prodData.stock : 0;
+                  const newStock = Math.max(0, currentStock - (item.quantity || 1));
+                  await supabase
+                    .from('products')
+                    .update({ stock: newStock })
+                    .eq('id', item.product_id);
+                }
+              })
+            );
+          } catch (stockUpdateErr) {
+            console.error('Error al descontar stock de los productos:', stockUpdateErr);
+          }
+        }
+
+        // Actualizar status de la orden correspondiente a 'paid' si es PayPal (acción consecutiva requerida)
+        if (paypalDetails) {
+          const { error: updateOrderError } = await supabase
+            .from('orders')
+            .update({ status: 'paid' })
+            .eq('id', newOrderId);
+          
+          if (updateOrderError) throw new Error(`Fallo al actualizar el estado de la orden a pagada: ${updateOrderError.message}`);
+        }
+
+        // Paso 3: Insertar en order_items
+        const orderItemsToInsert = items.map(item => {
+          return {
+            order_id: newOrderId,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            price_at_purchase_usd: item.salePrice || item.price
+          };
+        });
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItemsToInsert);
+
+        if (itemsError) throw new Error(`Fallo al insertar los productos de la orden (${orderType}): ${itemsError.message}`);
+
+        // Paso 4: Insertar en payments
+        let defaultPaymentMethodId = null;
+        try {
+          const { data: pmData } = await supabase
+            .from('payment_methods')
+            .select('id')
+            .eq('name', paymentMethod)
+            .maybeSingle();
+          if (pmData) defaultPaymentMethodId = pmData.id;
+        } catch (e) {
+          console.warn('Could not retrieve payment_method_id:', e);
+        }
+
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert([{
+            order_id: newOrderId,
+            payment_method_id: defaultPaymentMethodId,
+            amount_paid: totalAmount,
+            currency: 'USD',
+            reference_number: paypalDetails ? paypalDetails.id : (formData.referenceNumber || 'N/A'),
+            proof_image_url: uploadedReceiptUrl,
+            status: paypalDetails ? 'completed' : 'pending_verification'
+          }]);
+
+        if (paymentError) throw new Error(`Fallo al registrar el pago (${orderType}): ${paymentError.message}`);
+
+        return newOrderId;
+      };
+
+      const createdOrders = [];
+
+      // Procesar itemsContado si existen
+      if (itemsContado.length > 0) {
+        const subtotalContado = itemsContado.reduce((sum, item) => {
+          const price = item.salePrice || item.price || 0;
+          return sum + (price * (item.quantity || 1));
+        }, 0);
+        const discountContado = Number((subtotalContado * (appliedDiscount / 100)).toFixed(2));
+        const totalContado = Math.max(0, Number((subtotalContado - discountContado).toFixed(2)));
+
+        const orderId = await createSingleOrder(itemsContado, 'contado', totalContado);
+        createdOrders.push({ id: orderId, type: 'contado' });
+      }
+
+      // Procesar itemsEncargo si existen
+      if (itemsEncargo.length > 0) {
+        const subtotalEncargo = itemsEncargo.reduce((sum, item) => {
+          const price = item.salePrice || item.price || 0;
+          return sum + (price * (item.quantity || 1));
+        }, 0);
+        const discountEncargo = Number((subtotalEncargo * (appliedDiscount / 100)).toFixed(2));
+        const totalEncargo = Math.max(0, Number((subtotalEncargo - discountEncargo).toFixed(2)));
+
+        const orderId = await createSingleOrder(itemsEncargo, 'encargo', totalEncargo);
+        createdOrders.push({ id: orderId, type: 'encargo' });
+      }
+
+      if (createdOrders.length === 0) {
+        throw new Error('No se pudo registrar ninguna orden.');
+      }
 
       // 5. Guardar datos ANTES de limpiar carrito (para la pantalla de éxito)
       const totalToSave = finalTotal;
-      const refCode = newOrderId.slice(-6).toUpperCase();
+      const refCode = createdOrders.map(o => o.id.slice(-6).toUpperCase()).join(' / #');
       setSavedTotal(totalToSave);
       setOrderRefCode(refCode);
+      showSuccess("¡Pago procesado con éxito! Tu orden ha sido registrada.");
       setIsSuccess(true);
       clearCart();
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 5000);
     } catch (err) {
       console.error('Error in processCheckout:', err);
       showError(`Fallo en el proceso de compra: ${err.message || err}`);
@@ -652,7 +767,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                         <div className="paypal-button-container">
                           <PayPalButtons 
                             style={{ layout: "vertical", shape: "pill" }}
-                            createOrder={(data, actions) => {
+                            createOrder={async (data, actions) => {
                               try {
                                 const cleanItems = (cartItems || []).reduce((acc, item) => {
                                   if (!item) return acc;
@@ -672,6 +787,44 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
                                 if (cleanItems.length === 0) {
                                   throw new Error('El carrito está vacío o no contiene productos válidos.');
+                                }
+
+                                // Obtener el stock real de los productos en Supabase para validar
+                                let dbProducts = null;
+                                try {
+                                  const productIds = cleanItems.map(item => item.product_id);
+                                  const { data: fetchedProducts, error: dbProductsError } = await supabase
+                                    .from('products')
+                                    .select('id, stock')
+                                    .in('id', productIds);
+
+                                  if (!dbProductsError && fetchedProducts) {
+                                    dbProducts = fetchedProducts;
+                                  }
+                                } catch (stockErr) {
+                                  console.error('Error fetching stock in createOrder:', stockErr);
+                                }
+
+                                // Agrupar por stock para aplicar validaciones de stock máximo
+                                const itemsContado = [];
+                                cleanItems.forEach(item => {
+                                  const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
+                                  const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null)
+                                    ? matchedDbProduct.stock
+                                    : (item.stock !== undefined && item.stock !== null ? item.stock : 0);
+                                  if (stockValue >= 1) {
+                                    itemsContado.push(item);
+                                  }
+                                });
+
+                                const exceedsStock = itemsContado.some(item => {
+                                  const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
+                                  const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null) ? matchedDbProduct.stock : item.stock;
+                                  return item.quantity > stockValue;
+                                });
+
+                                if (exceedsStock) {
+                                  throw new Error("No se puede pedir más de este producto, solo queda 1 unidad disponible. Si quiere pedir otra, compre 1 y pida las demás por encargo.");
                                 }
 
                                 const subtotal = cleanItems.reduce((sum, item) => {

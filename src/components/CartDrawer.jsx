@@ -22,6 +22,26 @@ export default function CartDrawer() {
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
+  const handleQuantityChange = (productId, valueStr, stock) => {
+    if (valueStr === '') {
+      updateQuantity(productId, 1);
+      return;
+    }
+    let parsed = parseInt(valueStr, 10);
+    if (isNaN(parsed)) return;
+
+    const maxStock = stock !== undefined && stock !== null ? stock : 0;
+
+    // Si tiene stock (>= 1), aplicamos límite estricto. Si es 0 (encargo), no hay límite máximo.
+    if (maxStock >= 1 && parsed > maxStock) {
+      parsed = maxStock;
+    }
+    if (parsed < 1) {
+      parsed = 1;
+    }
+    updateQuantity(productId, parsed);
+  };
+
   // Proceder al pago (se permite a invitados y usuarios registrados)
   const handleOpenCheckout = () => {
     setIsCheckoutModalOpen(true);
@@ -77,6 +97,8 @@ export default function CartDrawer() {
             <div className="cart-items-list">
               {cartItems.map((item) => {
                 const price = item.salePrice || item.price;
+                const itemStock = item.stock !== undefined && item.stock !== null ? item.stock : 0;
+                const isEncargo = itemStock <= 0;
                 return (
                   <div className="cart-item glass-card" key={item.id}>
                     <div className="cart-item-img-wrapper">
@@ -94,13 +116,22 @@ export default function CartDrawer() {
                         <div className="cart-quantity-controls">
                           <button 
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
                             aria-label="Disminuir cantidad"
                           >
                             <Minus size={12} />
                           </button>
-                          <span>{item.quantity}</span>
+                          <input 
+                            type="number"
+                            className="cart-quantity-input"
+                            value={item.quantity}
+                            min="1"
+                            max={isEncargo ? undefined : itemStock}
+                            onChange={(e) => handleQuantityChange(item.id, e.target.value, itemStock)}
+                          />
                           <button 
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={!isEncargo && item.quantity >= itemStock}
                             aria-label="Aumentar cantidad"
                           >
                             <Plus size={12} />

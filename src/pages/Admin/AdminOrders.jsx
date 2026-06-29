@@ -354,11 +354,45 @@ export default function AdminOrders() {
 
   // ── Helper to detect backorders / encargos ──
   const isOrderEncargo = (order) => {
-    const hasOutOfStockItem = order.order_items?.some(item => {
-      const stock = item.products?.stock;
-      return stock === null || stock === undefined || stock <= 0;
-    });
-    return order.status === 'pending' || hasOutOfStockItem;
+    return order.order_type === 'encargo';
+  };
+
+  // ── Alternar manualmente el tipo de pedido (Acción de Administrador) ──
+  const handleToggleOrderType = async (orderId, currentType) => {
+    const newType = currentType === 'encargo' ? 'contado' : 'encargo';
+    const confirmed = window.confirm(
+      `¿Confirmas que deseas cambiar el tipo de este pedido a "${newType === 'encargo' ? 'Por Encargo' : 'Al Contado'}"?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ order_type: newType })
+        .eq('id', orderId)
+        .select();
+
+      if (error) {
+        console.error('[AdminOrders] Error al cambiar el tipo de pedido:', error);
+        alert('Error al actualizar el tipo de pedido en la base de datos. Intente de nuevo.');
+        return;
+      }
+
+      // Actualizar estado local
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, order_type: newType } : order
+        )
+      );
+
+      // Si el modal de la orden está abierto, actualizarlo también
+      setSelectedOrder(prev =>
+        prev && prev.id === orderId ? { ...prev, order_type: newType } : prev
+      );
+    } catch (err) {
+      console.error('[AdminOrders] Exception changing order type:', err);
+      alert('Ocurrió un error inesperado al actualizar el tipo de pedido.');
+    }
   };
 
   // ── Mapa de estados para badges (preserva tu CSS actual) ──
@@ -379,13 +413,16 @@ export default function AdminOrders() {
     return config;
   };
 
-  // Calculate orders counts for badges
-  const requestsCount = orders.filter(o => ['pending_payment', 'pending'].includes(o.status)).length;
-  const activeCount = orders.filter(o => ['processing', 'paid', 'shipped', 'ready'].includes(o.status)).length;
-  const historyCount = orders.filter(o => ['delivered', 'cancelled'].includes(o.status)).length;
+  // Calculate orders counts for badges (filtrando solo por encargos)
+  const requestsCount = orders.filter(o => isOrderEncargo(o) && ['pending_payment', 'pending'].includes(o.status)).length;
+  const activeCount = orders.filter(o => isOrderEncargo(o) && ['processing', 'paid', 'shipped', 'ready'].includes(o.status)).length;
+  const historyCount = orders.filter(o => isOrderEncargo(o) && ['delivered', 'cancelled'].includes(o.status)).length;
 
   // ── Filtrado por búsqueda, pestaña y estado ──
   const filteredOrders = orders.filter(order => {
+    // Filtrar estrictamente solo encargos en esta vista
+    if (!isOrderEncargo(order)) return false;
+
     const items = order.order_items || [];
     const firstItemName = items[0]?.products?.name || '';
     
@@ -618,7 +655,14 @@ export default function AdminOrders() {
                 </div>
                 <div className="header-badge-container">
                   <span className={`status-badge ${badge.className}`}>{badge.label}</span>
-                  {isEncargo && <span className="badge-encargo-inline">POR ENCARGO</span>}
+                  <span 
+                    className={isEncargo ? 'badge-encargo-inline' : 'badge-contado-inline'}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    title="Haz clic para alternar tipo de pedido (Por Encargo / Al Contado)"
+                    onClick={() => handleToggleOrderType(order.id, isEncargo ? 'encargo' : 'contado')}
+                  >
+                    {isEncargo ? 'POR ENCARGO' : 'AL CONTADO'}
+                  </span>
                   <button className="btn-modal-close" onClick={() => setSelectedOrder(null)}>
                     <X size={20} />
                   </button>

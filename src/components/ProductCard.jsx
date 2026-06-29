@@ -10,7 +10,7 @@ import './ProductCard.css';
 
 export default function ProductCard({ product }) {
   const { user, openAuthModalWithAction } = useAuth();
-  const { addToCart } = useCart();
+  const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isProductLiked } = useWishlist();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const precioActual = Number(product.price || 0);
@@ -25,9 +25,16 @@ export default function ProductCard({ product }) {
   const handleAddToCart = () => {
     addToCart(product);
     setIsAdded(true);
-    setTimeout(() => {
-      setIsAdded(false);
-    }, 1000);
+    if (isOutOfStock) {
+      setTimeout(() => {
+        setIsAdded(false);
+        setIsCartOpen(true);
+      }, 500);
+    } else {
+      setTimeout(() => {
+        setIsAdded(false);
+      }, 1000);
+    }
   };
 
   const handleQuickView = () => {
