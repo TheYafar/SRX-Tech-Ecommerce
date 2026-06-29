@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard';
 import { useProducts } from '../context/ProductContext';
 import './BestSellers.css';
@@ -7,8 +8,10 @@ import './BestSellers.css';
 export default function BestSellers() {
   const { products: allProducts, isLoading } = useProducts();
 
-  // Simular featured tomándolos por fecha o simplemente los 4 primeros
-  const products = allProducts && allProducts.length > 0 ? allProducts.slice(0, 4) : [];
+  // Filtrar por is_best_seller (mapeado como isBestSeller en ProductContext)
+  const bestSellers = allProducts ? allProducts.filter(p => p.isBestSeller) : [];
+  // Si no hay ninguno marcado, mostramos los 4 primeros como fallback
+  const products = bestSellers.length > 0 ? bestSellers.slice(0, 4) : (allProducts ? allProducts.slice(0, 4) : []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -51,9 +54,9 @@ export default function BestSellers() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <button className="btn-view-all" onClick={() => document.getElementById('tienda')?.scrollIntoView({ behavior: 'smooth' })}>
+            <Link to="/tienda?filter=best_sellers" className="btn-view-all">
               Ver colección completa <ArrowRight size={18} />
-            </button>
+            </Link>
           </motion.div>
         </div>
 

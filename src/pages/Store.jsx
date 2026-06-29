@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { X, Grid, Smartphone, Search } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { X, Grid, Smartphone, Search, Star } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { supabase } from '../utils/supabaseClient';
 import { getNavFilter, clearNavFilter } from '../components/Navbar';
@@ -22,6 +22,20 @@ export default function Store() {
   const [categories, setCategories]     = useState([]);
   const [isLoading, setIsLoading]       = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+
+  // ── Query param: filter=best_sellers ─────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isBestSellersFilter = searchParams.get('filter') === 'best_sellers';
+
+  // Limpiar el filtro URL de best_sellers
+  const clearBestSellersFilter = useCallback(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('filter');
+      return next;
+    });
+    setSelectedCategory('Todos');
+  }, [setSearchParams]);
 
   // ── Filtro de navegación (mega menú) ─────────────────────────────────────
   const [navFilter, setNavFilterState] = useState(() => getNavFilter());
@@ -64,11 +78,22 @@ export default function Store() {
     clearNavFilter();
     setNavFilterState(null);
     setSelectedCategory('Todos');
-  }, []);
+    // También limpiar best_sellers si está activo
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('filter');
+      return next;
+    });
+  }, [setSearchParams]);
 
   // ── Filtrado combinado en memoria ─────────────────────────────────────────
   const filteredProducts = (() => {
     let result = [...products];
+
+    // Filtro por más vendidos (query param URL) — máxima prioridad
+    if (isBestSellersFilter) {
+      return result.filter(p => p.is_best_seller === true);
+    }
 
     // Filtro por categoría (pill filter clásico)
     if (selectedCategory !== 'Todos' && !navFilter) {
@@ -169,16 +194,34 @@ export default function Store() {
             >
               <span className="section-subtitle">NUESTRO CATÁLOGO</span>
               <h2 className="section-title">
-                {navFilter
-                  ? `Filtrado: ${activeFilterLabel}`
-                  : selectedCategory === 'Todos'
-                    ? 'Todos los productos'
-                    : 'Productos filtrados'}
+                {isBestSellersFilter
+                  ? '⭐ Más Vendidos'
+                  : navFilter
+                    ? `Filtrado: ${activeFilterLabel}`
+                    : selectedCategory === 'Todos'
+                      ? 'Todos los productos'
+                      : 'Productos filtrados'}
               </h2>
             </motion.div>
 
+            {/* ── Chip: filtro best_sellers desde URL ── */}
+            {isBestSellersFilter && (
+              <motion.div
+                className="active-nav-filter-chip"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <Star size={13} />
+                <span>Filtro: <strong>Más Vendidos</strong></span>
+                <button className="chip-clear-btn" onClick={clearBestSellersFilter} aria-label="Limpiar filtro más vendidos">
+                  <X size={13} />
+                </button>
+              </motion.div>
+            )}
+
             {/* ── Active nav-filter chip ── */}
-            {navFilter && (
+            {!isBestSellersFilter && navFilter && (
               <motion.div
                 className="active-nav-filter-chip"
                 initial={{ opacity: 0, y: -8 }}
@@ -193,8 +236,8 @@ export default function Store() {
               </motion.div>
             )}
 
-            {/* Premium Pill Filter — solo visible si no hay nav-filter activo */}
-            {!navFilter && (
+            {/* Premium Pill Filter — solo visible si no hay nav-filter ni best_sellers activo */}
+            {!navFilter && !isBestSellersFilter && (
               <motion.div
                 className="pill-filter-container"
                 initial={{ opacity: 0, y: 20 }}
