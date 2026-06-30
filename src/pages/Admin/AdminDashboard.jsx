@@ -10,6 +10,7 @@ import { useProducts } from '../../context/ProductContext';
 import { enviarCorreoPagoVerificado } from '../../services/emailService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+import ProductRecommendationsInput from '../../components/ProductRecommendationsInput';
 
 import './AdminDashboard.css';
 
@@ -37,6 +38,8 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const [previewGaleria, setPreviewGaleria] = useState([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [allProductsList, setAllProductsList] = useState([]);
+  const [productRecommendations, setProductRecommendations] = useState([]);
 
   // ── States for Payments ─────────────────────────────────
   const [pendingPayments, setPendingPayments] = useState([]);
@@ -91,18 +94,26 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
 
 
-  // ── Fetch categories for Add Product dropdown ───────────
+  // ── Fetch categories and products for dropdowns ───────────
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchInitialData = async () => {
       try {
-        const { data, error } = await supabase.from('categories').select('id, name');
-        if (error) throw error;
-        if (data) setCategories(data);
+        const { data: catData, error: catError } = await supabase.from('categories').select('id, name');
+        if (catError) throw catError;
+        if (catData) setCategories(catData);
+
+        const { data: prodData, error: prodError } = await supabase
+          .from('products')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+        if (prodError) throw prodError;
+        if (prodData) setAllProductsList(prodData);
       } catch (err) {
-        console.error('Error al cargar categorías:', err);
+        console.error('Error al cargar datos iniciales del panel:', err);
       }
     };
-    fetchCategories();
+    fetchInitialData();
   }, []);
 
   // ── Fetch ALL categories for management tab ─────────────
@@ -230,6 +241,11 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   const handlePortadaChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 350 * 1024) {
+        showError(`La imagen de portada "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+        e.target.value = '';
+        return;
+      }
       setPortada(file);
       setPreviewPortada(URL.createObjectURL(file));
     }
@@ -244,6 +260,14 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+      const oversizedFiles = imageFiles.filter(f => f.size > 350 * 1024);
+      if (oversizedFiles.length > 0) {
+        const names = oversizedFiles.map(f => f.name).join(', ');
+        showError(`Las siguientes imágenes superan el límite de 350KB: ${names}. Por favor comprímelas antes de subirlas.`);
+        e.target.value = '';
+        return;
+      }
 
       if (galeria.length + imageFiles.length > 3) {
         showError('Límite excedido. Solo puedes agregar un máximo de 3 imágenes secundarias en la galería.');
@@ -311,6 +335,18 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
         .from('products').insert([objetoProducto]).select('id').single();
       if (productError) throw productError;
 
+      // ── Guardar recomendaciones asociadas ──
+      if (productRecommendations.length > 0) {
+        const insertRows = productRecommendations.map((recId) => ({
+          product_id: productoCreado.id,
+          recommended_product_id: recId,
+        }));
+        const { error: insertRecError } = await supabase
+          .from('product_recommendations')
+          .insert(insertRows);
+        if (insertRecError) throw insertRecError;
+      }
+
       const stockDelFormulario = parseInt(productData.stock) || 0;
       if (stockDelFormulario > 0) {
         const { error: stockError } = await supabase.from('inventory_transactions').insert([{
@@ -342,6 +378,16 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
       setPreviewPortada('');
       setGaleria([]);
       setPreviewGaleria([]);
+      setProductRecommendations([]);
+
+      // Actualizar lista de productos activos de fondo
+      const { data: updatedProds } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+      if (updatedProds) setAllProductsList(updatedProds);
+
       e.target.reset();
     } catch (error) {
       console.error('Error exacto:', error.message, error.details);
@@ -869,11 +915,20 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                 />
               </div>
 
+              <div className="form-group">
+                <ProductRecommendationsInput
+                  allProducts={allProductsList}
+                  selectedIds={productRecommendations}
+                  onChange={setProductRecommendations}
+                  currentProductId={null}
+                />
+              </div>
+
               {/* Imagen de Portada y Galería (Contenedor Responsivo en Grilla) */}
               <div className="image-upload-grid">
                 {/* Columna 1: Portada (Obligatoria) */}
                 <div className="upload-column">
-                  <span className="upload-label">Imagen de Portada (Obligatoria)</span>
+                  <span className="upload-label">Imagen de Portada (Obligatoria - Máx. 350KB)</span>
                   <div className="image-box-wrapper">
                     {previewPortada ? (
                       <div className="image-preview-container">
@@ -917,7 +972,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
                 {/* Columna 2 y 3: Galería (Opcional, hasta 3) */}
                 <div className="upload-column">
-                  <span className="upload-label">Galería de Imágenes (Opcional, hasta 3)</span>
+                  <span className="upload-label">Galería de Imágenes (Opcional, hasta 3 - Máx. 350KB por imagen)</span>
                   <div className="gallery-grid">
                     {/* Previews de la Galería */}
                     {previewGaleria.map((preview, index) => (
@@ -1473,7 +1528,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
 
 
               <div className="form-group">
-                <label>Imagen para PC (Escritorio)</label>
+                <label>Imagen para PC (Escritorio - Máx. 350KB)</label>
                 <div className="file-upload-wrapper">
                   <input
                     type="file"
@@ -1481,7 +1536,13 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                     accept="image/*"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setBannerImagePc(e.target.files[0]);
+                        const file = e.target.files[0];
+                        if (file.size > 350 * 1024) {
+                          showError(`La imagen de PC "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+                          e.target.value = '';
+                          return;
+                        }
+                        setBannerImagePc(file);
                       }
                     }}
                     className="file-input-hidden"
@@ -1499,7 +1560,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
               </div>
 
               <div className="form-group">
-                <label>Imagen para Móvil (Teléfonos)</label>
+                <label>Imagen para Móvil (Teléfonos - Máx. 350KB)</label>
                 <div className="file-upload-wrapper">
                   <input
                     type="file"
@@ -1507,7 +1568,13 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
                     accept="image/*"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setBannerImageMobile(e.target.files[0]);
+                        const file = e.target.files[0];
+                        if (file.size > 350 * 1024) {
+                          showError(`La imagen móvil "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+                          e.target.value = '';
+                          return;
+                        }
+                        setBannerImageMobile(file);
                       }
                     }}
                     className="file-input-hidden"

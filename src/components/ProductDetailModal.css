@@ -818,3 +818,231 @@
   user-select: none;
   -webkit-user-drag: none;
 }
+
+/* ==========================================================================
+   PRODUCT RECOMMENDATIONS (COMPLEMENTOS) — CLIENT VIEW
+   ========================================================================== */
+.product-recommendations-section {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed rgba(15, 23, 42, 0.08);
+}
+
+.recommendations-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  border-radius: 12px;
+  padding: 0.625rem 0.875rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recommendation-card:hover {
+  background: #f1f5f9;
+  border-color: rgba(79, 70, 229, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.recommendation-card-clickable {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.recommendation-card-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.recommendation-card-clickable:hover .recommendation-card-img {
+  transform: scale(1.05);
+}
+
+.recommendation-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recommendation-card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.recommendation-card-clickable:hover .recommendation-card-name {
+  color: #4f46e5;
+}
+
+.recommendation-card-price {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 0.125rem;
+}
+
+.btn-add-rec-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #ffffff;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  color: #4f46e5;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+}
+
+.btn-add-rec-cart:hover {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  transform: translateY(-0.5px);
+}
+
+.btn-add-rec-cart:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   PRODUCT COMPLEMENT (COMPACT HORIZONTAL CARD BELOW ACTIONS)
+   ========================================================================== */
+.product-complement-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.08);
+  padding-top: 1.25rem;
+}
+
+.complement-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.complement-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  gap: 0.75rem;
+}
+
+.complement-card-clickable {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.complement-card-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: #0f172a;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.complement-card-clickable:hover .complement-card-img {
+  transform: scale(1.05);
+}
+
+.complement-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.complement-card-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.complement-card-clickable:hover .complement-card-name {
+  color: #818cf8;
+}
+
+.complement-card-price {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+.btn-add-complement-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background-color: #4f46e5;
+  border: none;
+  color: #ffffff;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-add-complement-cart:hover {
+  background-color: #4338ca;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.btn-add-complement-cart:active {
+  transform: translateY(0);
+}

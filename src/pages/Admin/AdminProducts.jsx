@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Edit2, Trash2, Search, X, Save, Loader, Tag, UploadCloud, PackagePlus } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { supabase, uploadProductImage } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
+import ProductRecommendationsInput from '../../components/ProductRecommendationsInput';
 import './AdminProducts.css';
 
 // ================================================================
@@ -90,6 +91,9 @@ function DynamicTagInput({ title, placeholder, tags = [], onChange }) {
     </div>
   );
 }
+
+
+
 
 
 // ================================================================
@@ -277,6 +281,28 @@ export default function AdminProducts() {
   const { products, isLoading: contextLoading, setProducts, fetchProducts, addProductToState } = useProducts();
   const { showSuccess, showError } = useNotifications();
 
+  // ── Catálogo para recomendación única (Productos complementarios) ──
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [complementaryProductId, setComplementaryProductId] = useState('');
+  const [editComplementaryProductId, setEditComplementaryProductId] = useState('');
+
+  useEffect(() => {
+    const fetchCatalog = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+        if (error) throw error;
+        setCatalogProducts(data || []);
+      } catch (err) {
+        console.error('[AdminProducts] Error cargando catálogo simple:', err);
+      }
+    };
+    fetchCatalog();
+  }, [products]);
+
   // ── Estado de operaciones ──
   const [isLoading, setIsLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -319,6 +345,29 @@ export default function AdminProducts() {
   const [isDragActiveNew, setIsDragActiveNew] = useState(false);
   const [isDragActiveEdit, setIsDragActiveEdit] = useState(false);
 
+  // ── Recomendaciones de Productos ──
+  const [allProductsList, setAllProductsList] = useState([]);
+  const [selectedRecommendations, setSelectedRecommendations] = useState([]);
+  const [newProductRecommendations, setNewProductRecommendations] = useState([]);
+
+  // ── Cargar catálogo simple para recomendaciones ──
+  useEffect(() => {
+    const fetchAllProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        setAllProductsList(data || []);
+      } catch (err) {
+        console.warn('[AdminProducts] Error cargando catálogo de recomendaciones:', err);
+      }
+    };
+    fetchAllProducts();
+  }, [products]); // reload simple list when products change
 
   // ── Cargar categorías al montar ──
   useEffect(() => {
@@ -375,7 +424,7 @@ export default function AdminProducts() {
     }
   };
 
-  const handleEdit = (producto) => {
+  const handleEdit = async (producto) => {
     setEditingProduct(producto);
     const existingImages = producto.images_urls || (producto.image ? [producto.image] : []);
     setEditCoverImage(existingImages[0] || null);
@@ -395,6 +444,45 @@ export default function AdminProducts() {
         ? producto.use_scenarios
         : [],
     });
+
+    // Cargar recomendaciones asociadas
+    try {
+      const { data, error } = await supabase
+        .from('product_recommendations')
+        .select('recommended_product_id')
+        .eq('product_id', producto.id);
+      
+      if (error) throw error;
+      setSelectedRecommendations((data || []).map(r => r.recommended_product_id));
+      if (data && data.length > 0) {
+        setEditComplementaryProductId(data[0].recommended_product_id);
+      } else {
+        setEditComplementaryProductId('');
+      }
+    } catch (err) {
+      console.warn('[AdminProducts] Error cargando recomendaciones al editar:', err);
+      setSelectedRecommendations([]);
+      setEditComplementaryProductId('');
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditingProduct(null);
+    setSelectedRecommendations([]);
+    setEditComplementaryProductId('');
+  };
+
+  const closeCreateModal = () => {
+    setShowProductForm(false);
+    setSelectedRecommendations([]);
+    setNewProductRecommendations([]);
+    setComplementaryProductId('');
+    setNewProductData({
+      name: '', sku: '', description: '', price_usd: '',
+      stock: '', category_id: '', compatible_devices: [], use_scenarios: [],
+    });
+    setNewCoverImage(null);
+    setNewSecondaryImages([]);
   };
 
   // ================================================================
@@ -460,6 +548,27 @@ export default function AdminProducts() {
 
       if (error) throw error;
 
+      // ── Sincronizar recomendaciones ──
+      const { error: deleteRecError } = await supabase
+        .from('product_recommendations')
+        .delete()
+        .eq('product_id', editingProduct.id);
+
+      if (deleteRecError) throw deleteRecError;
+
+      if (selectedRecommendations.length > 0) {
+        const insertRows = selectedRecommendations.map((recId) => ({
+          product_id: editingProduct.id,
+          recommended_product_id: recId,
+        }));
+
+        const { error: insertRecError } = await supabase
+          .from('product_recommendations')
+          .insert(insertRows);
+
+        if (insertRecError) throw insertRecError;
+      }
+
       // Update local state
       setProducts((prev) =>
         prev.map((p) =>
@@ -492,7 +601,7 @@ export default function AdminProducts() {
       showError('Error al actualizar: ' + error.message);
     } finally {
       setIsLoading(false);
-      setEditingProduct(null);
+      closeEditModal();
     }
   };
 
@@ -574,6 +683,20 @@ export default function AdminProducts() {
 
       if (error) throw error;
 
+      // ── Guardar recomendaciones asociadas ──
+      if (newProductRecommendations.length > 0) {
+        const insertRows = newProductRecommendations.map((recId) => ({
+          product_id: data.id,
+          recommended_product_id: recId,
+        }));
+
+        const { error: insertRecError } = await supabase
+          .from('product_recommendations')
+          .insert(insertRows);
+
+        if (insertRecError) throw insertRecError;
+      }
+
       // 5. Éxito: agregar al estado local y cerrar modal
       addProductToState({
         ...data,
@@ -596,6 +719,8 @@ export default function AdminProducts() {
       });
       setNewCoverImage(null);
       setNewSecondaryImages([]);
+      setSelectedRecommendations([]);
+      setNewProductRecommendations([]);
 
       // Refrescar la lista completa de fondo
       fetchProducts();
@@ -743,7 +868,7 @@ export default function AdminProducts() {
         <div
           className="edit-modal-backdrop"
           onClick={(e) => {
-            if (e.target === e.currentTarget && !isLoading) setEditingProduct(null);
+            if (e.target === e.currentTarget && !isLoading) closeEditModal();
           }}
         >
           <div className="edit-modal">
@@ -752,7 +877,7 @@ export default function AdminProducts() {
               <h2>Editar Producto</h2>
               <button
                 className="edit-modal-close"
-                onClick={() => setEditingProduct(null)}
+                onClick={closeEditModal}
                 disabled={isLoading}
                 title="Cerrar"
               >
@@ -876,9 +1001,16 @@ export default function AdminProducts() {
                   onChange={(val) => setFormData({ ...formData, useScenarios: val })}
                 />
 
-                {/* ── Imagen de Portada (Obligatoria) ── */}
+                {/* ── Recomendaciones: Productos complementarios ── */}
+                <ProductRecommendationsInput
+                  allProducts={allProductsList}
+                  selectedIds={selectedRecommendations}
+                  onChange={setSelectedRecommendations}
+                  currentProductId={editingProduct?.id}
+                />
+
                 <div className="edit-form-group">
-                  <label>Imagen de Portada (Obligatoria)</label>
+                  <label>Imagen de Portada (Obligatoria - Máx. 350KB)</label>
                   <div
                     className={`cover-drag-drop ${isDragActiveEdit ? 'drag-active' : ''} ${editCoverImage ? 'has-image' : ''}`}
                     onDragEnter={(e) => { e.preventDefault(); setIsDragActiveEdit(true); }}
@@ -890,6 +1022,10 @@ export default function AdminProducts() {
                       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                         const file = e.dataTransfer.files[0];
                         if (file.type.startsWith('image/')) {
+                          if (file.size > 350 * 1024) {
+                            showError(`La imagen de portada "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+                            return;
+                          }
                           setEditCoverImage(file);
                         } else {
                           showError('Por favor selecciona un archivo de imagen.');
@@ -921,7 +1057,13 @@ export default function AdminProducts() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              setEditCoverImage(e.target.files[0]);
+                              const file = e.target.files[0];
+                              if (file.size > 350 * 1024) {
+                                showError(`La imagen de portada "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+                                e.target.value = '';
+                                return;
+                              }
+                              setEditCoverImage(file);
                             }
                           }}
                           className="create-file-input"
@@ -937,7 +1079,7 @@ export default function AdminProducts() {
 
                 {/* ── Imágenes de la Galería (Opcional) ── */}
                 <div className="edit-form-group">
-                  <label>Imágenes Secundarias (Máximo 3)</label>
+                  <label>Imágenes Secundarias (Máximo 3 - Máx. 350KB por imagen)</label>
                   <div className="gallery-upload-area">
                     <input
                       type="file"
@@ -948,6 +1090,15 @@ export default function AdminProducts() {
                         if (e.target.files) {
                           const files = Array.from(e.target.files);
                           const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+                          const oversizedFiles = imageFiles.filter(f => f.size > 350 * 1024);
+                          if (oversizedFiles.length > 0) {
+                            const names = oversizedFiles.map(f => f.name).join(', ');
+                            showError(`Las siguientes imágenes superan el límite de 350KB: ${names}. Por favor comprímelas antes de subirlas.`);
+                            e.target.value = '';
+                            return;
+                          }
+
                           if (imageFiles.length > 3) {
                             showError('Máximo 3 imágenes secundarias permitidas.');
                             e.target.value = ''; // Limpiar input
@@ -1007,7 +1158,7 @@ export default function AdminProducts() {
                 <button
                   type="button"
                   className="btn-cancel"
-                  onClick={() => setEditingProduct(null)}
+                  onClick={closeEditModal}
                   disabled={isLoading}
                 >
                   Cancelar
@@ -1031,7 +1182,7 @@ export default function AdminProducts() {
       {showProductForm && (
         <div
           className="create-modal-backdrop"
-          onClick={(e) => { if (e.target === e.currentTarget && !isSubmittingNew) setShowProductForm(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget && !isSubmittingNew) closeCreateModal(); }}
         >
           <div className="create-modal" role="dialog" aria-modal="true" aria-label="Nuevo Producto">
             {/* Header */}
@@ -1042,7 +1193,7 @@ export default function AdminProducts() {
               </div>
               <button
                 className="create-modal-close"
-                onClick={() => setShowProductForm(false)}
+                onClick={closeCreateModal}
                 disabled={isSubmittingNew}
                 title="Cerrar"
               >
@@ -1166,9 +1317,17 @@ export default function AdminProducts() {
                   onChange={(val) => setNewProductData({ ...newProductData, use_scenarios: val })}
                 />
 
+                {/* ── Recomendaciones: Productos complementarios ── */}
+                <ProductRecommendationsInput
+                  allProducts={allProductsList}
+                  selectedIds={newProductRecommendations}
+                  onChange={setNewProductRecommendations}
+                  currentProductId={null}
+                />
+
                 {/* ── Imagen de Portada (Obligatoria) ── */}
                 <div className="edit-form-group">
-                  <label>Imagen de Portada (Obligatoria)</label>
+                  <label>Imagen de Portada (Obligatoria - Máx. 350KB)</label>
                   <div
                     className={`cover-drag-drop ${isDragActiveNew ? 'drag-active' : ''} ${newCoverImage ? 'has-image' : ''}`}
                     onDragEnter={(e) => { e.preventDefault(); setIsDragActiveNew(true); }}
@@ -1180,6 +1339,10 @@ export default function AdminProducts() {
                       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                         const file = e.dataTransfer.files[0];
                         if (file.type.startsWith('image/')) {
+                          if (file.size > 350 * 1024) {
+                            showError(`La imagen de portada "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+                            return;
+                          }
                           setNewCoverImage(file);
                         } else {
                           showError('Por favor selecciona un archivo de imagen.');
@@ -1211,7 +1374,13 @@ export default function AdminProducts() {
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              setNewCoverImage(e.target.files[0]);
+                              const file = e.target.files[0];
+                              if (file.size > 350 * 1024) {
+                                showError(`La imagen de portada "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
+                                e.target.value = '';
+                                return;
+                              }
+                              setNewCoverImage(file);
                             }
                           }}
                           className="create-file-input"
@@ -1227,7 +1396,7 @@ export default function AdminProducts() {
 
                 {/* ── Imágenes de la Galería (Opcional) ── */}
                 <div className="edit-form-group">
-                  <label>Imágenes Secundarias (Máximo 3)</label>
+                  <label>Imágenes Secundarias (Máximo 3 - Máx. 350KB por imagen)</label>
                   <div className="gallery-upload-area">
                     <input
                       type="file"
@@ -1238,6 +1407,15 @@ export default function AdminProducts() {
                         if (e.target.files) {
                           const files = Array.from(e.target.files);
                           const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+                          const oversizedFiles = imageFiles.filter(f => f.size > 350 * 1024);
+                          if (oversizedFiles.length > 0) {
+                            const names = oversizedFiles.map(f => f.name).join(', ');
+                            showError(`Las siguientes imágenes superan el límite de 350KB: ${names}. Por favor comprímelas antes de subirlas.`);
+                            e.target.value = '';
+                            return;
+                          }
+
                           if (imageFiles.length > 3) {
                             showError('Máximo 3 imágenes secundarias permitidas.');
                             e.target.value = ''; // Limpiar input
@@ -1285,7 +1463,7 @@ export default function AdminProducts() {
                 <button
                   type="button"
                   className="btn-cancel"
-                  onClick={() => setShowProductForm(false)}
+                  onClick={closeCreateModal}
                   disabled={isSubmittingNew}
                 >
                   Cancelar

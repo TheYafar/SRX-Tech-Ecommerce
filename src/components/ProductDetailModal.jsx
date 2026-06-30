@@ -4,6 +4,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useNotifications } from '../context/NotificationContext';
+import { useProducts } from '../context/ProductContext';
+import { supabase } from '../utils/supabaseClient';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock, Smartphone, Package } from 'lucide-react';
 import './ProductDetailModal.css';
 
@@ -62,9 +64,113 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
   const { user, openAuthModalWithAction } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
   const { showSuccess, showError } = useNotifications();
+  const { setSelectedProductId } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  
+  const [complementProducts, setComplementProducts] = useState([]);
+  const [complementsToProducts, setComplementsToProducts] = useState([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !product?.id) {
+      setComplementProducts([]);
+      setComplementsToProducts([]);
+      return;
+    }
+
+    const fetchRecommendationAndParents = async () => {
+      setLoadingRecommendations(true);
+      try {
+        // 1. Fetch complementary products (what the current product recommends)
+        const { data: recData, error: recError } = await supabase
+          .from('product_recommendations')
+          .select(`
+            recommended_product_id,
+            recommended_product:products!product_recommendations_recommended_product_id_fkey (
+              id,
+              name,
+              price_usd,
+              compare_at_price_usd,
+              images_urls,
+              stock
+            )
+          `)
+          .eq('product_id', product.id);
+
+        if (recError) throw recError;
+        
+        if (recData && recData.length > 0) {
+          const recs = recData
+            .map(item => item.recommended_product)
+            .filter(Boolean)
+            .map(p => ({
+              ...p,
+              image: p.images_urls?.[0] || 'https://via.placeholder.com/150',
+              price: p.price_usd || 0,
+              stock: p.stock || 0
+            }));
+          setComplementProducts(recs);
+        } else {
+          setComplementProducts([]);
+        }
+
+        // 2. Fetch parent products (what products/equipments the current product complements)
+        const { data: parentData, error: parentError } = await supabase
+          .from('product_recommendations')
+          .select(`
+            product_id,
+            parent_product:products!product_recommendations_product_id_fkey (
+              id,
+              name,
+              price_usd,
+              compare_at_price_usd,
+              images_urls,
+              stock
+            )
+          `)
+          .eq('recommended_product_id', product.id);
+
+        if (parentError) throw parentError;
+
+        if (parentData && parentData.length > 0) {
+          const parents = parentData
+            .map(item => item.parent_product)
+            .filter(Boolean)
+            .map(p => ({
+              ...p,
+              image: p.images_urls?.[0] || 'https://via.placeholder.com/150',
+              price: p.price_usd || 0,
+              stock: p.stock || 0
+            }));
+          setComplementsToProducts(parents);
+        } else {
+          setComplementsToProducts([]);
+        }
+
+      } catch (err) {
+        console.warn('[ProductDetailModal] Error cargando complementos:', err);
+        setComplementProducts([]);
+        setComplementsToProducts([]);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    };
+
+    fetchRecommendationAndParents();
+  }, [product?.id, isOpen]);
+
+  const handleAddRecommendationToCart = (rec) => {
+    const formattedRec = {
+      ...rec,
+      image: rec.image || rec.images_urls?.[0] || 'https://via.placeholder.com/150',
+      price: rec.price || rec.price_usd || 0,
+      quantity: 1
+    };
+    addToCart(formattedRec);
+    showSuccess(`¡${rec.name} añadido al carrito!`);
+  };
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -398,6 +504,7 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                   <p>{product.description}</p>
                 </motion.div>
 
+
                 {/* Features */}
                 {product.specs && product.specs.length > 0 && (
                   <motion.div 
@@ -513,6 +620,98 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                     </>
                   )}
                 </motion.div>
+
+                {/* Complementary Product Section */}
+                {complementProducts && complementProducts.length > 0 && (
+                  <motion.div 
+                    className="product-complement-section mt-6 border-t border-slate-800 pt-4"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.75 }}
+                  >
+                    <h4 className="complement-title text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">
+                      Se complementa perfectamente con:
+                    </h4>
+                    <div className="flex flex-col gap-2">
+                      {complementProducts.map((compProd) => (
+                        <div key={compProd.id} className="complement-card flex items-center justify-between p-3 rounded-xl bg-[#1e293b] border border-slate-800 gap-3">
+                          <div 
+                            className="complement-card-clickable flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+                            onClick={() => setSelectedProductId(compProd.id)}
+                            title={`Ver ${compProd.name}`}
+                          >
+                            <img 
+                              src={compProd.image} 
+                              alt={compProd.name} 
+                              className="complement-card-img w-12 h-12 object-cover rounded-lg bg-slate-900 flex-shrink-0"
+                            />
+                            <div className="complement-card-info flex flex-col min-w-0 gap-0.5">
+                              <span className="complement-card-name text-sm font-medium text-white truncate block">
+                                {compProd.name}
+                              </span>
+                              <span className="complement-card-price text-sm font-bold text-indigo-400">
+                                {formatUSD(compProd.price)}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleAddRecommendationToCart(compProd)}
+                            className="btn-add-complement-cart flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-all duration-200"
+                          >
+                            <ShoppingCart size={14} />
+                            <span>Añadir al Carrito</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Parent Products Section (Equipos que complementa) */}
+                {complementsToProducts && complementsToProducts.length > 0 && (
+                  <motion.div 
+                    className="product-complement-section mt-6 border-t border-slate-800 pt-4"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.78 }}
+                  >
+                    <h4 className="complement-title text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">
+                      Es complemento para:
+                    </h4>
+                    <div className="flex flex-col gap-2">
+                      {complementsToProducts.map((parentProd) => (
+                        <div key={parentProd.id} className="complement-card flex items-center justify-between p-3 rounded-xl bg-[#1e293b] border border-slate-800 gap-3">
+                          <div 
+                            className="complement-card-clickable flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+                            onClick={() => setSelectedProductId(parentProd.id)}
+                            title={`Ver ${parentProd.name}`}
+                          >
+                            <img 
+                              src={parentProd.image} 
+                              alt={parentProd.name} 
+                              className="complement-card-img w-12 h-12 object-cover rounded-lg bg-slate-900 flex-shrink-0"
+                            />
+                            <div className="complement-card-info flex flex-col min-w-0 gap-0.5">
+                              <span className="complement-card-name text-sm font-medium text-white truncate block">
+                                {parentProd.name}
+                              </span>
+                              <span className="complement-card-price text-sm font-bold text-indigo-400">
+                                {formatUSD(parentProd.price)}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleAddRecommendationToCart(parentProd)}
+                            className="btn-add-complement-cart flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-all duration-200"
+                          >
+                            <ShoppingCart size={14} />
+                            <span>Añadir al Carrito</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Trust Badges */}
                 <motion.div 

@@ -175,9 +175,9 @@ export default function AdminCoupons() {
       showError('Solo se permiten archivos de imagen (JPG, PNG, WEBP, etc.).');
       return;
     }
-    // Validar tamaño: max 5 MB
-    if (file.size > 5 * 1024 * 1024) {
-      showError('La imagen no puede superar los 5 MB.');
+    // Validar tamaño: max 350 KB
+    if (file.size > 350 * 1024) {
+      showError(`La imagen del banner "${file.name}" supera el límite de 350KB (${(file.size / 1024).toFixed(1)}KB). Por favor comprímela.`);
       return;
     }
 
@@ -557,7 +557,7 @@ export default function AdminCoupons() {
                     >
                       <UploadCloud size={32} className="upload-zone-icon" />
                       <p className="upload-zone-title">Haz clic para subir una imagen</p>
-                      <p className="upload-zone-hint">JPG, PNG, WEBP — máx. 5 MB</p>
+                      <p className="upload-zone-hint">JPG, PNG, WEBP — máx. 350 KB</p>
                       <p className="upload-zone-note">
                         Se subirá automáticamente al bucket <code>banners_cupones</code> de Supabase
                       </p>
