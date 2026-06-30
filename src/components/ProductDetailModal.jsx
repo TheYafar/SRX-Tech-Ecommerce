@@ -108,24 +108,25 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
   };
 
   const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/?product=${product.id}`;
     const shareData = {
       title: product.name,
       text: product.tagline || product.description || `Mira este increíble producto: ${product.name}`,
-      url: `${window.location.origin}/producto/${product.id || ''}`
+      url: shareUrl
     };
 
     try {
       if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(shareData.url);
+        await navigator.clipboard.writeText(shareUrl);
         showSuccess('¡Enlace del producto copiado al portapapeles!');
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('Error sharing product:', err);
         try {
-          await navigator.clipboard.writeText(shareData.url);
+          await navigator.clipboard.writeText(shareUrl);
           showSuccess('¡Enlace del producto copiado al portapapeles!');
         } catch (clipErr) {
           showError('No se pudo copiar el enlace al portapapeles.');

@@ -205,6 +205,7 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
       const { data, error } = await supabase
         .from('products')
         .select('id, name')
+        .eq('is_active', true)
         .order('name', { ascending: true });
       if (error) throw error;
       setProductsList(data || []);

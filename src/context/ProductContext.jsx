@@ -22,7 +22,8 @@ export const ProductProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, categories(name)')
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -36,7 +37,8 @@ export const ProductProvider = ({ children }) => {
         stock: p.stock || 0,
         compareAtPrice: p.compare_at_price_usd || null,
         offerEndsAt: p.offer_ends_at || null,
-        isBestSeller: p.is_best_seller || false
+        isBestSeller: p.is_best_seller || false,
+        category: p.categories?.name || '—'
       }));
 
       setProducts(mappedData);

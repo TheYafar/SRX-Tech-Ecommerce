@@ -54,7 +54,8 @@ export default function Store() {
       try {
         const { data: productsData, error: productsError } = await supabase
           .from('products')
-          .select('*');
+          .select('*, categories(name)')
+          .eq('is_active', true);
         if (productsError) throw productsError;
 
         const { data: categoriesData, error: categoriesError } = await supabase
@@ -62,7 +63,12 @@ export default function Store() {
           .select('*');
         if (categoriesError) throw categoriesError;
 
-        setProducts(productsData || []);
+        const mappedProducts = (productsData || []).map(p => ({
+          ...p,
+          category: p.categories?.name || ''
+        }));
+
+        setProducts(mappedProducts);
         setCategories(categoriesData || []);
       } catch (error) {
         console.error('Error fetching data:', error);

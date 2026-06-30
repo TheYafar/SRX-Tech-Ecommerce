@@ -354,12 +354,22 @@ export default function AdminProducts() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) throw error;
+      // Usar desactivación lógica (is_active: false) para evitar errores de clave foránea en la BD
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', id);
+
+      if (error) {
+        console.error('[AdminProducts] Error de Supabase al desactivar producto:', error);
+        throw error;
+      }
+
       setProducts((prev) => prev.filter((p) => p.id !== id));
+      showSuccess('¡Producto eliminado exitosamente!');
     } catch (error) {
       console.error('Error BD:', error);
-      alert('Error al eliminar: ' + error.message);
+      showError('Error al eliminar: ' + (error.message || error));
     } finally {
       setIsLoading(false);
     }
@@ -470,6 +480,8 @@ export default function AdminProducts() {
                 use_scenarios: payload.use_scenarios,
                 images_urls: arrayFinalImagenes,
                 image: urlPortada,
+                category_id: payload.category_id,
+                category: categories.find((c) => c.id === payload.category_id)?.name || '—',
               }
             : p
         )
@@ -573,6 +585,7 @@ export default function AdminProducts() {
         compareAtPrice: null,
         offerEndsAt: null,
         isBestSeller: false,
+        category: categories.find((c) => c.id === newProductData.category_id)?.name || '—',
       });
 
       showSuccess('¡Producto creado exitosamente!');
