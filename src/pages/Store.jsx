@@ -18,9 +18,10 @@ const FILTER_LABELS = {
 };
 
 export default function Store() {
-  const [products, setProducts]         = useState([]);
-  const [categories, setCategories]     = useState([]);
-  const [isLoading, setIsLoading]       = useState(true);
+  const [products, setProducts]                 = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories]             = useState([]);
+  const [isLoading, setIsLoading]               = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
   // ── Query param: filter=best_sellers ─────────────────────────────────────
@@ -69,6 +70,7 @@ export default function Store() {
         }));
 
         setProducts(mappedProducts);
+        setFilteredProducts(mappedProducts);
         setCategories(categoriesData || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -84,21 +86,29 @@ export default function Store() {
     clearNavFilter();
     setNavFilterState(null);
     setSelectedCategory('Todos');
+    setFilteredProducts(products); // ¡CLAVE! Restablece el catálogo completo original
     // También limpiar best_sellers si está activo
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.delete('filter');
       return next;
     });
-  }, [setSearchParams]);
+  }, [products, setSearchParams]);
 
   // ── Filtrado combinado en memoria ─────────────────────────────────────────
-  const filteredProducts = (() => {
+  useEffect(() => {
+    // Cláusula de escape limpia al inicio: si no hay filtros activos, mostrar todo
+    if (!navFilter && selectedCategory === 'Todos' && !isBestSellersFilter) {
+      setFilteredProducts(products);
+      return;
+    }
+
     let result = [...products];
 
     // Filtro por más vendidos (query param URL) — máxima prioridad
     if (isBestSellersFilter) {
-      return result.filter(p => p.is_best_seller === true);
+      setFilteredProducts(result.filter(p => p.is_best_seller === true));
+      return;
     }
 
     // Filtro por categoría (pill filter clásico)
@@ -128,8 +138,8 @@ export default function Store() {
       }
     }
 
-    return result;
-  })();
+    setFilteredProducts(result);
+  }, [products, selectedCategory, navFilter, isBestSellersFilter]);
 
   // ── Detectar el nombre del filtro activo para mostrarlo ───────────────────
   const activeFilterLabel = (() => {
@@ -293,6 +303,7 @@ export default function Store() {
             </div>
           ) : filteredProducts.length > 0 ? (
             <motion.div
+              key={`${selectedCategory}-${navFilter ? navFilter.value : 'all'}-${isBestSellersFilter}`}
               className="products-premium-grid"
               variants={containerVariants}
               initial="hidden"
