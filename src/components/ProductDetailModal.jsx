@@ -730,10 +730,14 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.8 }}
                 >
-                  <div className="trust-item">
-                    <Shield size={20} />
-                    <span>Garantía de 2 años</span>
-                  </div>
+                  {product.garantia_texto && 
+                   product.garantia_texto.trim() !== '' && 
+                   product.garantia_texto.trim().toLowerCase() !== 'no aplica' && (
+                    <div className="trust-item">
+                      <Shield size={20} />
+                      <span>{product.garantia_texto}</span>
+                    </div>
+                  )}
                   <div className="trust-item">
                     <Truck size={20} />
                     <span>Envío gratis</span>

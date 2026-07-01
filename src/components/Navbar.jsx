@@ -307,112 +307,114 @@ export default function Navbar() {
 
       {/* ── Mobile Navigation Drawer ── */}
       {isMobileMenuOpen && (
-        <div className="mobile-nav-menu animate-fade-in">
-          {/* Links básicos */}
-          <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="mobile-nav-link">
-            Inicio
-          </Link>
-          <Link to="/tienda" onClick={() => setIsMobileMenuOpen(false)} className="mobile-nav-link">
-            Tienda
-          </Link>
-          <button onClick={() => scrollToSection('categorias')} className="mobile-nav-link">
-            Categorías
-          </button>
-          {user?.role === 'admin' && (
-            <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="mobile-nav-link" style={{ color: '#00f2fe', fontWeight: 'bold' }}>
-              Panel de Control
+        <div className="mobile-nav-menu animate-fade-in fixed top-0 left-0 h-screen overflow-y-auto w-full z-[1001]">
+          <div className="pb-10 pt-20">
+            {/* Links básicos */}
+            <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="mobile-nav-link">
+              Inicio
             </Link>
-          )}
+            <Link to="/tienda" onClick={() => setIsMobileMenuOpen(false)} className="mobile-nav-link">
+              Tienda
+            </Link>
+            <button onClick={() => scrollToSection('categorias')} className="mobile-nav-link">
+              Categorías
+            </button>
+            {user?.role === 'admin' && (
+              <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="mobile-nav-link" style={{ color: '#00f2fe', fontWeight: 'bold' }}>
+                Panel de Control
+              </Link>
+            )}
 
-          {/* ── DIMENSIÓN 1: Categorías Dinámicas agrupadas por clasificación ── */}
-          {categories.length > 0 && (
-            (() => {
-              const classifications = categories.filter(c => c.parent_id === null);
-              const activeClassifications = classifications.filter(clf => {
-                const children = categories.filter(c => c.parent_id === clf.id);
-                return children.length > 0 || clf.slug === 'por-producto';
-              });
-              
-              return activeClassifications.map(clf => {
-                const children = categories.filter(c => c.parent_id === clf.id);
-                if (clf.slug === 'para-tu-equipo') return null; // Se renderiza aparte
+            {/* ── DIMENSIÓN 1: Categorías Dinámicas agrupadas por clasificación ── */}
+            {categories.length > 0 && (
+              (() => {
+                const classifications = categories.filter(c => c.parent_id === null);
+                const activeClassifications = classifications.filter(clf => {
+                  const children = categories.filter(c => c.parent_id === clf.id);
+                  return children.length > 0 || clf.slug === 'por-producto';
+                });
                 
-                return (
-                  <div key={clf.id} className="mobile-dim-section">
-                    <div className="mobile-dim-label">
-                      <Grid size={11} />
-                      {clf.name}
+                return activeClassifications.map(clf => {
+                  const children = categories.filter(c => c.parent_id === clf.id);
+                  if (clf.slug === 'para-tu-equipo') return null; // Se renderiza aparte
+                  
+                  return (
+                    <div key={clf.id} className="mobile-dim-section">
+                      <div className="mobile-dim-label">
+                        <Grid size={11} />
+                        {clf.name}
+                      </div>
+                      <div className="mobile-tags-row flex overflow-x-auto scrollbar-none whitespace-nowrap pr-6">
+                        {children.map((cat) => (
+                          <button
+                            key={cat.id}
+                            className="mobile-dim-tag"
+                            onClick={() => {
+                              handleFilter({ type: 'category', value: cat.id });
+                              setIsMobileMenuOpen(false);
+                            }}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="mobile-tags-row">
-                      {children.map((cat) => (
-                        <button
-                          key={cat.id}
-                          className="mobile-dim-tag"
-                          onClick={() => {
-                            handleFilter({ type: 'category', value: cat.id });
-                            setIsMobileMenuOpen(false);
-                          }}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              });
-            })()
-          )}
+                  );
+                });
+              })()
+            )}
 
-          {/* ── DIMENSIÓN 2: Para tu equipo ── */}
-          <div className="mobile-dim-section">
-            <div className="mobile-dim-label">
-              <Smartphone size={11} />
-              Para tu equipo
-            </div>
-            <div className="mobile-tags-row">
-              {DEVICE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  className="mobile-dim-tag"
-                  onClick={() => handleFilter({ type: 'device', value: opt.value })}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-
-
-          {/* User Section */}
-          {user ? (
-            <>
-              <div className="mobile-user-info" onClick={() => { navigate('/profile', { state: { tab: 'profile' } }); setIsMobileMenuOpen(false); }} style={{ cursor: 'pointer' }}>
-                <div className="mobile-user-avatar">
-                  <img src={user.avatar} alt={user.name} />
-                </div>
-                <div>
-                  <div className="mobile-user-name">{user.name}</div>
-                  <div className="mobile-user-email">{user.email}</div>
-                </div>
+            {/* ── DIMENSIÓN 2: Para tu equipo ── */}
+            <div className="mobile-dim-section">
+              <div className="mobile-dim-label">
+                <Smartphone size={11} />
+                Para tu equipo
               </div>
-              <button className="mobile-nav-link" onClick={() => { navigate('/profile', { state: { tab: 'profile' } }); setIsMobileMenuOpen(false); }}>
-                Mi Panel de Usuario
-              </button>
-              <button className="mobile-nav-link" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
-                Cerrar Sesión
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="mobile-nav-link auth-link" onClick={() => { openAuthModal('login'); setIsMobileMenuOpen(false); }}>
-                Iniciar Sesión
-              </button>
-              <button className="mobile-nav-link auth-link register" onClick={() => { openAuthModal('register'); setIsMobileMenuOpen(false); }}>
-                Registrarse
-              </button>
-            </>
-          )}
+              <div className="mobile-tags-row flex overflow-x-auto scrollbar-none whitespace-nowrap pr-6">
+                {DEVICE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    className="mobile-dim-tag"
+                    onClick={() => handleFilter({ type: 'device', value: opt.value })}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+
+
+            {/* User Section */}
+            {user ? (
+              <>
+                <div className="mobile-user-info" onClick={() => { navigate('/profile', { state: { tab: 'profile' } }); setIsMobileMenuOpen(false); }} style={{ cursor: 'pointer' }}>
+                  <div className="mobile-user-avatar">
+                    <img src={user.avatar} alt={user.name} />
+                  </div>
+                  <div>
+                    <div className="mobile-user-name">{user.name}</div>
+                    <div className="mobile-user-email">{user.email}</div>
+                  </div>
+                </div>
+                <button className="mobile-nav-link" onClick={() => { navigate('/profile', { state: { tab: 'profile' } }); setIsMobileMenuOpen(false); }}>
+                  Mi Panel de Usuario
+                </button>
+                <button className="mobile-nav-link" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
+                  Cerrar Sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="mobile-nav-link auth-link" onClick={() => { openAuthModal('login'); setIsMobileMenuOpen(false); }}>
+                  Iniciar Sesión
+                </button>
+                <button className="mobile-nav-link auth-link register" onClick={() => { openAuthModal('register'); setIsMobileMenuOpen(false); }}>
+                  Registrarse
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 

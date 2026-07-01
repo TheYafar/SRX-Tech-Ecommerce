@@ -238,13 +238,29 @@ export default function Store() {
 
     // Filtro por categoría (pill filter clásico)
     if (selectedCategory !== 'Todos' && !navFilter) {
-      result = result.filter(p => p.category_id === selectedCategory);
+      const selectedCatObj = categories.find(c => c.id === selectedCategory);
+      if (selectedCatObj && selectedCatObj.parent_id === null) {
+        const childCategoryIds = categories
+          .filter(c => c.parent_id === selectedCategory)
+          .map(c => c.id);
+        result = result.filter(p => childCategoryIds.includes(p.category_id));
+      } else {
+        result = result.filter(p => p.category_id === selectedCategory);
+      }
     }
 
     // Filtro por mega menú
     if (navFilter) {
       if (navFilter.type === 'category') {
-        result = result.filter(p => p.category_id === navFilter.value);
+        const navCatObj = categories.find(c => c.id === navFilter.value);
+        if (navCatObj && navCatObj.parent_id === null) {
+          const childCategoryIds = categories
+            .filter(c => c.parent_id === navFilter.value)
+            .map(c => c.id);
+          result = result.filter(p => childCategoryIds.includes(p.category_id));
+        } else {
+          result = result.filter(p => p.category_id === navFilter.value);
+        }
       } else if (navFilter.type === 'device') {
         result = result.filter(p =>
           Array.isArray(p.compatible_devices) &&
@@ -264,7 +280,7 @@ export default function Store() {
     }
 
     setFilteredProducts(result);
-  }, [products, selectedCategory, navFilter, isBestSellersFilter]);
+  }, [products, selectedCategory, navFilter, isBestSellersFilter, categories]);
 
   // ── Detectar el nombre del filtro activo para mostrarlo ───────────────────
   const activeFilterLabel = (() => {
@@ -390,64 +406,65 @@ export default function Store() {
                 viewport={{ once: true }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-                <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-4">
-                  {/* Left scroll control */}
+                {/* Outer flex row: left arrow · white bar · right arrow */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', maxWidth: '72rem', margin: '0 auto' }}>
+
+                  {/* ← Left arrow — external, minimalista */}
                   <button
                     type="button"
                     onClick={() => handleScroll('left')}
                     className={`slider-arrow-btn ${showLeftArrow ? 'visible-arrow' : 'hidden-arrow'}`}
-                    aria-label="Scroll left"
+                    aria-label="Desplazar a la izquierda"
                   >
-                    <ChevronLeft size={18} strokeWidth={2.5} />
+                    <ChevronLeft size={16} strokeWidth={2} />
                   </button>
 
-                  {/* Central White Bar */}
-                  <div className="pill-filter-wrapper flex-1 relative">
-                    {/* Left fade gradient */}
+                  {/* ── Barra blanca central ── */}
+                  <div className="pill-filter-wrapper" style={{ flex: 1, position: 'relative' }}>
+                    {/* Gradiente izquierdo (fade) */}
                     <div className={`slider-fade-left ${showLeftArrow ? 'visible-fade' : 'hidden-fade'}`} />
 
-                    {/* Scrollable Container */}
+                    {/* Contenedor con scroll horizontal */}
                     <div
                       ref={scrollContainerRef}
-                      className="flex items-center gap-3 overflow-x-auto scrollbar-none scroll-smooth w-full py-1.5 px-2"
+                      className="pill-filter-scroll"
                     >
+                      {/* Botón «Todos» */}
                       <button
+                        type="button"
                         onClick={() => setSelectedCategory('Todos')}
-                        className={`flex-shrink-0 px-4 py-2 text-sm rounded-full border transition-all duration-300 whitespace-nowrap cursor-pointer ${
-                          selectedCategory === 'Todos'
-                            ? 'bg-[#4f6ef7] border-[#4f6ef7] text-white font-semibold shadow-md shadow-[#4f6ef7]/20'
-                            : 'bg-[#1e293b] border-gray-700 text-white hover:bg-[#2d3a4f] hover:border-gray-600'
-                        }`}
+                        className={`filter-pill-btn${selectedCategory === 'Todos' ? ' active' : ''}`}
                       >
+                        {selectedCategory === 'Todos' && <span className="active-pill-bg" />}
                         Todos
                       </button>
+
+                      {/* Categorías dinámicas */}
                       {categories.map(cat => (
                         <button
                           key={cat.id}
+                          type="button"
                           onClick={() => setSelectedCategory(cat.id)}
-                          className={`flex-shrink-0 px-4 py-2 text-sm rounded-full border transition-all duration-300 whitespace-nowrap cursor-pointer ${
-                            selectedCategory === cat.id
-                              ? 'bg-[#4f6ef7] border-[#4f6ef7] text-white font-semibold shadow-md shadow-[#4f6ef7]/20'
-                              : 'bg-[#1e293b] border-gray-700 text-white hover:bg-[#2d3a4f] hover:border-gray-600'
-                          }`}
+                          className={`filter-pill-btn${selectedCategory === cat.id ? ' active' : ''}`}
                         >
+                          {selectedCategory === cat.id && <span className="active-pill-bg" />}
                           {cat.name}
                         </button>
                       ))}
                     </div>
 
-                    {/* Right fade gradient */}
+                    {/* Gradiente derecho (fade) */}
                     <div className={`slider-fade-right ${showRightArrow ? 'visible-fade' : 'hidden-fade'}`} />
                   </div>
 
-                  {/* Right scroll control */}
+                  {/* → Right arrow — external, minimalista */}
                   <button
                     type="button"
                     onClick={() => handleScroll('right')}
                     className={`slider-arrow-btn ${showRightArrow ? 'visible-arrow' : 'hidden-arrow'}`}
-                    aria-label="Scroll right"
+                    aria-label="Desplazar a la derecha"
                   >
-                    <ChevronRight size={18} strokeWidth={2.5} />
+                    <ChevronRight size={16} strokeWidth={2} />
                   </button>
                 </div>
               </motion.div>

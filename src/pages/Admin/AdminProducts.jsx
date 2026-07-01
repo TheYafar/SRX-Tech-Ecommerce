@@ -337,6 +337,7 @@ export default function AdminProducts() {
     fechaOferta: '',
     masVendido: false,
     categoria: '',
+    description: '',
     compatibleDevices: [],
     useScenarios: [],
   });
@@ -375,7 +376,7 @@ export default function AdminProducts() {
       try {
         const { data, error } = await supabase
           .from('categories')
-          .select('id, name, slug')
+          .select('id, name, slug, parent_id')
           .order('name', { ascending: true });
 
         if (error) throw error;
@@ -437,6 +438,7 @@ export default function AdminProducts() {
       fechaOferta: producto.offer_ends_at ?? producto.offerEndsAt ?? '',
       masVendido: producto.is_best_seller ?? producto.isBestSeller ?? false,
       categoria: producto.category_id ?? producto.category ?? '',
+      description: producto.description || '',
       compatibleDevices: Array.isArray(producto.compatible_devices)
         ? producto.compatible_devices
         : [],
@@ -529,6 +531,7 @@ export default function AdminProducts() {
 
       const payload = {
         name: formData.nombre,
+        description: formData.description || null,
         price_usd: safePrice,
         compare_at_price_usd: safeOfferPrice,
         stock: Number(formData.stock),
@@ -576,6 +579,7 @@ export default function AdminProducts() {
             ? {
                 ...p,
                 name: payload.name,
+                description: payload.description,
                 price_usd: payload.price_usd,
                 price: payload.price_usd,
                 compare_at_price_usd: payload.compare_at_price_usd,
@@ -901,6 +905,19 @@ export default function AdminProducts() {
                   />
                 </div>
 
+                {/* ── Descripción ── */}
+                <div className="edit-form-group">
+                  <label htmlFor="edit-description">Descripción</label>
+                  <textarea
+                    id="edit-description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Descripción detallada del producto..."
+                    rows={3}
+                    className="create-textarea"
+                  />
+                </div>
+
                 {/* ── Categoría + Botón Nueva ── */}
                 <div className="edit-form-group">
                   <label htmlFor="edit-categoria">Categoría</label>
@@ -912,7 +929,7 @@ export default function AdminProducts() {
                       className="category-select"
                     >
                       <option value="">— Sin categoría —</option>
-                      {categories.map((cat) => (
+                      {categories.filter(cat => cat.parent_id !== null).map((cat) => (
                         <option key={cat.id} value={String(cat.id)}>
                           {cat.name}
                         </option>
@@ -1283,7 +1300,7 @@ export default function AdminProducts() {
                       required
                     >
                       <option value="" disabled>Selecciona una categoría...</option>
-                      {categories.map((cat) => (
+                      {categories.filter(cat => cat.parent_id !== null).map((cat) => (
                         <option key={cat.id} value={String(cat.id)}>
                           {cat.name}
                         </option>
