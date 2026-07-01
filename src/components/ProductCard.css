@@ -1,0 +1,512 @@
+/* ══════════════════════════════════════════
+   PRODUCT CARD — Premium e-commerce style
+   ══════════════════════════════════════════ */
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+  border: 1px solid var(--border-color);
+}
+
+@media (hover: hover) {
+  .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow:
+      0 18px 44px rgba(0, 0, 0, 0.12),
+      0 6px 16px rgba(30, 34, 94, 0.08);
+    border-color: rgba(30, 34, 94, 0.15);
+  }
+}
+
+/* ── Image Container ── */
+.card-image-container {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* Perfect 1:1 */
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+@media (hover: hover) {
+  .product-card:hover .card-image {
+    transform: scale(1.07);
+  }
+}
+
+/* ── Premium Offer Banner (Vibrant glassmorphism) ── */
+.premium-offer-banner {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(120, 80, 255, 0.55);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  color: #ffffff;
+  padding: 6px 16px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border: 1px solid rgba(160, 130, 255, 0.3);
+  border-radius: 6px;
+  z-index: 10;
+  box-shadow:
+    0 4px 16px rgba(120, 80, 255, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  animation: offerShimmer 3s ease-in-out infinite;
+}
+
+/* ── Price Container (Offer layout) ── */
+.price-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.old-price {
+  text-decoration: line-through;
+  color: rgba(160, 160, 175, 0.7);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+
+.new-price {
+  color: rgb(140, 100, 255);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+}
+
+/* ── Backorder Notice ── */
+.backorder-notice {
+  font-size: 0.75rem;
+  color: rgba(180, 180, 195, 0.75);
+  margin-top: 0.25rem;
+  font-style: italic;
+  line-height: 1.4;
+  letter-spacing: 0.1px;
+}
+
+/* ── Order Button variant (out of stock) ── */
+.pill-btn.order-btn {
+  border-color: rgba(88, 101, 242, 0.5);
+  background: rgba(88, 101, 242, 0.1);
+  color: #8b97f6;
+}
+
+@media (hover: hover) {
+  .pill-btn.order-btn:hover {
+    border-color: rgba(88, 101, 242, 0.9);
+    background: rgba(88, 101, 242, 0.85);
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(88, 101, 242, 0.35);
+  }
+}
+
+/* ── Rating Badge ── */
+.card-rating {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  background: rgba(15, 17, 23, 0.72);
+  color: #ffc947;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.73rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ── Hover Actions Overlay ── */
+.card-actions-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 12, 26, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .product-card:hover .card-actions-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* ── Quick Action Buttons ── */
+.quick-action-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-md);
+}
+
+@media (hover: hover) {
+  .quick-action-btn:hover {
+    background: #fff;
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.view-btn:hover {
+  color: var(--navy);
+}
+
+.like-btn:hover,
+.like-btn[aria-label*="Quitar"] {
+  color: #e74c5e;
+}
+
+/* ── Card Info ── */
+.card-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 1.1rem 1.1rem 1.2rem;
+  gap: 0;
+}
+
+.card-category-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 0.22rem 0.7rem;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--border-color);
+  /* Override the absolute position from old CSS */
+  position: static;
+}
+
+.card-title {
+  font-size: 0.97rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+}
+
+.card-tagline {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 0.85rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+/* ── Pricing ── */
+.card-pricing {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 1.2rem;
+}
+
+.pricing-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.usd-prices {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ves-price {
+  font-size: 0.75rem;
+  color: rgba(160, 160, 175, 0.55);
+  font-weight: 500;
+  margin-top: 0.1rem;
+  letter-spacing: 0.2px;
+}
+
+.current-price {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.sale-price {
+  color: var(--navy);
+}
+
+.original-price {
+  font-size: 0.85rem;
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Add to Cart Button ── */
+.pill-btn {
+  align-self: stretch;
+  margin-top: auto;
+  padding: 0.65rem 1.2rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.1px;
+}
+
+@media (hover: hover) {
+  .pill-btn:hover {
+    border-color: var(--navy);
+    background: var(--navy);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow:
+      var(--shadow-navy),
+      0 0 0 1px rgba(30, 34, 94, 0.1);
+    filter: brightness(1.1) saturate(1.05);
+  }
+}
+
+/* Tactile press feedback */
+.pill-btn:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 8px rgba(30, 34, 94, 0.15);
+  transition-duration: 0.08s;
+}
+
+.cart-btn.added-to-cart {
+  background: var(--success-color);
+  color: #fff;
+  border-color: var(--success-color);
+}
+
+.cart-added-indicator {
+  position: absolute;
+  right: 0.9rem;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+/* ── Animations ── */
+@keyframes offerShimmer {
+  0%, 100% {
+    box-shadow:
+      0 4px 16px rgba(120, 80, 255, 0.35),
+      0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 6px 24px rgba(120, 80, 255, 0.55),
+      0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .card-image-container {
+    padding-top: 110%; /* ~4:5 aspect ratio — taller, more e-commerce style */
+  }
+
+  .card-title { font-size: 0.82rem; line-height: 1.3; }
+  .card-tagline { font-size: 0.72rem; margin-bottom: 0.4rem; }
+  .current-price { font-size: 1rem; }
+  .new-price { font-size: 1rem; }
+  .old-price { font-size: 0.78rem; }
+  .premium-offer-banner { font-size: 0.58rem; padding: 3px 8px; letter-spacing: 1.8px; }
+  .quick-action-btn { width: 38px; height: 38px; }
+
+  /* Compact card info for 2-col grids */
+  .card-info {
+    padding: 0.65rem 0.65rem 0.75rem;
+    gap: 0;
+  }
+
+  .card-category-badge {
+    font-size: 0.58rem;
+    padding: 0.15rem 0.5rem;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.6px;
+  }
+
+  .card-pricing {
+    margin-bottom: 0.65rem;
+  }
+
+  .ves-price {
+    font-size: 0.68rem;
+  }
+
+  /* Touch-friendly add-to-cart */
+  .pill-btn {
+    min-height: 42px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.78rem;
+    gap: 0.35rem;
+  }
+
+  .pill-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Order button also touch-friendly */
+  .pill-btn.order-btn {
+    min-height: 42px;
+    padding: 0.6rem 0.8rem;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     MOBILE OVERLAY — Corner Badge (always visible, no hover needed)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .card-actions-overlay {
+    /* Reset full-cover overlay */
+    inset: auto !important;
+    background: rgba(15, 23, 42, 0.78) !important;
+    backdrop-filter: blur(6px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(6px) saturate(1.4) !important;
+
+    /* Pin to top-right corner of the image */
+    top: 8px !important;
+    right: 8px !important;
+    bottom: auto !important;
+    left: auto !important;
+
+    /* Compact pill shape holding both icon buttons */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding: 3px 5px !important;
+    border-radius: 50px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+
+    /* Always visible on touch devices */
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+
+    /* Subtle entrance animation */
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  }
+
+  /* Active feedback for the whole badge on tap */
+  .card-actions-overlay:active {
+    transform: scale(0.93) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Icon buttons inside the corner badge */
+  .card-actions-overlay .quick-action-btn {
+    width: 30px !important;
+    height: 30px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    border-radius: 50% !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .card-actions-overlay .quick-action-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  /* Active (tap) feedback per button */
+  .card-actions-overlay .quick-action-btn:active {
+    background: rgba(255, 255, 255, 0.15) !important;
+    transform: scale(0.88) !important;
+  }
+
+  /* Heart icon inherits liked color */
+  .card-actions-overlay .like-btn[aria-label*="Quitar"] {
+    color: #ff6b8a !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-image-container {
+    padding-top: 105%; /* Slightly less tall for very small screens */
+  }
+
+  .card-title { font-size: 0.78rem; }
+
+  .card-category-badge {
+    font-size: 0.55rem;
+    padding: 0.12rem 0.45rem;
+  }
+
+  .card-info {
+    padding: 0.55rem 0.55rem 0.7rem;
+  }
+
+  .pill-btn {
+    min-height: 40px;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.74rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .current-price { font-size: 0.92rem; }
+  .new-price { font-size: 0.92rem; }
+}

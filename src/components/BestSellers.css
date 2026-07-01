@@ -1,0 +1,130 @@
+/* ===========================================
+   Best Sellers Section
+   =========================================== */
+
+.best-sellers-section {
+  padding: 6rem 0;
+  background-color: var(--bg-primary);
+}
+
+.best-sellers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3.5rem;
+}
+
+.best-sellers-title-wrapper {
+  max-width: 600px;
+}
+
+.best-sellers-subtitle {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent-light);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.best-sellers-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.best-sellers-action {
+  padding-bottom: 0.5rem;
+}
+
+.btn-view-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+}
+
+.btn-view-all::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--navy);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--transition-normal);
+}
+
+.btn-view-all:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.best-sellers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .best-sellers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .best-sellers-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .best-sellers-title {
+    font-size: 1.65rem;
+  }
+  .best-sellers-section {
+    padding: 3.5rem 0;
+  }
+  /* 2-column grid — consistent with Store */
+  .best-sellers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  .btn-view-all {
+    min-height: 44px;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .best-sellers-grid {
+    gap: 0.55rem;
+  }
+
+  .best-sellers-section {
+    padding: 2.5rem 0;
+  }
+
+  .best-sellers-title {
+    font-size: 1.45rem;
+  }
+
+  /* Hide 'Ver colección' button on small mobile — not needed */
+  .best-sellers-action {
+    display: none;
+  }
+}
+

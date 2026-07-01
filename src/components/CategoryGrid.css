@@ -1,0 +1,277 @@
+/* ══════════════════════════════════════════════════════════
+   CATEGORY GRID — Bento-style layout (Vanilla CSS, CERO Tailwind)
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper ── */
+.category-section {
+  padding: 6rem 0 5rem;
+  background: var(--bg-primary);
+}
+
+/* ── Section Header ── */
+.section-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.section-subtitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-light);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.section-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-top: 0.25rem;
+}
+
+/* ── Bento Grid ── */
+.category-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Right Column ── */
+.category-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Card base ── */
+.category-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  color: #fff;
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 
+              0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.category-card:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 3px;
+}
+
+/* ── Card size variants ── */
+.large-card {
+  height: 500px;
+}
+
+.horizontal-card {
+  height: 240px; /* (500px - 20px gap) / 2 = 240px for perfect alignment */
+}
+
+/* ── Image background ── */
+.category-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  transition: transform 0.5s ease;
+}
+
+.category-card:hover .category-bg-img {
+  transform: scale(1.05);
+}
+
+/* ── Dark gradient overlay ── */
+.category-overlay-dark {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.85));
+  z-index: 2;
+}
+
+/* ── Text content ── */
+.category-content {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  width: 100%;
+  padding: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  pointer-events: none; /* Evita que el contenedor tape el botón */
+}
+
+/* ── Typography ── */
+.cat-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.45rem;
+  line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+
+.cat-description {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 1.35rem;
+  max-width: 380px;
+  line-height: 1.55;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* ── CTA pill button ── */
+.pill-btn-outline {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto; /* Permite clics en el botón/enlace */
+  text-decoration: none; /* Quita el subrayado por ser un Link de React Router */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pill-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #fff;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.pill-btn-outline:active {
+  transform: scale(0.98) translateY(0);
+}
+
+/* ── Skeleton loader ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton-card {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  overflow: hidden;
+}
+
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+.category-error {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.95rem;
+  padding: 3rem 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .large-card {
+    height: 440px;
+  }
+  .horizontal-card {
+    height: 210px; /* (440px - 20px gap) / 2 = 210px */
+  }
+  .cat-title {
+    font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .large-card,
+  .horizontal-card {
+    height: 300px !important;
+  }
+
+  .category-content {
+    padding: 1.5rem;
+  }
+
+  .cat-title {
+    font-size: 1.35rem;
+  }
+  
+  .cat-description {
+    font-size: 0.82rem;
+    margin-bottom: 1rem;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .category-section {
+    padding: 4rem 0 3rem;
+  }
+  
+  .large-card,
+  .horizontal-card {
+    height: 260px !important;
+  }
+
+  .category-content {
+    padding: 1.25rem;
+  }
+
+  .cat-title {
+    font-size: 1.2rem;
+  }
+
+  .cat-description {
+    display: none; /* Ocultar descripciones en pantallas muy pequeñas */
+  }
+
+  .pill-btn-outline {
+    padding: 0.45rem 1.25rem;
+    font-size: 0.8rem;
+  }
+}
