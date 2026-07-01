@@ -952,6 +952,7 @@
   padding-top: 1.25rem;
 }
 
+<<<<<<< HEAD
 .product-complement-section > div {
   display: flex !important;
   flex-direction: column !important;
@@ -959,6 +960,8 @@
   width: 100% !important;
 }
 
+=======
+>>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 .complement-title {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -977,8 +980,11 @@
   background-color: #1e293b;
   border: 1px solid #334155;
   gap: 0.75rem;
+<<<<<<< HEAD
   width: 100%;
   box-sizing: border-box;
+=======
+>>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 }
 
 .complement-card-clickable {

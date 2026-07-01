@@ -48,7 +48,10 @@ export default function App() {
                     <Route path="/" element={<MainLayout />}>
                       <Route index element={<Home />} />
                       <Route path="tienda" element={<Store />} />
+<<<<<<< HEAD
                       <Route path="tienda/:slug" element={<Store />} />
+=======
+>>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
                       <Route path="profile" element={<Profile />} />
                       <Route path="register" element={<RegisterRedirect />} />
                       <Route path="signup" element={<RegisterRedirect />} />
