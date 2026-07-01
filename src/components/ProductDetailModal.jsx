@@ -1,9 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -11,10 +8,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { useProducts } from '../context/ProductContext';
 import { supabase } from '../utils/supabaseClient';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock, Smartphone, Package } from 'lucide-react';
-<<<<<<< HEAD
 import { generateSlug } from '../utils/slugify';
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 import './ProductDetailModal.css';
 
 // ── Sub-componente: SpecTabs ────────────────────────────────────────────────
@@ -68,10 +62,7 @@ function SpecTabs({ compatibleDevices = [], useScenarios = [] }) {
 
 // ── Componente Principal ────────────────────────────────────────────────────
 export default function ProductDetailModal({ product, isOpen, onClose, onMouseEnter, onMouseLeave }) {
-<<<<<<< HEAD
   const navigate = useNavigate();
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   const { addToCart, setIsCartOpen } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatUSD, formatVES, isLoading } = useCurrency();
@@ -226,12 +217,8 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
   };
 
   const handleShare = async () => {
-<<<<<<< HEAD
     const slug = product.slug || generateSlug(product.name) || String(product.id);
     const shareUrl = `${window.location.origin}/#/tienda/${slug}`;
-=======
-    const shareUrl = `${window.location.origin}/?product=${product.id}`;
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
     const shareData = {
       title: product.name,
       text: product.tagline || product.description || `Mira este increíble producto: ${product.name}`,
@@ -654,14 +641,10 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                         <div key={compProd.id} className="complement-card flex items-center justify-between p-3 rounded-xl bg-[#1e293b] border border-slate-800 gap-3">
                           <div 
                             className="complement-card-clickable flex items-center gap-3 cursor-pointer flex-1 min-w-0"
-<<<<<<< HEAD
                             onClick={() => {
                               const newSlug = compProd.slug || generateSlug(compProd.name) || String(compProd.id);
                               navigate(`/tienda/${newSlug}`);
                             }}
-=======
-                            onClick={() => setSelectedProductId(compProd.id)}
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
                             title={`Ver ${compProd.name}`}
                           >
                             <img 
@@ -707,14 +690,10 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                         <div key={parentProd.id} className="complement-card flex items-center justify-between p-3 rounded-xl bg-[#1e293b] border border-slate-800 gap-3">
                           <div 
                             className="complement-card-clickable flex items-center gap-3 cursor-pointer flex-1 min-w-0"
-<<<<<<< HEAD
                             onClick={() => {
                               const newSlug = parentProd.slug || generateSlug(parentProd.name) || String(parentProd.id);
                               navigate(`/tienda/${newSlug}`);
                             }}
-=======
-                            onClick={() => setSelectedProductId(parentProd.id)}
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
                             title={`Ver ${parentProd.name}`}
                           >
                             <img 

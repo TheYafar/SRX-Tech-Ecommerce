@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
-<<<<<<< HEAD
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 import { useProducts } from '../context/ProductContext';
@@ -13,17 +12,6 @@ export default function Hero() {
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const { products } = useProducts();
-=======
-import { Link } from 'react-router-dom';
-import { supabase } from '../utils/supabaseClient';
-import { useProducts } from '../context/ProductContext';
-import './Hero.css';
-
-export default function Hero() {
-  const [slides, setSlides] = useState([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const { products, setSelectedProductId } = useProducts();
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 
   // Fetch banners on mount
   useEffect(() => {
@@ -141,7 +129,6 @@ export default function Hero() {
           {/* === Bottom Tagline Pill === */}
           {slide?.product_id ? (
             <button
-<<<<<<< HEAD
               onClick={() => {
                 const product = products.find(p => p.id === slide.product_id);
                 if (product) {
@@ -149,9 +136,6 @@ export default function Hero() {
                   navigate(`/tienda/${slug}`);
                 }
               }}
-=======
-              onClick={() => setSelectedProductId(slide.product_id)}
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
               style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'none', pointerEvents: 'auto', cursor: 'pointer', display: 'block' }}
             >
               <motion.div

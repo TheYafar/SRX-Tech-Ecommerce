@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCurrency } from '../context/CurrencyContext';
-<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star } from 'lucide-react';
@@ -12,14 +11,6 @@ import './ProductCard.css';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
-=======
-import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, Star } from 'lucide-react';
-import ProductDetailModal from './ProductDetailModal';
-import './ProductCard.css';
-
-export default function ProductCard({ product }) {
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   const { user, openAuthModalWithAction } = useAuth();
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isProductLiked } = useWishlist();
@@ -29,10 +20,7 @@ export default function ProductCard({ product }) {
   const tieneOferta = precioOferta > 0 && precioOferta < precioActual;
   const isOutOfStock = !product.stock || product.stock < 1;
   const [isAdded, setIsAdded] = useState(false);
-<<<<<<< HEAD
-=======
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
+
   
   const isLiked = isProductLiked(product.id);
 
@@ -52,16 +40,8 @@ export default function ProductCard({ product }) {
   };
 
   const handleQuickView = () => {
-<<<<<<< HEAD
     const slug = product.slug || generateSlug(product.name) || String(product.id);
     navigate(`/tienda/${slug}`);
-=======
-    setIsDetailOpen(true);
-  };
-
-  const handleCloseDetail = () => {
-    setIsDetailOpen(false);
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   };
 
   return (
@@ -221,16 +201,7 @@ export default function ProductCard({ product }) {
           </motion.button>
         </div>
       </motion.div>
-<<<<<<< HEAD
-=======
 
-      {/* Product Detail Modal */}
-      <ProductDetailModal 
-        product={product} 
-        isOpen={isDetailOpen} 
-        onClose={handleCloseDetail} 
-      />
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
     </>
   );
 }

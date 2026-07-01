@@ -250,18 +250,13 @@
   margin-bottom: 4rem;
 }
 
-<<<<<<< HEAD
 /* Pill Filter Outer Wrapper Capsule */
-=======
-/* Pill Filter */
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 .pill-filter-container {
   display: flex;
   justify-content: center;
   margin-top: 2rem;
 }
 
-<<<<<<< HEAD
 .pill-filter-wrapper {
   background: white;
   border-radius: var(--radius-full);
@@ -281,19 +276,6 @@
   padding: 0.5rem 2rem;
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
-=======
-.pill-filter-scroll {
-  display: inline-flex;
-  background: white;
-  padding: 0.5rem;
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-color);
-  gap: 0.5rem;
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 }
 
 .pill-filter-scroll::-webkit-scrollbar {
@@ -629,7 +611,6 @@
 
   .store-hero-title { font-size: 1.75rem; }
   .store-hero-subtitle { font-size: 0.88rem; }
-<<<<<<< HEAD
 }
 
 /* ── Fallback Tailwind Utilities for Horizontal Scroll and Fade Effect ── */
@@ -865,6 +846,4 @@
 
 .slider-fade-left.visible-fade, .slider-fade-right.visible-fade {
   opacity: 1 !important;
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 }

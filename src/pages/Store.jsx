@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams, useParams, useNavigate } from 'react-router-dom';
@@ -8,15 +7,6 @@ import ProductDetailModal from '../components/ProductDetailModal';
 import { supabase } from '../utils/supabaseClient';
 import { getNavFilter, clearNavFilter } from '../components/Navbar';
 import { generateSlug } from '../utils/slugify';
-=======
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useSearchParams } from 'react-router-dom';
-import { X, Grid, Smartphone, Search, Star } from 'lucide-react';
-import ProductCard from '../components/ProductCard';
-import { supabase } from '../utils/supabaseClient';
-import { getNavFilter, clearNavFilter } from '../components/Navbar';
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 import './Store.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,21 +20,14 @@ const FILTER_LABELS = {
 };
 
 export default function Store() {
-<<<<<<< HEAD
   const { slug } = useParams();
   const navigate = useNavigate();
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   const [products, setProducts]                 = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories]             = useState([]);
   const [isLoading, setIsLoading]               = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-<<<<<<< HEAD
   const [activeProduct, setActiveProduct]       = useState(null);
-
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
 
   // ── Query param: filter=best_sellers ─────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
@@ -70,7 +53,6 @@ export default function Store() {
     return () => window.removeEventListener('srx_nav_filter_change', onNavFilter);
   }, []);
 
-<<<<<<< HEAD
   // ── Scroll container control and arrows state ──────────────────────────────
   const scrollContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -110,8 +92,6 @@ export default function Store() {
     }
   }, [categories, navFilter, isBestSellersFilter, checkScrollButtons]);
 
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   // ── Fetch de datos ────────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchData() {
@@ -145,7 +125,6 @@ export default function Store() {
     fetchData();
   }, []);
 
-<<<<<<< HEAD
   // ── Sincronizar producto seleccionado según el slug de la URL ─────────────
   useEffect(() => {
     if (!slug) {
@@ -227,8 +206,6 @@ export default function Store() {
     fetchProductBySlugOrId();
   }, [slug, products]);
 
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   // ── Limpiar filtro de navegación ──────────────────────────────────────────
   const clearFilter = useCallback(() => {
     clearNavFilter();
@@ -310,13 +287,10 @@ export default function Store() {
     visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100, damping: 12 } },
   };
 
-<<<<<<< HEAD
   const handleCloseModal = () => {
     navigate('/tienda');
   };
 
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
   return (
     <div className="store-page">
       {/* Premium Hero Section */}
@@ -410,17 +384,12 @@ export default function Store() {
             {/* Premium Pill Filter — solo visible si no hay nav-filter ni best_sellers activo */}
             {!navFilter && !isBestSellersFilter && (
               <motion.div
-<<<<<<< HEAD
                 className="pill-filter-container w-full"
-=======
-                className="pill-filter-container"
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-<<<<<<< HEAD
                 <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-4">
                   {/* Left scroll control */}
                   <button
@@ -480,30 +449,6 @@ export default function Store() {
                   >
                     <ChevronRight size={18} strokeWidth={2.5} />
                   </button>
-=======
-                <div className="pill-filter-scroll">
-                  <button
-                    className={`filter-pill-btn ${selectedCategory === 'Todos' ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory('Todos')}
-                  >
-                    Todos
-                    {selectedCategory === 'Todos' && (
-                      <motion.div layoutId="activePill" className="active-pill-bg" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
-                    )}
-                  </button>
-                  {categories.map(cat => (
-                    <button
-                      key={cat.id}
-                      className={`filter-pill-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-                      onClick={() => setSelectedCategory(cat.id)}
-                    >
-                      {cat.name}
-                      {selectedCategory === cat.id && (
-                        <motion.div layoutId="activePill" className="active-pill-bg" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
-                      )}
-                    </button>
-                  ))}
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
                 </div>
               </motion.div>
             )}
@@ -606,8 +551,6 @@ export default function Store() {
           </motion.div>
         </div>
       </section>
-<<<<<<< HEAD
-
       {/* Product Detail Modal */}
       {activeProduct && (
         <ProductDetailModal
@@ -616,8 +559,6 @@ export default function Store() {
           onClose={handleCloseModal}
         />
       )}
-=======
->>>>>>> 9ee00f1a54de86a0312da8b07ce6b48267d252e8
     </div>
   );
 }
