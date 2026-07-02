@@ -69,77 +69,7 @@
   z-index: 10;
   box-shadow:
     0 4px 16px rgba(120, 80, 255, 0.35),
-/* ══════════════════════════════════════════
-   PRODUCT CARD — Premium e-commerce style
-   ══════════════════════════════════════════ */
 
-.product-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 100%;
-  background: #fff;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  position: relative;
-  border: 1px solid var(--border-color);
-}
-
-@media (hover: hover) {
-  .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow:
-      0 18px 44px rgba(0, 0, 0, 0.12),
-      0 6px 16px rgba(30, 34, 94, 0.08);
-    border-color: rgba(30, 34, 94, 0.15);
-  }
-}
-
-/* ── Image Container ── */
-.card-image-container {
-  position: relative;
-  width: 100%;
-  padding-top: 100%; /* Perfect 1:1 */
-  background: var(--bg-tertiary);
-  overflow: hidden;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-
-.card-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--transition-slow);
-}
-
-@media (hover: hover) {
-  .product-card:hover .card-image {
-    transform: scale(1.07);
-  }
-}
-
-/* ── Premium Offer Banner (Vibrant glassmorphism) ── */
-.premium-offer-banner {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: rgba(120, 80, 255, 0.55);
-  backdrop-filter: blur(12px) saturate(1.6);
-  -webkit-backdrop-filter: blur(12px) saturate(1.6);
-  color: #ffffff;
-  padding: 6px 16px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  border: 1px solid rgba(160, 130, 255, 0.3);
-  border-radius: 6px;
-  z-index: 10;
-  box-shadow:
-    0 4px 16px rgba(120, 80, 255, 0.35),
     0 1px 3px rgba(0, 0, 0, 0.25);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   animation: offerShimmer 3s ease-in-out infinite;

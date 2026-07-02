@@ -429,15 +429,18 @@ export default function Store() {
                     {/* Contenedor con scroll horizontal */}
                     <div
                       ref={scrollContainerRef}
-                      className="pill-filter-scroll"
+                      className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2"
                     >
                       {/* Botón «Todos» */}
                       <button
                         type="button"
                         onClick={() => setSelectedCategory('Todos')}
-                        className={`filter-pill-btn${selectedCategory === 'Todos' ? ' active' : ''}`}
+                        className={`whitespace-nowrap px-5 py-2 rounded-full transition-all text-sm font-medium ${
+                          selectedCategory === 'Todos'
+                            ? 'bg-[#4f6ef7] text-white shadow-md shadow-[#4f6ef7]/20 font-semibold'
+                            : 'bg-white text-gray-700 shadow-sm hover:bg-gray-50'
+                        }`}
                       >
-                        {selectedCategory === 'Todos' && <span className="active-pill-bg" />}
                         Todos
                       </button>
 
@@ -447,9 +450,12 @@ export default function Store() {
                           key={cat.id}
                           type="button"
                           onClick={() => setSelectedCategory(cat.id)}
-                          className={`filter-pill-btn${selectedCategory === cat.id ? ' active' : ''}`}
+                          className={`whitespace-nowrap px-5 py-2 rounded-full transition-all text-sm font-medium ${
+                            selectedCategory === cat.id
+                              ? 'bg-[#4f6ef7] text-white shadow-md shadow-[#4f6ef7]/20 font-semibold'
+                              : 'bg-white text-gray-700 shadow-sm hover:bg-gray-50'
+                          }`}
                         >
-                          {selectedCategory === cat.id && <span className="active-pill-bg" />}
                           {cat.name}
                         </button>
                       ))}

@@ -701,10 +701,10 @@
 .right-2 {
   right: 0.5rem !important;
 }
-.top-1/2 {
+.top-1\/2 {
   top: 50% !important;
 }
-.-translate-y-1/2 {
+.-translate-y-1\/2 {
   transform: translateY(-50%) !important;
 }
 .gap-4 {
@@ -754,6 +754,32 @@
 }
 .shadow-\[\#4f6ef7\]\/20 {
   box-shadow: 0 4px 6px -1px rgba(79, 110, 247, 0.2), 0 2px 4px -1px rgba(79, 110, 247, 0.2) !important;
+}
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.px-5 {
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+}
+.bg-white {
+  background-color: #ffffff !important;
+}
+.text-gray-700 {
+  color: #374151 !important;
+}
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+.font-medium {
+  font-weight: 500 !important;
+}
+.hover\:bg-gray-50:hover {
+  background-color: #f9fafb !important;
 }
 /* (estilos legacy de barra oscura eliminados) */
 
