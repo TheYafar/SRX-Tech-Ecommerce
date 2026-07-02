@@ -96,18 +96,11 @@ export function CurrencyProvider({ children }) {
 
   const formatVES = (amountUSD) => {
     // Ya no necesitamos el guard "if (!exchangeRate)" porque siempre hay un valor
-<<<<<<< HEAD
     const formatted = new Intl.NumberFormat('es-VE', {
       style: 'currency',
       currency: 'VES',
     }).format(amountUSD * exchangeRate);
     return formatted.replace('Bs.S', 'Bs.');
-=======
-    return new Intl.NumberFormat('es-VE', {
-      style: 'currency',
-      currency: 'VES',
-    }).format(amountUSD * exchangeRate);
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   };
 
   return (

@@ -105,13 +105,9 @@ export default function Store() {
 
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('categories')
-<<<<<<< HEAD
           .select('*')
           .order('order', { ascending: true })
           .order('name', { ascending: true });
-=======
-          .select('*');
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
         if (categoriesError) throw categoriesError;
 
         const mappedProducts = (productsData || []).map(p => ({

@@ -5,19 +5,14 @@ import { setNavFilter } from './Navbar';
 import './CategoryGrid.css';
 
 const categoryMeta = {
-<<<<<<< HEAD
   // Tarjeta grande de la izquierda (Productos SRX / Cámaras, fotografía y video)
   'drones-y-sistemas-aereos': {
-=======
-  'drones-y-sistemas-aereos': { // Tarjeta grande de la izquierda
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
     image: '/srx.jpg',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
-<<<<<<< HEAD
   'cámaras,-fotografía-y-video': {
     image: '/srx.jpg',
     titleDisplay: 'Productos SRX',
@@ -49,17 +44,12 @@ const categoryMeta = {
 
   // Tarjeta superior derecha
   'audio-profesional': {
-=======
-  'audio-profesional': { // Tarjeta superior derecha
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
     image: '/srx2.jpg',
     titleDisplay: 'Audio Profesional',
     description: 'Lentes de marcas reconocidas para ampliar tu creatividad visual.',
     buttonText: 'Comprar',
     order: 1
   },
-<<<<<<< HEAD
-
   // Tarjeta inferior derecha
   'iluminacion-y-energia': {
     image: '/srx3.jpg',
@@ -76,9 +66,6 @@ const categoryMeta = {
     order: 2
   },
   'iluminacion': {
-=======
-  'iluminacion-y-energia': { // Tarjeta inferior derecha
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
     image: '/srx3.jpg',
     titleDisplay: 'Iluminación y Energía',
     description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
@@ -97,19 +84,11 @@ function SkeletonCard({ large }) {
 }
 
 /* ─── Single category card ─────────────────────────────── */
-<<<<<<< HEAD
 function CategoryCard({ category, large, reverse, onClick }) {
   const title = category.titleDisplay || category.name;
   return (
     <div
       className={`category-card ${large ? 'large-card' : 'horizontal-card'} ${reverse ? 'reverse-card' : ''}`}
-=======
-function CategoryCard({ category, large, onClick }) {
-  const title = category.titleDisplay || category.name;
-  return (
-    <div
-      className={`category-card ${large ? 'large-card' : 'horizontal-card'}`}
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -117,7 +96,6 @@ function CategoryCard({ category, large, onClick }) {
       aria-label={`Ver categoría ${title}`}
     >
       {category.image && (
-<<<<<<< HEAD
         <div className="category-img-wrapper">
           <img src={category.image} alt={title} className="category-bg-img" />
         </div>
@@ -127,14 +105,6 @@ function CategoryCard({ category, large, onClick }) {
           <h3 className="cat-title">{title}</h3>
           {category.description && <p className="cat-description">{category.description}</p>}
         </div>
-=======
-        <img src={category.image} alt={title} className="category-bg-img" />
-      )}
-      <div className="category-overlay-dark" />
-      <div className="category-content">
-        <h3 className="cat-title">{title}</h3>
-        {category.description && <p className="cat-description">{category.description}</p>}
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
         <Link
           to="/tienda"
           className="pill-btn-outline"
@@ -271,19 +241,12 @@ export default function CategoryGrid() {
           {/* Columna derecha con dos tarjetas horizontales pequeñas */}
           {restCats.length > 0 && (
             <div className="category-right-col">
-<<<<<<< HEAD
               {restCats.map((cat, idx) => (
-=======
-              {restCats.map((cat) => (
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
                 <CategoryCard
                   key={cat.id}
                   category={cat}
                   large={false}
-<<<<<<< HEAD
                   reverse={idx === 1}
-=======
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
                   onClick={() => handleCategoryClick(cat.id)}
                 />
               ))}

@@ -8,10 +8,7 @@ import { X, CreditCard, Shield, CheckCircle, AlertCircle, Lock, User, Mail, Phon
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import PaymentInstructions from './PaymentInstructions';
-<<<<<<< HEAD
 import { enviarCorreoCompraExitosa } from '../services/emailService';
-=======
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 import './CheckoutModal.css';
 
 const CONFETTI_PARTICLES = [
@@ -115,16 +112,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
     : (cartTotal || 0);
 
   const discountAmount = Number((calculatedSubtotal * (appliedDiscount / 100)).toFixed(2));
-<<<<<<< HEAD
   const baseTotal = Math.max(0, Number((calculatedSubtotal - discountAmount).toFixed(2)));
   const isPayPalOrCard = paymentMethod === 'paypal' || paymentMethod === 'tarjeta';
   const paypalCommission = isPayPalOrCard && baseTotal > 0
     ? Number(((baseTotal + 0.30) / (1 - 0.054) - baseTotal).toFixed(2))
     : 0;
   const finalTotal = Number((baseTotal + paypalCommission).toFixed(2));
-=======
-  const finalTotal = Math.max(0, Number((calculatedSubtotal - discountAmount).toFixed(2)));
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isContactInfoValid = 
@@ -397,16 +390,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
           return sum + (price * (item.quantity || 1));
         }, 0);
         const discountContado = Number((subtotalContado * (appliedDiscount / 100)).toFixed(2));
-<<<<<<< HEAD
         const baseContado = Math.max(0, Number((subtotalContado - discountContado).toFixed(2)));
 
         const commissionContado = isPayPalOrCard && baseTotal > 0
           ? Number(((baseContado / baseTotal) * paypalCommission).toFixed(2))
           : 0;
         const totalContado = Number((baseContado + commissionContado).toFixed(2));
-=======
-        const totalContado = Math.max(0, Number((subtotalContado - discountContado).toFixed(2)));
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 
         const orderId = await createSingleOrder(itemsContado, 'contado', totalContado);
         createdOrders.push({ id: orderId, type: 'contado' });
@@ -419,16 +408,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
           return sum + (price * (item.quantity || 1));
         }, 0);
         const discountEncargo = Number((subtotalEncargo * (appliedDiscount / 100)).toFixed(2));
-<<<<<<< HEAD
         const baseEncargo = Math.max(0, Number((subtotalEncargo - discountEncargo).toFixed(2)));
 
         const commissionEncargo = isPayPalOrCard && baseTotal > 0
           ? Number((paypalCommission - (itemsContado.length > 0 ? Number(((baseContado / baseTotal) * paypalCommission).toFixed(2)) : 0)).toFixed(2))
           : 0;
         const totalEncargo = Number((baseEncargo + commissionEncargo).toFixed(2));
-=======
-        const totalEncargo = Math.max(0, Number((subtotalEncargo - discountEncargo).toFixed(2)));
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 
         const orderId = await createSingleOrder(itemsEncargo, 'encargo', totalEncargo);
         createdOrders.push({ id: orderId, type: 'encargo' });
@@ -443,7 +428,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
       const refCode = createdOrders.map(o => o.id.slice(-6).toUpperCase()).join(' / #');
       setSavedTotal(totalToSave);
       setOrderRefCode(refCode);
-<<<<<<< HEAD
 
       // Enviar correo de confirmación de compra de forma asíncrona
       const emailPayload = {
@@ -469,8 +453,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
         console.error('Error al enviar el correo de confirmación de compra:', emailErr);
       });
 
-=======
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
       showSuccess("¡Pago procesado con éxito! Tu orden ha sido registrada.");
       setIsSuccess(true);
       clearCart();
@@ -892,13 +874,9 @@ export default function CheckoutModal({ isOpen, onClose }) {
                                 }, 0);
 
                                 const discountAmt = Number((subtotal * (appliedDiscount / 100)).toFixed(2));
-<<<<<<< HEAD
                                 const baseAmt = Math.max(0, Number((subtotal - discountAmt).toFixed(2)));
                                 const commissionAmt = baseAmt > 0 ? Number(((baseAmt + 0.30) / (1 - 0.054) - baseAmt).toFixed(2)) : 0;
                                 const totalAmount = baseAmt + commissionAmt;
-=======
-                                const totalAmount = Math.max(0, Number((subtotal - discountAmt).toFixed(2)));
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 
                                 if (totalAmount <= 0) {
                                   throw new Error('El monto total de la orden debe ser mayor a cero.');
@@ -929,13 +907,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
                                         discount: appliedDiscount > 0 ? {
                                           currency_code: 'USD',
                                           value: discountAmt.toFixed(2)
-<<<<<<< HEAD
                                         } : undefined,
                                         handling: commissionAmt > 0 ? {
                                           currency_code: 'USD',
                                           value: commissionAmt.toFixed(2)
-=======
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
                                         } : undefined
                                       }
                                     },
@@ -1170,7 +1145,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   </div>
                 )}
 
-<<<<<<< HEAD
                 {isPayPalOrCard && paypalCommission > 0 && (
                   <div className="summary-row commission-row" style={{ fontWeight: '500' }}>
                     <span>Comisión por pasarela</span>
@@ -1181,8 +1155,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   </div>
                 )}
 
-=======
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
                 <div className="summary-row total">
                   <span>Total</span>
                   <span className="price-container total-price">

@@ -151,7 +151,6 @@ export default function ProductCard({ product }) {
           )}
           
           <div className="card-pricing">
-<<<<<<< HEAD
             <div className="pricing-wrapper">
               <div className="price-container">
                 {tieneOferta ? (
@@ -179,37 +178,6 @@ export default function ProductCard({ product }) {
                 </div>
               )}
             </div>
-=======
-            {tieneOferta ? (
-              <div className="pricing-wrapper">
-                <div className="price-container">
-                  <span className="old-price">{formatUSD(precioActual)}</span>
-                  <motion.span 
-                    className="new-price"
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 200 }}
-                  >
-                    {formatUSD(precioOferta)}
-                  </motion.span>
-                </div>
-                {!isLoading && (
-                  <div className="ves-price">
-                    Ref: {formatVES(precioOferta)}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="pricing-wrapper">
-                <span className="current-price">{formatUSD(precioActual)}</span>
-                {!isLoading && (
-                  <div className="ves-price">
-                    Ref: {formatVES(precioActual)}
-                  </div>
-                )}
-              </div>
-            )}
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
           </div>
 
           <motion.button 

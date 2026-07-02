@@ -368,7 +368,6 @@ export async function sendCouponEmail(userEmail, couponCode, discountPercent) {
     return { success: false, error: error.message || error };
   }
 }
-<<<<<<< HEAD
 
 /**
  * Envía el correo de confirmación de compra exitosa al cliente.
@@ -399,5 +398,3 @@ export async function enviarCorreoCompraExitosa(purchaseData) {
   }
 }
 
-=======
->>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
