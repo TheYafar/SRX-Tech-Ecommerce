@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+<<<<<<< HEAD
 import { LayoutDashboard, ShoppingBag, Package, LogOut, Menu, X, Ticket, DollarSign, Layers, Sparkles, Image as ImageIcon, ListOrdered } from 'lucide-react';
+=======
+import { LayoutDashboard, ShoppingBag, Package, LogOut, Menu, X, Ticket, DollarSign, Layers, Sparkles, Image as ImageIcon } from 'lucide-react';
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 import { NotificationManager } from '../components/Notification';
 import './AdminLayout.css';
 
@@ -19,7 +23,10 @@ export default function AdminLayout() {
     { id: 'coupons', icon: Ticket, label: 'Cupones', path: '/admin/coupons' },
     { id: 'payments', icon: DollarSign, label: 'Pedidos al contado', path: '/admin/pedidos-contado' },
     { id: 'categories', icon: Layers, label: 'Gestionar Categorías', path: '/admin/categories' },
+<<<<<<< HEAD
     { id: 'categories-order', icon: ListOrdered, label: 'Orden de Menú', path: '/admin/orden-categorias' },
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
     { id: 'banners', icon: ImageIcon, label: 'Gestión de Banners', path: '/admin/banners' },
   ];
 

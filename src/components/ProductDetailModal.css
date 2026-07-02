@@ -305,7 +305,11 @@
   font-weight: 500;
 }
 
+<<<<<<< HEAD
 .modal-current-price {
+=======
+.current-price {
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   font-size: 2.25rem; /* Prominent size */
   font-weight: 800;
   color: #0f172a; /* Premium dark color */

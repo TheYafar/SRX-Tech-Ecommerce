@@ -487,7 +487,11 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                       </div>
                     ) : (
                       <div className="modal-price-group">
+<<<<<<< HEAD
                         <span className="modal-current-price">{formatUSD(finalPrice)}</span>
+=======
+                        <span className="current-price">{formatUSD(finalPrice)}</span>
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
                         {!isLoading && (
                           <span className="price-bs current-price-ves" style={{ color: '#0f172a', fontWeight: '600', fontSize: '1.05rem', marginTop: '0.25rem', display: 'block' }}>
                             {formatVES(finalPrice)}

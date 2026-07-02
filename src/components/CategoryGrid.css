@@ -51,14 +51,19 @@
 
 /* ── Card base ── */
 .category-card {
+<<<<<<< HEAD
   display: flex;
   flex-direction: row-reverse;
   align-items: stretch;
+=======
+  position: relative;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   overflow: hidden;
   border-radius: 24px;
   color: #fff;
   height: 100%;
   cursor: pointer;
+<<<<<<< HEAD
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
               box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.3s ease;
@@ -71,6 +76,17 @@
   box-shadow: 0 20px 40px rgba(15, 17, 23, 0.15), 
               0 0 0 1px rgba(79, 110, 247, 0.2);
   border-color: rgba(79, 110, 247, 0.3);
+=======
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 
+              0 0 0 1px rgba(255, 255, 255, 0.15);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 .category-card:focus-visible {
@@ -78,11 +94,14 @@
   outline-offset: 3px;
 }
 
+<<<<<<< HEAD
 /* ── Reverse layout for alternating pattern ── */
 .reverse-card {
   flex-direction: row; /* Image on left, text on right */
 }
 
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 /* ── Card size variants ── */
 .large-card {
   height: 500px;
@@ -92,6 +111,7 @@
   height: 240px; /* (500px - 20px gap) / 2 = 240px for perfect alignment */
 }
 
+<<<<<<< HEAD
 /* ── Image Wrapper and Background ── */
 .category-img-wrapper {
   position: relative;
@@ -108,6 +128,9 @@
   width: 50%;
 }
 
+=======
+/* ── Image background ── */
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 .category-bg-img {
   width: 100%;
   height: 100%;
@@ -116,6 +139,7 @@
   position: absolute;
   top: 0;
   left: 0;
+<<<<<<< HEAD
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -169,10 +193,52 @@
 .large-card .cat-title {
   font-size: 1.75rem;
   margin-bottom: 0.75rem;
+=======
+  z-index: 1;
+  transition: transform 0.5s ease;
+}
+
+.category-card:hover .category-bg-img {
+  transform: scale(1.05);
+}
+
+/* ── Dark gradient overlay ── */
+.category-overlay-dark {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.85));
+  z-index: 2;
+}
+
+/* ── Text content ── */
+.category-content {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  width: 100%;
+  padding: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  pointer-events: none; /* Evita que el contenedor tape el botón */
+}
+
+/* ── Typography ── */
+.cat-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.45rem;
+  line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 .cat-description {
   font-size: 0.88rem;
+<<<<<<< HEAD
   color: rgba(255, 255, 255, 0.82);
   margin: 0 0 1.5rem 0;
   max-width: 100%;
@@ -187,12 +253,20 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden; /* Clamp text for standard horizontal cards if it is too long */
+=======
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 1.35rem;
+  max-width: 380px;
+  line-height: 1.55;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 /* ── CTA pill button ── */
 .pill-btn-outline {
   position: relative;
   z-index: 10;
+<<<<<<< HEAD
   pointer-events: auto;
   text-decoration: none;
   display: inline-flex;
@@ -202,16 +276,33 @@
   border-radius: 9999px;
   border: 1.5px solid rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.08);
+=======
+  pointer-events: auto; /* Permite clics en el botón/enlace */
+  text-decoration: none; /* Quita el subrayado por ser un Link de React Router */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   color: #fff;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+<<<<<<< HEAD
   transition: all 0.25s ease;
+=======
+  transition: all 0.3s ease;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 .pill-btn-outline:hover {
+<<<<<<< HEAD
   background: #fff;
   border-color: #fff;
   color: var(--navy);
@@ -221,6 +312,16 @@
 
 .pill-btn-outline:active {
   transform: scale(0.97) translateY(0);
+=======
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #fff;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.pill-btn-outline:active {
+  transform: scale(0.98) translateY(0);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 /* ── Skeleton loader ── */
@@ -230,11 +331,17 @@
 }
 
 .skeleton-card {
+<<<<<<< HEAD
   display: block !important;
   background: rgba(30, 41, 59, 0.7) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   overflow: hidden;
   position: relative;
+=======
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  overflow: hidden;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 .skeleton-shimmer {
@@ -242,9 +349,15 @@
   inset: 0;
   background: linear-gradient(
     90deg,
+<<<<<<< HEAD
     rgba(255, 255, 255, 0.03) 25%,
     rgba(255, 255, 255, 0.08) 50%,
     rgba(255, 255, 255, 0.03) 75%
+=======
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 75%
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   );
   background-size: 600px 100%;
   animation: shimmer 1.6s infinite ease-in-out;
@@ -265,6 +378,7 @@
     height: 440px;
   }
   .horizontal-card {
+<<<<<<< HEAD
     height: 210px;
   }
   .large-card .category-content {
@@ -278,12 +392,19 @@
   }
   .large-card .cat-title {
     font-size: 1.5rem;
+=======
+    height: 210px; /* (440px - 20px gap) / 2 = 210px */
+  }
+  .cat-title {
+    font-size: 1.45rem;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   }
 }
 
 @media (max-width: 768px) {
   .category-grid {
     grid-template-columns: 1fr;
+<<<<<<< HEAD
     gap: 24px;
   }
 
@@ -320,6 +441,28 @@
   .cat-description {
     font-size: 0.88rem;
     margin-bottom: 1.25rem;
+=======
+    gap: 20px;
+  }
+
+  .large-card,
+  .horizontal-card {
+    height: 300px !important;
+  }
+
+  .category-content {
+    padding: 1.5rem;
+  }
+
+  .cat-title {
+    font-size: 1.35rem;
+  }
+  
+  .cat-description {
+    font-size: 0.82rem;
+    margin-bottom: 1rem;
+    max-width: 100%;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   }
 }
 
@@ -328,6 +471,7 @@
     padding: 4rem 0 3rem;
   }
   
+<<<<<<< HEAD
   .category-img-wrapper {
     height: 180px !important;
   }
@@ -339,6 +483,23 @@
   .cat-title,
   .large-card .cat-title {
     font-size: 1.25rem;
+=======
+  .large-card,
+  .horizontal-card {
+    height: 260px !important;
+  }
+
+  .category-content {
+    padding: 1.25rem;
+  }
+
+  .cat-title {
+    font-size: 1.2rem;
+  }
+
+  .cat-description {
+    display: none; /* Ocultar descripciones en pantallas muy pequeñas */
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   }
 
   .pill-btn-outline {

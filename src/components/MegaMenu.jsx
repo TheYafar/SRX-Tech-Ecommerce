@@ -58,6 +58,7 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
 
   if (!isOpen) return null;
 
+<<<<<<< HEAD
   // ─── DEBUG LOG 1: Datos originales del contexto ────────────────────────────
   console.log('[MegaMenu] Categorías totales del contexto:', categories);
 
@@ -72,6 +73,10 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
     return orderA - orderB;
   });
   console.log('[MegaMenu] Principales DESPUÉS de ordenar:', classifications.map(c => ({ name: c.name, order: c.order })));
+=======
+  // Obtener clasificaciones (categorías raíz)
+  const classifications = categories.filter(c => c.parent_id === null);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 
   // Filtrar las clasificaciones activas para mostrar en el menú
   const activeClassifications = classifications.filter(clf => {
@@ -88,6 +93,7 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
         aria-label="Menú de navegación por categorías"
       >
         {activeClassifications.map((clf, index) => {
+<<<<<<< HEAD
           const subcategorias = categories.filter(c => c.parent_id === clf.id);
           const children = [...subcategorias].sort((a, b) => {
             const orderA = a.order === 0 || a.order == null ? 999 : a.order;
@@ -96,6 +102,9 @@ export default function MegaMenu({ categories = [], isOpen, onClose, onFilter })
           });
           // ─── DEBUG LOG 3: Subcategorías por padre ─────────────────────────
           console.log(`[MegaMenu] Subcategorías de [${clf.name}] ordenadas:`, children.map(s => ({ name: s.name, order: s.order })));
+=======
+          const children = categories.filter(c => c.parent_id === clf.id);
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
           
           // Si es "Para tu Equipo" y no tiene subcategorías en DB, renderizamos las opciones fijas (DEVICE_OPTIONS)
           const links = clf.slug === 'para-tu-equipo' && children.length === 0

@@ -79,21 +79,35 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+<<<<<<< HEAD
   min-height: 1.8rem; /* Evita que colapse el espacio vertical */
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 .old-price {
   text-decoration: line-through;
+<<<<<<< HEAD
   color: #9ca3af; /* gris más sutil, como text-gray-400 */
   font-size: 0.875rem; /* text-sm */
   font-weight: 400;
+=======
+  color: rgba(160, 160, 175, 0.7);
+  font-size: 0.88rem;
+  font-weight: 500;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   letter-spacing: -0.2px;
 }
 
 .new-price {
   color: rgb(140, 100, 255);
+<<<<<<< HEAD
   font-size: 1.25rem; /* text-xl/text-2xl */
   font-weight: 700; /* font-bold */
+=======
+  font-size: 1.15rem;
+  font-weight: 900;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   letter-spacing: -0.4px;
 }
 
@@ -250,17 +264,25 @@
 /* ── Pricing ── */
 .card-pricing {
   display: flex;
+<<<<<<< HEAD
   flex-direction: column;
   align-items: flex-start;
   margin-bottom: 1.25rem; /* Margen consistente con respecto al botón inferior */
   min-height: 3.5rem; /* Altura fija para alinear perfectamente todas las tarjetas */
+=======
+  align-items: flex-end;
+  margin-bottom: 1.2rem;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 .pricing-wrapper {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+<<<<<<< HEAD
   width: 100%;
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }
 
 .usd-prices {
@@ -270,16 +292,28 @@
 }
 
 .ves-price {
+<<<<<<< HEAD
   font-size: 0.75rem; /* text-xs */
   color: #6b7280; /* text-gray-500 */
   font-weight: 500;
   margin-top: 0.25rem; /* Margen superior consistente */
+=======
+  font-size: 0.75rem;
+  color: rgba(160, 160, 175, 0.55);
+  font-weight: 500;
+  margin-top: 0.1rem;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   letter-spacing: 0.2px;
 }
 
 .current-price {
+<<<<<<< HEAD
   font-size: 1.25rem; /* text-xl/text-2xl */
   font-weight: 700; /* font-bold */
+=======
+  font-size: 1.15rem;
+  font-weight: 600;
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   color: var(--text-primary);
   letter-spacing: -0.3px;
 }
@@ -392,7 +426,10 @@
 
   .card-pricing {
     margin-bottom: 0.65rem;
+<<<<<<< HEAD
     min-height: 2.8rem;
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   }
 
   .ves-price {
@@ -514,5 +551,8 @@
 
   .current-price { font-size: 0.92rem; }
   .new-price { font-size: 0.92rem; }
+<<<<<<< HEAD
   .card-pricing { min-height: 2.6rem; }
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 }

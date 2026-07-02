@@ -20,11 +20,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+<<<<<<< HEAD
       '/send-purchase-success-email.php': {
         target: 'https://srxtech.net',
         changeOrigin: true,
         secure: true,
       },
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
     },
   },
 })

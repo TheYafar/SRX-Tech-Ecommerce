@@ -98,11 +98,15 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
+<<<<<<< HEAD
         const { data: catData, error: catError } = await supabase
           .from('categories')
           .select('id, name')
           .order('order', { ascending: true })
           .order('name', { ascending: true });
+=======
+        const { data: catData, error: catError } = await supabase.from('categories').select('id, name');
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
         if (catError) throw catError;
         if (catData) setCategories(catData);
 
@@ -128,7 +132,10 @@ export default function AdminDashboard({ activeSection = 'addProduct' }) {
       const { data, error } = await supabase
         .from('categories')
         .select('id, name, slug, parent_id')
+<<<<<<< HEAD
         .order('order', { ascending: true })
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
         .order('name', { ascending: true });
       if (error) throw error;
 

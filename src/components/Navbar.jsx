@@ -53,6 +53,7 @@ export default function Navbar() {
   useEffect(() => {
     supabase
       .from('categories')
+<<<<<<< HEAD
       .select('id, name, slug, parent_id, order')
       .order('order', { ascending: true })
       .order('name', { ascending: true })
@@ -60,6 +61,10 @@ export default function Navbar() {
         console.log('[Navbar] Categorías RAW de Supabase:', data?.map(c => ({ name: c.name, order: c.order, parent_id: c.parent_id })));
         if (data) setCategories(data);
       });
+=======
+      .select('id, name, slug, parent_id')
+      .then(({ data }) => { if (data) setCategories(data); });
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
   }, []);
 
   // ── Click fuera → cerrar dropdowns ───────────────────────────────────────

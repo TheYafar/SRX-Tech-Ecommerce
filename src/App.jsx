@@ -18,7 +18,10 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminOrders from './pages/Admin/AdminOrders';
 import AdminProducts from './pages/Admin/AdminProducts';
 import AdminCoupons from './pages/Admin/AdminCoupons';
+<<<<<<< HEAD
 import AdminCategoriesOrder from './pages/Admin/AdminCategoriesOrder';
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
 import AdminRoute from './components/AdminRoute';
 import './App.css';
 
@@ -63,7 +66,10 @@ export default function App() {
                       <Route path="coupons" element={<AdminCoupons />} />
                       <Route path="pedidos-contado" element={<AdminDashboard activeSection="payments" />} />
                       <Route path="categories" element={<AdminDashboard activeSection="categories" />} />
+<<<<<<< HEAD
                       <Route path="orden-categorias" element={<AdminCategoriesOrder />} />
+=======
+>>>>>>> b0c789606a9ef553b479d38066fde33febba94b8
                       <Route path="banners" element={<AdminDashboard activeSection="banners" />} />
                     </Route>
                   </Routes>
