@@ -1,0 +1,994 @@
+/* ================================================================
+   AdminCoupons.css — Vanilla CSS for Discount Coupons Management
+   Estética Dark Mode premium de la tienda integrada en el panel
+   ================================================================ */
+
+.admin-coupons-container {
+  padding: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+  color: #ffffff;
+  background-color: #0f172a; /* slate-900: Fondo oscuro de la tienda */
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.3);
+  border: 1px solid #1e293b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-top: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+/* ── Cabecera ── */
+.admin-coupons-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 1.5rem;
+}
+
+.admin-coupons-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.admin-coupons-subtitle {
+  color: #94a3b8; /* slate-400 */
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* ── Formulario de Alta ── */
+.admin-coupons-form-section {
+  background-color: #1e293b; /* slate-800: Oscuro mate */
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #334155; /* slate-700 */
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.admin-coupons-form .form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-end;
+}
+
+.admin-coupons-form .form-group {
+  flex: 1 1 240px; /* flexbox perfecto y responsive */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-coupons-form label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #cbd5e1; /* slate-300 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-coupons-form .input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-coupons-form .input-icon {
+  position: absolute;
+  left: 12px;
+  color: #64748b; /* slate-500 */
+  pointer-events: none;
+}
+
+.admin-coupons-form input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  background-color: #0f172a; /* slate-900 para contraste */
+  border: 1px solid #475569; /* slate-600 */
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-coupons-form input:focus {
+  border-color: #3b82f6; /* azul */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.admin-coupons-form .coupon-text-input {
+  text-transform: uppercase; /* fuerza mayúsculas visualmente */
+}
+
+.admin-coupons-form input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* para que el icono del calendario sea blanco en dark mode */
+  cursor: pointer;
+}
+
+.form-submit-row {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.generate-coupon-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.generate-coupon-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+}
+
+.generate-coupon-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.generate-coupon-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Listado / Tabla ── */
+.admin-coupons-list-section {
+  background-color: #1e293b; /* slate-800 */
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.admin-coupons-list-section .section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #2563eb;
+  padding-left: 10px;
+  color: #ffffff;
+}
+
+/* Loading/Empty */
+.admin-coupons-loading,
+.admin-coupons-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #94a3b8;
+  gap: 0.75rem;
+}
+
+.admin-coupons-loading p,
+.admin-coupons-empty p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-coupons-loading .spin {
+  animation: spin 1s linear infinite;
+  color: #2563eb;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.admin-coupons-empty .empty-icon {
+  color: #475569;
+}
+
+/* Tabla */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.coupons-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.coupons-table th,
+.coupons-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #334155;
+  font-size: 0.9rem;
+}
+
+.coupons-table th {
+  background-color: #0f172a; /* slate-900 */
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.coupons-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.coupons-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.coupons-table tbody tr.coupon-row-expired {
+  opacity: 0.65;
+}
+
+/* Celdas especiales */
+.coupon-code-cell .code-badge {
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #60a5fa; /* azul claro */
+  letter-spacing: 0.03em;
+}
+
+.coupon-discount-cell .discount-value {
+  font-weight: 700;
+  color: #10b981; /* verde esmeralda */
+  font-size: 1rem;
+}
+
+.no-limit-badge {
+  color: #64748b;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.expired-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.date-expiredText {
+  text-decoration: line-through;
+  color: #f87171;
+}
+
+/* Badges de Estado */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge.status-active {
+  background-color: rgba(16, 185, 129, 0.15); /* verde suave */
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.status-inactive {
+  background-color: rgba(239, 68, 68, 0.15); /* rojo suave */
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Botones de acción */
+.action-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  color: #ffffff;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.action-toggle-btn.btn-disable {
+  background-color: #dc2626; /* rojo */
+}
+
+.action-toggle-btn.btn-disable:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.action-toggle-btn.btn-enable {
+  background-color: #2563eb; /* azul operativo */
+}
+
+.action-toggle-btn.btn-enable:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.action-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-toggle-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* ── Responsividad ── */
+@media (max-width: 768px) {
+  .admin-coupons-container {
+    padding: 16px;
+  }
+
+  .admin-coupons-form-section,
+  .admin-coupons-list-section {
+    padding: 16px;
+  }
+
+  .admin-coupons-form .form-grid {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-coupons-form .form-group {
+    flex: 1 1 auto;
+  }
+
+  .form-submit-row {
+    justify-content: stretch;
+  }
+
+  .generate-coupon-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Switch de Automatización ── */
+.automation-switch-group {
+  margin: 1.5rem 0 1rem;
+  padding: 15px 0 5px;
+  border-top: 1px solid #334155;
+}
+
+.mass-email-switch-group {
+  margin-bottom: 1rem;
+}
+
+.switch-container {
+  display: flex;
+  align-items: center;
+}
+
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch-input {
+  display: none;
+}
+
+.switch-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: #334155;     /* slate-700 - off */
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+  flex-shrink: 0;
+}
+
+.switch-input:checked + .switch-track {
+  background: #2563eb;     /* blue-600 - on */
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.35);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #94a3b8;     /* slate-400 - off */
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+}
+
+.switch-input:checked + .switch-track .switch-thumb {
+  transform: translateX(20px);
+  background: #ffffff;
+}
+
+.switch-label-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #cbd5e1;          /* slate-300 */
+}
+
+/* ── Campos Condicionales con Animación de Despliegue ── */
+.conditional-fields {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
+}
+
+.conditional-fields.expanded {
+  max-height: 2400px;
+  opacity: 1;
+  padding: 1.25rem 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  margin: 1rem 0 1.5rem;
+}
+
+.conditional-fields-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.email-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.coupon-text-input-email {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ── Botón de Generar y Enviar (Color Cohete/Envío) ── */
+.btn-send-email {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+}
+
+.btn-send-email:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* ── Animaciones ── */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Badges de tipo de cupón ── */
+.badge-single-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge-multi-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Hint de campo ── */
+.field-hint {
+  color: #64748b;
+  font-size: 0.78rem;
+  margin: 5px 0 0 0;
+  padding-left: 2px;
+  font-style: italic;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ZONA DE SUBIDA DE BANNER
+   ══════════════════════════════════════════════════════════ */
+
+.banner-file-input-hidden {
+  display: none;
+}
+
+.banner-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2rem 1.5rem;
+  border: 2px dashed #334155;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a 0%, #1a2540 100%);
+  cursor: pointer;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.2s ease;
+  text-align: center;
+}
+
+.banner-upload-zone:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #0c1a30 0%, #1e3158 100%);
+  transform: translateY(-2px);
+}
+
+.upload-zone-icon {
+  color: #3b82f6;
+  margin-bottom: 0.25rem;
+  opacity: 0.85;
+}
+
+.upload-zone-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.upload-zone-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.upload-zone-note {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.upload-zone-note code {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+/* Thumbnail del banner seleccionado */
+.banner-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #334155;
+  background: #0f172a;
+  max-height: 160px;
+}
+
+.banner-thumb-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.banner-thumb-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 50%);
+}
+
+.banner-uploading-badge,
+.banner-ready-badge,
+.banner-error-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.banner-uploading-badge {
+  background: rgba(59, 130, 246, 0.85);
+  color: #fff;
+}
+
+.banner-ready-badge {
+  background: rgba(16, 185, 129, 0.85);
+  color: #fff;
+}
+
+.banner-error-badge {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+}
+
+.banner-remove-btn {
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.banner-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+}
+
+/* ══════════════════════════════════════════════════════════
+   SELECTOR DE ORDEN VISUAL
+   ══════════════════════════════════════════════════════════ */
+
+.design-order-selector {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.design-order-btn {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  position: relative;
+}
+
+.design-order-btn:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+.design-order-btn.active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #0c2040 0%, #1e3a6e 100%);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 6px 20px rgba(59, 130, 246, 0.15);
+}
+
+.design-order-btn.active::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #fff;
+  font-weight: 900;
+  line-height: 20px;
+  text-align: center;
+}
+
+.dob-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.dob-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.dob-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ══════════════════════════════════════════════════════════
+   VISTA PREVIA DINÁMICA DEL CORREO
+   ══════════════════════════════════════════════════════════ */
+
+.email-preview-wrapper {
+  margin: 1.5rem 0 0.5rem;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #1e3a6e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.email-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, #0c1a35 0%, #1e3158 100%);
+  border-bottom: 1px solid #1e3a6e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ep-tag {
+  margin-left: auto;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  color: #60a5fa;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.email-preview-card {
+  background: #0f172a;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ep-email-header {
+  background: linear-gradient(180deg, #060d1a 0%, #0f172a 100%);
+  text-align: center;
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ep-logo {
+  height: 36px;
+  width: auto;
+  display: inline-block;
+  margin: 0 auto 6px;
+}
+
+.ep-brand-tagline {
+  margin: 0;
+  font-size: 0.65rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.ep-email-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ep-headline {
+  margin: 16px 20px 4px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.02em;
+}
+
+/* Banner dentro de la preview */
+.ep-banner-block {
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.ep-banner-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+/* Tarjeta del cupón dentro de la preview */
+.ep-coupon-block {
+  margin: 12px 16px;
+  background: linear-gradient(135deg, #0c2340 0%, #1e293b 50%, #0c2340 100%);
+  border: 1.5px dashed #3b82f6;
+  border-radius: 12px;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.ep-coupon-label {
+  margin: 0 0 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.ep-coupon-percent {
+  margin: 0 0 8px;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #3b82f6;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.ep-coupon-percent span {
+  font-size: 1.4rem;
+  vertical-align: middle;
+}
+
+.ep-coupon-hint {
+  margin: 0 0 10px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.ep-code-box {
+  display: inline-block;
+  background: #060d1a;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 8px 20px;
+  margin: 0 auto;
+}
+
+.ep-code-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #f1f5f9;
+  letter-spacing: 0.2em;
+}
+
+.ep-expiry {
+  margin: 10px 0 0;
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.ep-email-footer {
+  background: #060d1a;
+  border-top: 1px solid #1e293b;
+  padding: 14px 20px;
+  text-align: center;
+}
+
+.ep-cta-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #fff;
+  padding: 10px 28px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.ep-footer-text {
+  margin: 0;
+  font-size: 0.65rem;
+  color: #334155;
+}
+
+/* ── Textarea de Mensaje Personalizado ── */
+.email-message-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  min-height: 110px;
+}
+
+.email-message-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.email-message-textarea::placeholder {
+  color: #475569;
+  font-style: italic;
+}
+
+/* ── Hint / nota auxiliar debajo de los inputs ── */
+.field-hint {
+  margin: 4px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+

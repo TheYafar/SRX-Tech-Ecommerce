@@ -1,0 +1,253 @@
+/* ===========================================
+   Payment Checkout - Dark Editorial Aesthetic
+   =========================================== */
+
+.payment-checkout-container {
+  background: var(--bg-dark-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  max-width: 550px;
+  margin: 0 auto;
+  color: #ffffff;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  font-family: 'Outfit', sans-serif;
+}
+
+.payment-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.payment-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.payment-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ── Payment Methods Grid ── */
+.payment-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.payment-method-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.payment-method-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.payment-method-btn.active {
+  background: rgba(79, 110, 247, 0.1);
+  border-color: var(--accent-light);
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(79, 110, 247, 0.15);
+}
+
+.payment-method-btn span {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ── Receipt Upload Area ── */
+.receipt-upload-section {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.receipt-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #e2e6f0;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.upload-dropzone {
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.2);
+  transition: all var(--transition-fast);
+}
+
+.upload-dropzone:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.upload-dropzone.has-file {
+  border-color: var(--success-color);
+  background: rgba(16, 185, 129, 0.05);
+  border-style: solid;
+}
+
+.upload-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-icon {
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.upload-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.upload-subtext {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.upload-success-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.success-icon {
+  color: var(--success-color);
+}
+
+.file-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-change-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
+/* ── Feedback Messages ── */
+.payment-error,
+.payment-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+
+.payment-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.payment-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* ── Submit Button ── */
+.payment-submit-btn {
+  width: 100%;
+  padding: 1.1rem;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--accent-light);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 15px rgba(79, 110, 247, 0.3);
+}
+
+.payment-submit-btn:hover:not(:disabled) {
+  background: #3b5bdb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 110, 247, 0.4);
+}
+
+.payment-submit-btn:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 576px) {
+  .payment-checkout-container {
+    padding: 1.5rem;
+  }
+  
+  .payment-methods-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .payment-method-btn {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 1rem 1.25rem;
+  }
+}

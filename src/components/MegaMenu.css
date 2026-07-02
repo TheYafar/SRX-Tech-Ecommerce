@@ -1,0 +1,218 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   MEGA MENU — Premium 3-column floating navigation panel
+   Vanilla CSS · Dark Premium · SRX Tech
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Overlay (fondo difuminado detrás del panel) ── */
+.mega-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  /* No bloquea el fondo visualmente, solo captura clicks */
+  background: transparent;
+  pointer-events: none; /* el overlay no captura clicks... */
+}
+
+/* ...el panel sí los captura */
+.mega-menu-panel {
+  pointer-events: all;
+  position: absolute;
+  top: calc(var(--nav-height, 64px) + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.5rem;
+  width: 95vw;
+  max-width: 1200px;
+
+  /* Estética glassmorphism dark */
+  background: rgba(15, 23, 42, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+
+  /* Animación de entrada */
+  animation: megaMenuIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes megaMenuIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* ── Columna individual ── */
+.mega-col {
+  width: 100%;
+}
+
+/* ── Encabezado de columna ── */
+.mega-col-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7); /* #94a3b8 con opacidad */
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mega-col-icon {
+  color: rgba(148, 163, 184, 0.5);
+  flex-shrink: 0;
+}
+
+/* ── Lista de links ── */
+.mega-link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Botón link individual ── */
+.mega-link {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: normal;
+  word-break: break-word;
+  display: block;
+}
+
+.mega-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+  padding-left: 16px; /* indent sutil al hover */
+}
+
+.mega-link:active {
+  transform: scale(0.98);
+}
+
+.mega-link-empty {
+  font-size: 0.82rem;
+  color: rgba(148, 163, 184, 0.4);
+  padding: 6px 10px;
+  display: block;
+}
+
+/* ── Divisor vertical entre columnas ── */
+.mega-divider {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE DIMENSION TAGS
+   3 filas de tags con scroll horizontal suave
+   Solo visibles en ≤ 768px — dentro del mobile-nav-menu existente
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.mobile-dim-section {
+  padding: 10px 0 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 4px;
+}
+
+.mobile-dim-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.6);
+  padding: 0 4px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Fila de tags con scroll horizontal */
+.mobile-tags-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  padding: 2px 4px 10px;
+  white-space: nowrap;
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.mobile-tags-row::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Tag individual */
+.mobile-dim-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.mobile-dim-tag:hover,
+.mobile-dim-tag:active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: scale(1.03);
+}
+
+.mobile-dim-tag.active {
+  background: rgba(0, 242, 254, 0.15);
+  border-color: rgba(0, 242, 254, 0.4);
+  color: #00f2fe;
+}
+
+/* El mega menú de escritorio NUNCA aparece en móvil */
+@media (max-width: 768px) {
+  .mega-menu-overlay,
+  .mega-menu-panel {
+    display: none !important;
+  }
+}
+
+/* Las mobile-dim-sections NUNCA aparecen en desktop */
+@media (min-width: 769px) {
+  .mobile-dim-section {
+    display: none !important;
+  }
+}

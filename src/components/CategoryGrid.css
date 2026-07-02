@@ -1,0 +1,348 @@
+/* ══════════════════════════════════════════════════════════
+   CATEGORY GRID — Bento-style layout (Vanilla CSS, CERO Tailwind)
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper ── */
+.category-section {
+  padding: 6rem 0 5rem;
+  background: var(--bg-primary);
+}
+
+/* ── Section Header ── */
+.section-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.section-subtitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-light);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.section-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-top: 0.25rem;
+}
+
+/* ── Bento Grid ── */
+.category-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Right Column ── */
+.category-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Card base ── */
+.category-card {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 24px;
+  color: #fff;
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
+  border: 1px solid rgba(15, 17, 23, 0.08);
+  background: var(--bg-dark-card);
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(15, 17, 23, 0.15), 
+              0 0 0 1px rgba(79, 110, 247, 0.2);
+  border-color: rgba(79, 110, 247, 0.3);
+}
+
+.category-card:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 3px;
+}
+
+/* ── Reverse layout for alternating pattern ── */
+.reverse-card {
+  flex-direction: row; /* Image on left, text on right */
+}
+
+/* ── Card size variants ── */
+.large-card {
+  height: 500px;
+}
+
+.horizontal-card {
+  height: 240px; /* (500px - 20px gap) / 2 = 240px for perfect alignment */
+}
+
+/* ── Image Wrapper and Background ── */
+.category-img-wrapper {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  z-index: 1;
+}
+
+.large-card .category-img-wrapper {
+  width: 55%;
+}
+
+.horizontal-card .category-img-wrapper {
+  width: 50%;
+}
+
+.category-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-card:hover .category-bg-img {
+  transform: scale(1.06);
+}
+
+/* ── Text content container ── */
+.category-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
+  transition: background 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.large-card .category-content {
+  width: 45%;
+  padding: 3rem 2.5rem;
+}
+
+.horizontal-card .category-content {
+  width: 50%;
+  padding: 1.75rem 2rem;
+}
+
+.category-card:hover .category-content {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+}
+
+/* ── Typography ── */
+.category-text-group {
+  width: 100%;
+}
+
+.cat-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.6rem 0;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+.large-card .cat-title {
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cat-description {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0 0 1.5rem 0;
+  max-width: 100%;
+  line-height: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.horizontal-card .cat-description {
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden; /* Clamp text for standard horizontal cards if it is too long */
+}
+
+/* ── CTA pill button ── */
+.pill-btn-outline {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pill-btn-outline:hover {
+  background: #fff;
+  border-color: #fff;
+  color: var(--navy);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pill-btn-outline:active {
+  transform: scale(0.97) translateY(0);
+}
+
+/* ── Skeleton loader ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton-card {
+  display: block !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+.category-error {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.95rem;
+  padding: 3rem 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .large-card {
+    height: 440px;
+  }
+  .horizontal-card {
+    height: 210px;
+  }
+  .large-card .category-content {
+    padding: 2rem;
+  }
+  .horizontal-card .category-content {
+    padding: 1.25rem 1.5rem;
+  }
+  .cat-title {
+    font-size: 1.2rem;
+  }
+  .large-card .cat-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .category-card,
+  .large-card,
+  .horizontal-card {
+    height: auto !important;
+    flex-direction: column !important; /* Stack vertically: image on top, text on bottom */
+  }
+
+  .category-img-wrapper {
+    width: 100% !important;
+    height: 220px !important;
+  }
+
+  .category-content {
+    width: 100% !important;
+    height: auto !important;
+    padding: 2rem 1.5rem !important;
+    align-items: center;
+    text-align: center;
+  }
+
+  .horizontal-card .cat-description {
+    display: block; /* Show full description since card height is auto */
+    -webkit-line-clamp: unset;
+  }
+
+  .cat-title,
+  .large-card .cat-title {
+    font-size: 1.35rem;
+  }
+
+  .cat-description {
+    font-size: 0.88rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .category-section {
+    padding: 4rem 0 3rem;
+  }
+  
+  .category-img-wrapper {
+    height: 180px !important;
+  }
+
+  .category-content {
+    padding: 1.5rem 1.25rem !important;
+  }
+
+  .cat-title,
+  .large-card .cat-title {
+    font-size: 1.25rem;
+  }
+
+  .pill-btn-outline {
+    padding: 0.45rem 1.25rem;
+    font-size: 0.8rem;
+  }
+}

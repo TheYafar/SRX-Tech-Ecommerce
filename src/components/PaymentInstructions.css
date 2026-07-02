@@ -1,0 +1,389 @@
+/* ============================================================
+   PaymentInstructions – Premium Dark Mode (Vanilla CSS)
+   SRX Tech · Datos oficiales de pago de Diego
+   ============================================================ */
+
+/* ── Container ── */
+.pi-container {
+  background: #ffffff; /* Fondo claro para integrarse con el checkout */
+  border: 1px solid #cbd5e1; /* Borde sutil */
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  font-family: 'Outfit', sans-serif;
+  color: #000000; /* Texto negro */
+  box-shadow: var(--shadow-sm);
+  animation: piFadeIn 0.5s ease-out;
+}
+
+@keyframes piFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ── */
+.pi-header {
+  text-align: center;
+  margin-bottom: 1.4rem;
+}
+
+.pi-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #000000; /* Negro absoluto */
+  letter-spacing: -0.3px;
+  margin: 0 0 0.3rem;
+}
+
+.pi-subtitle {
+  font-size: 0.82rem;
+  color: #334155; /* Gris muy oscuro */
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ── Tab Switcher ── */
+.pi-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.35rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.pi-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.5rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #94a3b8;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pi-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pi-tab:hover {
+  color: #cbd5e1;
+}
+
+.pi-tab.active {
+  background: rgba(99, 130, 255, 0.12);
+  color: #ffffff;
+  box-shadow: 0 2px 12px rgba(99, 130, 255, 0.15);
+}
+
+.pi-tab-icon {
+  display: flex;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.pi-tab-icon img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* ── Tab Panel ── */
+.pi-panel {
+  animation: piSlideIn 0.35s ease-out;
+}
+
+@keyframes piSlideIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Data Row ── */
+.pi-data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(30, 34, 94, 0.03); /* Fondo gris azulado sutil */
+  border: 1px solid #cbd5e1; /* Borde sutil */
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.65rem;
+  transition: border-color 0.25s ease;
+}
+
+.pi-data-row:hover {
+  border-color: var(--navy-light);
+}
+
+.pi-data-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.pi-data-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #475569; /* Gris oscuro para contraste */
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.pi-data-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #000000; /* Negro sólido */
+  word-break: break-all;
+}
+
+.pi-data-value.highlight-blue {
+  color: #1d4ed8; /* Azul oscuro legible */
+}
+
+.pi-data-value.highlight-green {
+  color: #047857; /* Verde oscuro legible */
+}
+
+/* ── Copy Button ── */
+.pi-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Acompañamiento alineado */
+  background: rgba(99, 130, 255, 0.1);
+  border: 1px solid rgba(99, 130, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  color: #a5b4fc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+  transition: all 0.25s ease;
+}
+
+.pi-copy-btn:hover {
+  background: rgba(99, 130, 255, 0.2);
+  border-color: rgba(99, 130, 255, 0.4);
+  color: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+.pi-copy-btn:active {
+  transform: scale(0.96);
+}
+
+.pi-copy-btn.copied {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+  pointer-events: none;
+}
+
+.pi-copy-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Note Box ── */
+.pi-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: #fef3c7; /* Fondo ámbar claro */
+  border: 1px solid #f59e0b; /* Borde ámbar */
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.2rem;
+}
+
+.pi-note-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.pi-note-text {
+  font-size: 0.78rem;
+  color: #78350f; /* Texto marrón/ámbar oscuro de alto contraste */
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Divider ── */
+.pi-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(99, 130, 255, 0.2),
+    transparent
+  );
+  margin: 1.2rem 0;
+  border: none;
+}
+
+/* ── Reference Input ── */
+.pi-ref-group {
+  margin-top: 0.2rem;
+}
+
+.pi-ref-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 0.5rem;
+}
+
+.pi-ref-label .pi-required {
+  color: #f87171;
+  margin-left: 2px;
+}
+
+.pi-ref-input-wrap {
+  position: relative;
+}
+
+.pi-ref-input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+.pi-ref-input::placeholder {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.pi-ref-input:focus {
+  border-color: rgba(99, 130, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 130, 255, 0.1);
+}
+
+.pi-ref-input-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  display: flex;
+  pointer-events: none;
+}
+
+.pi-ref-hint {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 0.4rem;
+  margin-bottom: 0;
+}
+
+/* ── Bank Badge ── */
+.pi-bank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Acompañamiento alineado */
+  background: #dcfce7; /* Fondo verde claro */
+  border: 1px solid #10b981; /* Borde verde */
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.pi-bank-icon {
+  font-size: 1rem;
+}
+
+.pi-bank-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #047857; /* Nombre en verde oscuro */
+}
+
+.pi-bank-code {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #065f46; /* Código en verde esmeralda oscuro */
+  opacity: 0.9;
+}
+
+/* ── Responsive ── */
+@media (max-width: 520px) {
+  .pi-container {
+    padding: 1.25rem 1rem 1rem;
+    border-radius: 12px;
+  }
+
+  .pi-tabs {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .pi-tab {
+    padding: 0.6rem 0.75rem;
+    justify-content: flex-start;
+  }
+
+  .pi-data-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .pi-copy-btn {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+
+  .pi-title {
+    font-size: 1.05rem;
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY BLACK TEXT OVERRIDES
+   Fuerza todas las letras, números y caracteres a negro sólido.
+   ============================================================ */
+.pi-container,
+.pi-title,
+.pi-subtitle,
+.pi-data-label,
+.pi-data-value,
+.pi-bank-name,
+.pi-bank-code,
+.pi-copy-btn span {
+  color: #000000 !important;
+}

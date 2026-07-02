@@ -1,0 +1,861 @@
+/* ==========================================================================
+   HERO SECTION — SRX Tech | Responsive Slider/Hero
+   ==========================================================================
+   Estructura:
+     1. Base (Desktop / Pantallas Grandes ≥ 1024px)
+     2. Tablet  (@media max-width: 1024px)
+     3. Móvil   (@media max-width: 768px)
+     4. Móvil Pequeño (@media max-width: 480px)
+     5. Móvil Micro (@media max-width: 360px)
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. ESTRUCTURA BASE — DESKTOP (Pantallas Grandes)
+   ========================================================================== */
+
+.hero-section {
+  position: relative;
+  width: 100%;
+  margin-top: var(--nav-height, 70px);
+  aspect-ratio: 1920 / 650;
+  max-height: 650px;
+  min-height: 480px;
+  overflow: hidden;
+  background-color: #0a0812;       /* Fallback mientras carga la imagen */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ---------- Background Wrapper ----------
+   position: absolute → se extiende detrás del contenido
+   z-index: 1 → siempre debajo de la capa interactiva */
+
+.hero-background-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Contenedor que alinea los slides en horizontal para el efecto slide */
+.hero-slides-slider {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
+/* Cada slide individual ocupa el 100% del slider flex */
+.hero-slide-bg-container {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+
+/* <picture> debe comportarse como bloque completo */
+.hero-slide-bg-container picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Imagen de Fondo Responsiva ----------
+   object-fit: cover → llena el contenedor sin distorsión
+   object-position: center → centrada por defecto */
+
+.hero-background-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+
+/* ---------- Overlay Cinemático de Gradiente ----------
+   Protege la legibilidad del texto del Navbar arriba
+   y del CTA abajo */
+
+.hero-bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0.75)   0%,
+    rgba(15, 23, 42, 0.15)  30%,
+    rgba(15, 23, 42, 0.05)  50%,
+    rgba(15, 23, 42, 0.35)  75%,
+    rgba(15, 23, 42, 0.85) 100%
+  );
+}
+
+
+/* ==========================================================================
+   CONTENT LAYER — z-index: 2 (todo lo interactivo vive aquí)
+   ========================================================================== */
+
+.hero-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+
+/* ---------- Capa de Texto Real (HTML) ----------
+   Título + subtítulo centrados en desktop */
+
+.hero-text-layer {
+  position: absolute;
+  z-index: 2;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  max-width: 740px;
+  width: 90%;
+  padding: 0 1rem;
+}
+
+.hero-headline {
+  font-size: clamp(1.8rem, 4.5vw, 3.6rem);
+  font-weight: 300;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 0.75rem;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+}
+
+.hero-subheadline {
+  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.6;
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+
+
+/* ==========================================================================
+   FLOATING BADGES — Desktop Base
+   ========================================================================== */
+
+.hero-badge {
+  position: absolute;
+  z-index: 4;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: auto;
+  transition: top 0.3s ease, right 0.3s ease, left 0.3s ease;
+}
+
+.price-badge {
+  top: 1.5rem;
+  left: 2.5rem;
+  background: rgba(20, 20, 20, 0.55);
+  color: #ffffff;
+}
+
+/* Rating Badge — posición fluida arriba-derecha */
+.rating-badge {
+  top: 1.5rem;
+  right: 2.5rem;
+  background: rgba(20, 20, 20, 0.55);
+  color: #ffffff;
+}
+
+.badge-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #ffd700;
+}
+
+.badge-price {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffd700;
+}
+
+.badge-original {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: line-through;
+}
+
+.badge-rating {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.badge-reviews {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+
+/* ==========================================================================
+   HERO SEARCH BAR — Glassmorphism (dentro del Hero)
+   ========================================================================== */
+
+.hero-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto 0.8rem;
+  padding: 0.7rem 1.2rem;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-search-bar:focus-within {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.hero-search-icon {
+  color: rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+}
+
+.hero-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.hero-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+
+/* ==========================================================================
+   BOTTOM CTA STRIP — Botón Pill Tagline + Acciones
+   ========================================================================== */
+
+.bottom-controls-container {
+  position: absolute;
+  bottom: 20px; /* Se posiciona flotando a 20px del borde inferior de la imagen */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px; /* Separación simétrica exacta */
+  pointer-events: none;
+}
+
+/* Pill Tagline — "Captura la acción sin límites →" */
+.cta-button-pill {
+  margin-bottom: 0;
+  pointer-events: auto; /* Restaura interactividad */
+
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.4rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.3px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.cta-button-pill:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.hero-cta-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- Primary CTA — Discover ---------- */
+.hero-btn-discover {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 2.1rem;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  letter-spacing: 0.2px;
+}
+
+.hero-btn-discover:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.6);
+  filter: brightness(1.1);
+}
+
+.hero-btn-discover:active {
+  transform: scale(0.98);
+  transition-duration: 0.08s;
+}
+
+/* ---------- Secondary CTA — Cart ---------- */
+.hero-btn-cart {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 2.1rem;
+  background: var(--nav-bg, #1a1a2e);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  box-shadow: 0 8px 24px rgba(30, 34, 94, 0.35);
+}
+
+.hero-btn-cart:hover {
+  background: #2a2f80;
+  box-shadow: 0 12px 32px rgba(30, 34, 94, 0.5);
+  filter: brightness(1.1);
+}
+
+.hero-btn-cart:active {
+  transform: scale(0.98);
+  transition-duration: 0.08s;
+}
+
+
+/* ==========================================================================
+   SLIDE INDICATORS — Dots de navegación
+   ========================================================================== */
+
+.pagination-dots {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0;
+  pointer-events: auto;
+}
+
+.hero-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+.hero-indicator.active {
+  width: 28px;
+  border-radius: 10px;
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.hero-indicator:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+
+/* ==========================================================================
+   AMBIENT BACKGROUND CIRCLES — Decorativos
+   ========================================================================== */
+
+.hero-background-elements {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+}
+
+.circle-1 {
+  width: 300px;
+  height: 300px;
+  top: 10%;
+  left: 5%;
+}
+
+.circle-2 {
+  width: 200px;
+  height: 200px;
+  bottom: 25%;
+  right: 8%;
+}
+
+
+/* ==========================================================================
+   2. RESPONSIVE — TABLET (@media max-width: 1024px)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+
+  /* Texto ligeramente más compacto */
+  .hero-text-layer {
+    max-width: 600px;
+  }
+
+  .hero-headline {
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+  }
+
+  /* Badges se acercan a los bordes */
+  .price-badge {
+    left: 1.5rem;
+  }
+
+  .rating-badge {
+    right: 1.5rem;
+  }
+
+  /* Ajuste de controles inferiores */
+
+  /* Circles decorativos más pequeños */
+  .circle-1 {
+    width: 220px;
+    height: 220px;
+  }
+
+  .circle-2 {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+
+/* ==========================================================================
+   3. RESPONSIVE — MÓVIL (@media max-width: 768px)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+
+  /* ----------------------------------------------------------
+     3.1 Contenedor principal → diseño VERTICAL
+     - flex-direction: column para apilar contenido
+     - text-align: center para centrar texto
+     - Altura adaptada para retratos móviles
+     ---------------------------------------------------------- */
+  .hero-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    margin-top: 0;
+    aspect-ratio: auto;
+    min-height: 85vh;
+    max-height: 780px;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .hero-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: calc(var(--nav-height, 70px) + 64px) !important; /* Ajustado exactamente al alto del header + buscador */
+    z-index: 2;
+  }
+
+  /* ----------------------------------------------------------
+     3.2 Imagen de fondo — Espaciado superior CRÍTICO
+     - Agrega padding-top para despegar la imagen de la
+       barra de búsqueda superior del Navbar
+     - object-position ajustado para centrar el producto
+     ---------------------------------------------------------- */
+  .hero-slides-slider {
+    top: calc(var(--nav-height, 70px) + 64px) !important; /* Despejado de la barra de búsqueda */
+    height: calc(100% - (var(--nav-height, 70px) + 64px)) !important;
+    position: absolute;
+    left: 0;
+    width: 100%;
+  }
+
+  .hero-slide-bg-container {
+    padding-top: 0;
+    top: 0 !important;
+    height: 100% !important;
+  }
+
+  .hero-slide-bg-container picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-background-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%; /* Centra el producto verticalmente en el área visible */
+  }
+
+  /* ----------------------------------------------------------
+     3.3 Overlay suavizado para móvil
+     - Las fotos móviles ya tienen buen contraste
+     - Gradiente más suave pero protege la zona superior
+       donde está el buscador del Navbar
+     ---------------------------------------------------------- */
+  .hero-bg-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 8, 18, 1.0) 0%,
+      rgba(10, 8, 18, 1.0) 22%,
+      rgba(10, 8, 18, 0.0) 50%,
+      rgba(10, 8, 18, 0.40) 75%,
+      rgba(10, 8, 18, 0.95) 100%
+    );
+  }
+
+  /* ----------------------------------------------------------
+     3.4 Texto oculto en móvil
+     - Las fotos ya incluyen el branding del producto
+     ---------------------------------------------------------- */
+  .hero-text-layer {
+    display: none;
+  }
+
+  .hero-headline {
+    display: none;
+  }
+
+  /* ----------------------------------------------------------
+     3.5 Rating Badge — Posición fluida en móvil
+     - position: absolute con top/right controlados
+     - Despegado de la zona del buscador con margen superior
+       calculado: nav-height + barra búsqueda (~56px) + gap
+     ---------------------------------------------------------- */
+  .rating-badge {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    margin: 0;
+    z-index: 10;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85em;
+  }
+
+  .price-badge {
+    left: 1rem;
+    top: 16px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85em;
+  }
+
+  /* ----------------------------------------------------------
+     3.6 CTA Strip — Botón Pill inferior
+     - margin-bottom: 24px para accesibilidad del pulgar
+     - Padding compactado para pantallas pequeñas
+     ---------------------------------------------------------- */
+  .cta-button-pill {
+    font-size: 0.85rem; /* Ajusta sutilmente el texto si es muy largo */
+    width: max-content;
+    max-width: 90%;
+  }
+
+  /* ----------------------------------------------------------
+     3.7 Search Bar — Ancho completo en móvil
+     ---------------------------------------------------------- */
+  .hero-search-bar {
+    max-width: 100%;
+    padding: 0.55rem 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .hero-search-input {
+    font-size: 0.88rem;
+  }
+
+  /* ----------------------------------------------------------
+     3.8 Botones CTA — Targets táctiles ≥ 46px
+     ---------------------------------------------------------- */
+  .hero-cta-actions {
+    gap: 0.65rem;
+  }
+
+  .hero-btn-discover,
+  .hero-btn-cart {
+    padding: 0.7rem 1.4rem;
+    font-size: 0.88rem;
+    min-height: 46px;
+  }
+
+  /* ----------------------------------------------------------
+     3.9 Slide Indicators — Reposicionar para móvil
+     ---------------------------------------------------------- */
+}
+
+
+/* ==========================================================================
+   4. RESPONSIVE — MÓVIL PEQUEÑO (@media max-width: 480px)
+   ========================================================================== */
+
+@media (max-width: 480px) {
+
+  .hero-section {
+    min-height: 88vh;
+    max-height: 800px;
+    padding: 16px;
+  }
+
+  /* ----------------------------------------------------------
+     4.1 Imagen — Prevenir desbordamiento en iPhone/Android
+     Si hay una imagen de producto renderizada (no fondo),
+     controla su tamaño con estos límites
+     ---------------------------------------------------------- */
+  .hero-background-img {
+    object-position: 50% 50%;
+  }
+
+  /* ----------------------------------------------------------
+     4.2 Botones CTA — Stack vertical, ancho completo
+     ---------------------------------------------------------- */
+  .hero-cta-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.6rem;
+  }
+
+  .hero-btn-discover,
+  .hero-btn-cart {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.86rem;
+  }
+
+  /* ----------------------------------------------------------
+     4.3 Badges — Ocultar en pantallas muy pequeñas
+     ---------------------------------------------------------- */
+  .price-badge {
+    display: none;
+  }
+
+  /* ----------------------------------------------------------
+     4.4 CTA Tagline — Texto más compacto
+     ---------------------------------------------------------- */
+  .cta-button-pill {
+    font-size: 0.76rem;
+    padding: 0.35rem 0.8rem;
+  }
+
+  /* ----------------------------------------------------------
+     4.5 Elementos decorativos — Ocultar para rendimiento
+     ---------------------------------------------------------- */
+  .hero-background-elements {
+    display: none;
+  }
+
+  .hero-text-layer {
+    display: none;
+  }
+}
+
+
+/* ==========================================================================
+   5. RESPONSIVE — MÓVIL MICRO (@media max-width: 360px)
+   Pantallas ultra-compactas (iPhone SE, Galaxy A series, etc.)
+   ========================================================================== */
+
+@media (max-width: 360px) {
+
+  .hero-section {
+    min-height: 90vh;
+    padding: 12px;
+  }
+
+  .hero-background-img {
+    object-position: 50% 50%;
+  }
+
+  .cta-button-pill {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .hero-btn-discover,
+  .hero-btn-cart {
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    min-height: 44px;
+  }
+
+  .pagination-dots {
+    gap: 0.35rem;
+  }
+
+  .hero-indicator {
+    width: 6px;
+    height: 6px;
+  }
+
+  .hero-indicator.active {
+    width: 22px;
+  }
+}
+
+
+/* ==========================================================================
+   CLASE UTILITARIA — Para imágenes de producto renderizadas
+   (si algún slide usa una imagen del producto superpuesta
+    en vez de una imagen de fondo completa)
+   ========================================================================== */
+
+.slider-image-element {
+  max-width: 90%;
+  height: auto;
+  max-height: 380px;
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+}
+
+/* ==========================================================================
+   INTEGRACIÓN VISUAL SUPERIOR E INFERIOR — Hero Slider Container
+   ========================================================================== */
+
+.hero-slider-container {
+  /* Degradado que mezcla el fondo del slider suavemente con los extremos */
+  background: linear-gradient(to bottom, var(--navy, #1e225e) 0%, var(--navy-dark, #161944) 50%, var(--navy, #1e225e) 100%) !important;
+  width: 100%;
+  margin: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  background-size: cover; /* Cambiar de contain a cover obligatoriamente */
+  background-position: center;
+  position: relative; /* Necesario para los botones absolutos */
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   AJUSTE PIXEL-PERFECT PARA ESCRITORIO (PC)
+   ========================================================================== */
+@media (min-width: 769px) {
+  /* Contenedor principal del slider */
+  .hero-section,
+  .hero-slider-container {
+    width: 100% !important;
+    height: auto !important; /* Elimina cualquier altura fija (px, vh) que deforme el banner */
+    min-height: unset !important;
+    max-height: unset !important;
+    aspect-ratio: unset !important;
+    padding: 0 !important;
+    margin-top: var(--nav-height, 70px) !important; /* Mantiene el espaciado del Navbar */
+    margin-bottom: 0 !important;
+    background: none !important; /* Quita fondos remanentes */
+    overflow: hidden;
+  }
+
+  /* Estructura del contenedor interno de cada slide */
+  .hero-background-wrapper,
+  .hero-slides-slider,
+  .hero-slide-bg-container {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .hero-background-wrapper {
+    display: block !important;
+  }
+
+  .hero-slides-slider {
+    display: flex !important;
+  }
+
+  .hero-slide-bg-container {
+    display: block !important;
+    flex: 0 0 100% !important;
+  }
+
+  .hero-slide-bg-container picture {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Configuración estricta de la etiqueta <img> */
+  .hero-background-img {
+    width: 100% !important;
+    height: auto !important; /* Fuerza a la imagen a respetar su resolución y proporción nativa */
+    object-fit: normal !important; /* Evita que cover o contain fuercen un reescalado artificial */
+    display: block !important;
+  }
+  
+  /* Ajuste de controles absolutos sobre el banner panorámico */
+  .bottom-controls-container {
+    position: absolute;
+    bottom: 5%; /* Flota dinámicamente según el alto del banner */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+}
+
+
