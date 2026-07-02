@@ -517,19 +517,17 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: calc(var(--nav-height, 70px) + 64px) !important; /* Ajustado exactamente al alto del header + buscador */
+    padding-top: 2rem !important; /* Adjusted now that the search bar is in normal flow */
     z-index: 2;
   }
 
   /* ----------------------------------------------------------
      3.2 Imagen de fondo — Espaciado superior CRÍTICO
-     - Agrega padding-top para despegar la imagen de la
-       barra de búsqueda superior del Navbar
-     - object-position ajustado para centrar el producto
+     - No offset needed as the container is in normal flow below search
      ---------------------------------------------------------- */
   .hero-slides-slider {
-    top: calc(var(--nav-height, 70px) + 64px) !important; /* Despejado de la barra de búsqueda */
-    height: calc(100% - (var(--nav-height, 70px) + 64px)) !important;
+    top: 0 !important;
+    height: 100% !important;
     position: absolute;
     left: 0;
     width: 100%;

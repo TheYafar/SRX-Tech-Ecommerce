@@ -1213,3 +1213,18 @@
   color: #475569;
   transition: color var(--transition-fast) ease, stroke var(--transition-fast) ease;
 }
+
+/* ── PayPal Loader Spinner ────────────────────────────────────────────────── */
+.paypal-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(0, 48, 135, 0.1);
+  border-top-color: #003087; /* PayPal Blue */
+  border-radius: 50%;
+  animation: paypalSpin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes paypalSpin {
+  to { transform: rotate(360deg); }
+}

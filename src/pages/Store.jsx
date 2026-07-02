@@ -310,7 +310,7 @@ export default function Store() {
   };
 
   return (
-    <div className="store-page">
+    <div className="store-page pb-24">
       {/* Premium Hero Section */}
       <section className="store-hero">
         <motion.div className="hero-orb orb-1" animate={{ x: [0, 30, 0], y: [0, -40, 0] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />

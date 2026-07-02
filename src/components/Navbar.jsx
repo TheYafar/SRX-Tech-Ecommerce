@@ -127,8 +127,9 @@ export default function Navbar() {
   }, [navigate]);
 
   return (
-    <header className={`navbar-header ${isScrolled ? 'scrolled' : ''}`}>
-      <div className="container navbar-container">
+    <>
+      <header className={`navbar-header ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="container navbar-container">
         {/* Bloque Izquierdo: Solo el logo */}
         <div className="navbar-left">
           <Link to="/" className="nav-logo" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
@@ -422,9 +423,10 @@ export default function Navbar() {
           </div>
         </div>
       )}
+    </header>
 
-      {/* Floating Mobile Search Bubble */}
-      <div className="mobile-floating-search">
+      {/* Mobile Search Bar in normal flow */}
+      <div className="mobile-search-bar-flow">
         <form onSubmit={handleSearch} className="floating-search-form">
           <input
             type="text"
@@ -438,6 +440,6 @@ export default function Navbar() {
           </button>
         </form>
       </div>
-    </header>
+    </>
   );
 }

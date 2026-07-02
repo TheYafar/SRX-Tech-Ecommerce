@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';
@@ -22,6 +23,8 @@ import AdminCategoriesOrder from './pages/Admin/AdminCategoriesOrder';
 import AdminRoute from './components/AdminRoute';
 import './App.css';
 
+const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "test";
+
 function RegisterRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,41 +41,48 @@ function RegisterRedirect() {
 
 export default function App() {
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <CurrencyProvider>
-          <ProductProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <HashRouter>
-                  <Routes>
-                    <Route path="/" element={<MainLayout />}>
-                      <Route index element={<Home />} />
-                      <Route path="tienda" element={<Store />} />
-                      <Route path="tienda/:slug" element={<Store />} />
-                      <Route path="profile" element={<Profile />} />
-                      <Route path="register" element={<RegisterRedirect />} />
-                      <Route path="signup" element={<RegisterRedirect />} />
-                      <Route path="reset-password" element={<ResetPassword />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Route>
-                    <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                      <Route index element={<AdminDashboard activeSection="addProduct" />} />
-                      <Route path="orders" element={<AdminOrders />} />
-                      <Route path="products" element={<AdminProducts />} />
-                      <Route path="coupons" element={<AdminCoupons />} />
-                      <Route path="pedidos-contado" element={<AdminDashboard activeSection="payments" />} />
-                      <Route path="categories" element={<AdminDashboard activeSection="categories" />} />
-                      <Route path="orden-categorias" element={<AdminCategoriesOrder />} />
-                      <Route path="banners" element={<AdminDashboard activeSection="banners" />} />
-                    </Route>
-                  </Routes>
-                </HashRouter>
-              </WishlistProvider>
-            </CartProvider>
-          </ProductProvider>
-        </CurrencyProvider>
-      </AuthProvider>
-    </NotificationProvider>
+    <PayPalScriptProvider options={{
+      "client-id": paypalClientId,
+      currency: "USD",
+      components: "buttons",
+      intent: "capture"
+    }}>
+      <NotificationProvider>
+        <AuthProvider>
+          <CurrencyProvider>
+            <ProductProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <HashRouter>
+                    <Routes>
+                      <Route path="/" element={<MainLayout />}>
+                        <Route index element={<Home />} />
+                        <Route path="tienda" element={<Store />} />
+                        <Route path="tienda/:slug" element={<Store />} />
+                        <Route path="profile" element={<Profile />} />
+                        <Route path="register" element={<RegisterRedirect />} />
+                        <Route path="signup" element={<RegisterRedirect />} />
+                        <Route path="reset-password" element={<ResetPassword />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
+                      <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                        <Route index element={<AdminDashboard activeSection="addProduct" />} />
+                        <Route path="orders" element={<AdminOrders />} />
+                        <Route path="products" element={<AdminProducts />} />
+                        <Route path="coupons" element={<AdminCoupons />} />
+                        <Route path="pedidos-contado" element={<AdminDashboard activeSection="payments" />} />
+                        <Route path="categories" element={<AdminDashboard activeSection="categories" />} />
+                        <Route path="orden-categorias" element={<AdminCategoriesOrder />} />
+                        <Route path="banners" element={<AdminDashboard activeSection="banners" />} />
+                      </Route>
+                    </Routes>
+                  </HashRouter>
+                </WishlistProvider>
+              </CartProvider>
+            </ProductProvider>
+          </CurrencyProvider>
+        </AuthProvider>
+      </NotificationProvider>
+    </PayPalScriptProvider>
   );
 }

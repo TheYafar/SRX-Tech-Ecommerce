@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useNotifications } from '../context/NotificationContext';
 import { X, CreditCard, Shield, CheckCircle, AlertCircle, Lock, User, Mail, Phone, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { usePayPalScriptReducer, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import PaymentInstructions from './PaymentInstructions';
 import { enviarCorreoCompraExitosa } from '../services/emailService';
@@ -57,6 +57,7 @@ const renderPaymentIcon = (id) => {
 };
 
 export default function CheckoutModal({ isOpen, onClose }) {
+  const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
   const { cartItems, cartTotal = 0, clearCart } = useCart();
   const { user, openAuthModalWithAction } = useAuth();
   const { formatVES, exchangeRate } = useCurrency();
@@ -572,16 +573,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
     exit: { y: -20, opacity: 0, transition: { duration: 0.2 } }
   };
 
-  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "test";
-
   return (
-    <PayPalScriptProvider options={{
-      "client-id": paypalClientId,
-      currency: "USD",
-      components: "buttons",
-      intent: "capture"
-    }}>
-      <motion.div
+    <motion.div
         className="checkout-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -806,144 +799,161 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <div className="payment-details-form">
                       {isContactInfoValid ? (
                         <div className="paypal-button-container">
-                          <PayPalButtons 
-                            style={{ layout: "vertical", shape: "pill" }}
-                            createOrder={async (data, actions) => {
-                              try {
-                                const cleanItems = (cartItems || []).reduce((acc, item) => {
-                                  if (!item) return acc;
-                                  let realProductId = null;
-                                  const candidateId = item.id || item.product_id || item._id;
-                                  if (isUUID(candidateId)) realProductId = candidateId;
-                                  else if (isUUID(item.uuid)) realProductId = item.uuid;
-                                  
-                                  if (realProductId) {
-                                    acc.push({
-                                      ...item,
-                                      product_id: realProductId
-                                    });
-                                  }
-                                  return acc;
-                                }, []);
-
-                                if (cleanItems.length === 0) {
-                                  throw new Error('El carrito está vacío o no contiene productos válidos.');
-                                }
-
-                                // Obtener el stock real de los productos en Supabase para validar
-                                let dbProducts = null;
+                          {isPending ? (
+                            <div className="paypal-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.05)', minHeight: '150px' }}>
+                              <div className="paypal-spinner"></div>
+                              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>Cargando pasarela de pago...</span>
+                            </div>
+                          ) : (isRejected || (isResolved && (!window.paypal || !window.paypal.Buttons))) ? (
+                            <div className="payment-validation-warning" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #ef4444', padding: '1.25rem', borderRadius: '8px', color: '#dc2626', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
+                                <AlertCircle size={18} />
+                                <span>Error al cargar PayPal</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '0.85rem', color: '#b91c1c', fontWeight: 'normal', lineHeight: '1.4' }}>
+                                No se pudo inicializar la pasarela de PayPal. Esto suele ocurrir si hay un bloqueador de anuncios activo, si las cookies de terceros están bloqueadas, o si hay un problema de red. Por favor, desactive las extensiones de bloqueo para este sitio web o intente con otro método de pago.
+                              </p>
+                            </div>
+                          ) : (
+                            <PayPalButtons 
+                              style={{ layout: "vertical", shape: "pill" }}
+                              createOrder={async (data, actions) => {
                                 try {
-                                  const productIds = cleanItems.map(item => item.product_id);
-                                  const { data: fetchedProducts, error: dbProductsError } = await supabase
-                                    .from('products')
-                                    .select('id, stock')
-                                    .in('id', productIds);
-
-                                  if (!dbProductsError && fetchedProducts) {
-                                    dbProducts = fetchedProducts;
-                                  }
-                                } catch (stockErr) {
-                                  console.error('Error fetching stock in createOrder:', stockErr);
-                                }
-
-                                // Agrupar por stock para aplicar validaciones de stock máximo
-                                const itemsContado = [];
-                                cleanItems.forEach(item => {
-                                  const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
-                                  const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null)
-                                    ? matchedDbProduct.stock
-                                    : (item.stock !== undefined && item.stock !== null ? item.stock : 0);
-                                  if (stockValue >= 1) {
-                                    itemsContado.push(item);
-                                  }
-                                });
-
-                                const exceedsStock = itemsContado.some(item => {
-                                  const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
-                                  const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null) ? matchedDbProduct.stock : item.stock;
-                                  return item.quantity > stockValue;
-                                });
-
-                                if (exceedsStock) {
-                                  throw new Error("No se puede pedir más de este producto, solo queda 1 unidad disponible. Si quiere pedir otra, compre 1 y pida las demás por encargo.");
-                                }
-
-                                const subtotal = cleanItems.reduce((sum, item) => {
-                                  const price = item.salePrice || item.price || 0;
-                                  return sum + (price * (item.quantity || 1));
-                                }, 0);
-
-                                const discountAmt = Number((subtotal * (appliedDiscount / 100)).toFixed(2));
-                                const baseAmt = Math.max(0, Number((subtotal - discountAmt).toFixed(2)));
-                                const commissionAmt = baseAmt > 0 ? Number(((baseAmt + 0.30) / (1 - 0.054) - baseAmt).toFixed(2)) : 0;
-                                const totalAmount = baseAmt + commissionAmt;
-
-                                if (totalAmount <= 0) {
-                                  throw new Error('El monto total de la orden debe ser mayor a cero.');
-                                }
-
-                                const paypalItems = cleanItems.map(item => {
-                                  const price = item.salePrice || item.price || 0;
-                                  return {
-                                    name: item.name || 'Producto',
-                                    quantity: String(item.quantity || 1),
-                                    unit_amount: {
-                                      currency_code: 'USD',
-                                      value: price.toFixed(2)
+                                  const cleanItems = (cartItems || []).reduce((acc, item) => {
+                                    if (!item) return acc;
+                                    let realProductId = null;
+                                    const candidateId = item.id || item.product_id || item._id;
+                                    if (isUUID(candidateId)) realProductId = candidateId;
+                                    else if (isUUID(item.uuid)) realProductId = item.uuid;
+                                    
+                                    if (realProductId) {
+                                      acc.push({
+                                        ...item,
+                                        product_id: realProductId
+                                      });
                                     }
-                                  };
-                                });
+                                    return acc;
+                                  }, []);
 
-                                return actions.order.create({
-                                  purchase_units: [{
-                                    amount: {
-                                      currency_code: 'USD',
-                                      value: totalAmount.toFixed(2),
-                                      breakdown: {
-                                        item_total: {
-                                          currency_code: 'USD',
-                                          value: subtotal.toFixed(2)
-                                        },
-                                        discount: appliedDiscount > 0 ? {
-                                          currency_code: 'USD',
-                                          value: discountAmt.toFixed(2)
-                                        } : undefined,
-                                        handling: commissionAmt > 0 ? {
-                                          currency_code: 'USD',
-                                          value: commissionAmt.toFixed(2)
-                                        } : undefined
+                                  if (cleanItems.length === 0) {
+                                    throw new Error('El carrito está vacío o no contiene productos válidos.');
+                                  }
+
+                                  // Obtener el stock real de los productos en Supabase para validar
+                                  let dbProducts = null;
+                                  try {
+                                    const productIds = cleanItems.map(item => item.product_id);
+                                    const { data: fetchedProducts, error: dbProductsError } = await supabase
+                                      .from('products')
+                                      .select('id, stock')
+                                      .in('id', productIds);
+
+                                    if (!dbProductsError && fetchedProducts) {
+                                      dbProducts = fetchedProducts;
+                                    }
+                                  } catch (stockErr) {
+                                    console.error('Error fetching stock in createOrder:', stockErr);
+                                  }
+
+                                  // Agrupar por stock para aplicar validaciones de stock máximo
+                                  const itemsContado = [];
+                                  cleanItems.forEach(item => {
+                                    const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
+                                    const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null)
+                                      ? matchedDbProduct.stock
+                                      : (item.stock !== undefined && item.stock !== null ? item.stock : 0);
+                                    if (stockValue >= 1) {
+                                      itemsContado.push(item);
+                                    }
+                                  });
+
+                                  const exceedsStock = itemsContado.some(item => {
+                                    const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
+                                    const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null) ? matchedDbProduct.stock : item.stock;
+                                    return item.quantity > stockValue;
+                                  });
+
+                                  if (exceedsStock) {
+                                    throw new Error("No se puede pedir más de este producto, solo queda 1 unidad disponible. Si quiere pedir otra, compre 1 y pida las demás por encargo.");
+                                  }
+
+                                  const subtotal = cleanItems.reduce((sum, item) => {
+                                    const price = item.salePrice || item.price || 0;
+                                    return sum + (price * (item.quantity || 1));
+                                  }, 0);
+
+                                  const discountAmt = Number((subtotal * (appliedDiscount / 100)).toFixed(2));
+                                  const baseAmt = Math.max(0, Number((subtotal - discountAmt).toFixed(2)));
+                                  const commissionAmt = baseAmt > 0 ? Number(((baseAmt + 0.30) / (1 - 0.054) - baseAmt).toFixed(2)) : 0;
+                                  const totalAmount = baseAmt + commissionAmt;
+
+                                  if (totalAmount <= 0) {
+                                    throw new Error('El monto total de la orden debe ser mayor a cero.');
+                                  }
+
+                                  const paypalItems = cleanItems.map(item => {
+                                    const price = item.salePrice || item.price || 0;
+                                    return {
+                                      name: item.name || 'Producto',
+                                      quantity: String(item.quantity || 1),
+                                      unit_amount: {
+                                        currency_code: 'USD',
+                                        value: price.toFixed(2)
                                       }
-                                    },
-                                    items: paypalItems
-                                  }]
-                                });
-                              } catch (err) {
-                                console.error('PayPal createOrder error:', err);
-                                showError(err.message || 'Error al preparar el pago con PayPal.');
-                                throw err;
-                              }
-                            }}
-                            onApprove={async (data, actions) => {
-                              setIsSubmitting(true);
-                              try {
-                                const details = await actions.order.capture();
-                                await processCheckout(details);
-                              } catch (err) {
-                                console.error('PayPal capture or database sync error:', err);
-                                showError('Error al procesar el pago con PayPal: ' + (err.message || err));
+                                    };
+                                  });
+
+                                  return actions.order.create({
+                                    purchase_units: [{
+                                      amount: {
+                                        currency_code: 'USD',
+                                        value: totalAmount.toFixed(2),
+                                        breakdown: {
+                                          item_total: {
+                                            currency_code: 'USD',
+                                            value: subtotal.toFixed(2)
+                                          },
+                                          discount: appliedDiscount > 0 ? {
+                                            currency_code: 'USD',
+                                            value: discountAmt.toFixed(2)
+                                          } : undefined,
+                                          handling: commissionAmt > 0 ? {
+                                            currency_code: 'USD',
+                                            value: commissionAmt.toFixed(2)
+                                          } : undefined
+                                        }
+                                      },
+                                      items: paypalItems
+                                    }]
+                                  });
+                                } catch (err) {
+                                  console.error('PayPal createOrder error:', err);
+                                  showError(err.message || 'Error al preparar el pago con PayPal.');
+                                  throw err;
+                                }
+                              }}
+                              onApprove={async (data, actions) => {
+                                setIsSubmitting(true);
+                                try {
+                                  const details = await actions.order.capture();
+                                  await processCheckout(details);
+                                } catch (err) {
+                                  console.error('PayPal capture or database sync error:', err);
+                                  showError('Error al procesar el pago con PayPal: ' + (err.message || err));
+                                  setIsSubmitting(false);
+                                }
+                              }}
+                              onError={(err) => {
+                                console.error('PayPal error:', err);
+                                showError('Ocurrió un error con el servicio de PayPal.');
                                 setIsSubmitting(false);
-                              }
-                            }}
-                            onError={(err) => {
-                              console.error('PayPal error:', err);
-                              showError('Ocurrió un error con el servicio de PayPal.');
-                              setIsSubmitting(false);
-                            }}
-                            onCancel={() => {
-                              showError('El pago con PayPal fue cancelado.');
-                              setIsSubmitting(false);
-                            }}
-                          />
+                              }}
+                              onCancel={() => {
+                                showError('El pago con PayPal fue cancelado.');
+                                setIsSubmitting(false);
+                              }}
+                            />
+                          )}
                         </div>
                       ) : (
                         <div className="payment-validation-warning" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '8px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: '600', marginTop: '1rem' }}>
@@ -1179,6 +1189,5 @@ export default function CheckoutModal({ isOpen, onClose }) {
         )}
       </motion.div>
     </motion.div>
-    </PayPalScriptProvider>
   );
 }

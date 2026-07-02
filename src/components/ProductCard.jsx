@@ -155,14 +155,9 @@ export default function ProductCard({ product }) {
               <div className="price-container">
                 {tieneOferta ? (
                   <>
-                    <motion.span 
-                      className="new-price"
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                    >
+                    <span className="new-price">
                       {formatUSD(precioOferta)}
-                    </motion.span>
+                    </span>
                     <span className="old-price">{formatUSD(precioActual)}</span>
                   </>
                 ) : (
