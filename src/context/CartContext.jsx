@@ -130,6 +130,22 @@ export const CartProvider = ({ children }) => {
   const addToCart = useCallback(async (product, qty = 1) => {
     const quantityToAdd = product.quantity || qty;
 
+    // Track AddToCart event in FB Pixel
+    window.fbq = window.fbq || function() {
+      (window.fbq.q = window.fbq.q || []).push(arguments);
+    };
+    if (window.fbq) {
+      const eventData = {
+        content_ids: [product.id],
+        content_name: product.name || product.title,
+        value: Number(product.price_usd || product.price || 0),
+        currency: 'USD',
+        content_type: 'product'
+      };
+      window.fbq('track', 'AddToCart', eventData);
+      console.log('[Meta Pixel] Evento disparado: AddToCart', eventData);
+    }
+
     // Get latest stock from availableProducts or fallback to product.stock
     const latestProduct = availableProducts.find(p => p.id === product.id) || product;
     const stock = latestProduct.stock !== undefined && latestProduct.stock !== null ? latestProduct.stock : 0;

@@ -455,6 +455,22 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
       showSuccess("¡Pago procesado con éxito! Tu orden ha sido registrada.");
       setIsSuccess(true);
+
+      // Track Purchase event in FB Pixel strictly if payment is confirmed via PayPal gateway
+      if (paypalDetails) {
+        window.fbq = window.fbq || function() {
+          (window.fbq.q = window.fbq.q || []).push(arguments);
+        };
+        if (window.fbq) {
+          const eventData = {
+            value: Number(totalToSave),
+            currency: 'USD'
+          };
+          window.fbq('track', 'Purchase', eventData);
+          console.log('[Meta Pixel] Evento disparado: Purchase', eventData);
+        }
+      }
+
       clearCart();
       
       setTimeout(() => {

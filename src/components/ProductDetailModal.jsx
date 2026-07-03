@@ -195,6 +195,26 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
     }
   }, [product]);
 
+  // Track ViewContent event in FB Pixel
+  useEffect(() => {
+    if (isOpen && product?.id) {
+      window.fbq = window.fbq || function() {
+        (window.fbq.q = window.fbq.q || []).push(arguments);
+      };
+      if (window.fbq) {
+        const eventData = {
+          content_ids: [product.id],
+          content_name: product.name,
+          value: Number(product.price_usd || product.price || 0),
+          currency: 'USD',
+          content_type: 'product'
+        };
+        window.fbq('track', 'ViewContent', eventData);
+        console.log('[Meta Pixel] Evento disparado: ViewContent', eventData);
+      }
+    }
+  }, [product?.id, isOpen]);
+
   const handleSliderScroll = () => {
     if (!sliderRef.current) return;
     const { scrollLeft, clientWidth } = sliderRef.current;

@@ -25,6 +25,45 @@ import './App.css';
 
 const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "test";
 
+function FacebookPixelTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.fbq = window.fbq || function() {
+      (window.fbq.q = window.fbq.q || []).push(arguments);
+    };
+    window._fbq = window._fbq || window.fbq;
+    window.fbq.push = window.fbq;
+    window.fbq.loaded = true;
+    window.fbq.version = '2.0';
+    window.fbq.queue = [];
+
+    const scriptId = 'facebook-pixel-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.async = true;
+      script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      document.head.appendChild(script);
+    }
+
+    window.fbq('init', '1341230694784299');
+  }, []);
+
+  useEffect(() => {
+    window.fbq = window.fbq || function() {
+      (window.fbq.q = window.fbq.q || []).push(arguments);
+    };
+    if (window.fbq) {
+      window.fbq('track', 'PageView');
+      console.log('[Meta Pixel] Evento disparado: PageView', { path: location.pathname });
+    }
+  }, [location.pathname]);
+
+  return null;
+}
+
+
 function RegisterRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +93,7 @@ export default function App() {
               <CartProvider>
                 <WishlistProvider>
                   <HashRouter>
+                    <FacebookPixelTracker />
                     <Routes>
                       <Route path="/" element={<MainLayout />}>
                         <Route index element={<Home />} />
