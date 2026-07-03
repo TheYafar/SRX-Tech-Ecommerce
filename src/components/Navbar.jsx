@@ -114,6 +114,18 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // ── Bloquear scroll del body cuando el menú móvil está abierto ─────────────
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
   const scrollToSection = (id) => {
     setIsMobileMenuOpen(false);
     if (location.pathname !== '/') {
