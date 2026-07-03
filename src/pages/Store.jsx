@@ -310,7 +310,7 @@ export default function Store() {
   };
 
   return (
-    <div className="store-page pb-24">
+    <div className="store-page h-auto pb-24">
       {/* Premium Hero Section */}
       <section className="store-hero">
         <motion.div className="hero-orb orb-1" animate={{ x: [0, 30, 0], y: [0, -40, 0] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
@@ -480,7 +480,7 @@ export default function Store() {
           </div>
 
           {isLoading ? (
-            <div className="products-premium-grid">
+            <div className="products-premium-grid grid grid-cols-2 gap-4 w-full auto-rows-fr">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                 <div key={n} className="product-card skeleton" style={{ height: '380px' }}>
                   <div style={{ height: '240px', width: '100%' }}></div>
@@ -495,7 +495,7 @@ export default function Store() {
           ) : filteredProducts.length > 0 ? (
             <motion.div
               key={`${selectedCategory}-${navFilter ? navFilter.value : 'all'}-${isBestSellersFilter}`}
-              className="products-premium-grid"
+              className="products-premium-grid grid grid-cols-2 gap-4 w-full auto-rows-fr"
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"

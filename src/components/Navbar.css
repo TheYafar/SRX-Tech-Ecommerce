@@ -483,7 +483,8 @@
   /* ── Mobile search bar in normal flow — glassmorphism premium ── */
   .mobile-search-bar-flow {
     display: block !important;
-    position: relative !important;   /* Normal document flow */
+    position: sticky !important;     /* Sticky positioning so it can float on scroll */
+    top: var(--nav-height, 70px) !important; /* Sticks below the fixed header */
     margin-top: var(--nav-height, 70px) !important; /* Clears the fixed navbar space */
     width: 100% !important;
     box-sizing: border-box !important;
@@ -494,8 +495,16 @@
     -webkit-backdrop-filter: blur(14px) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-    z-index: 10 !important;
+    z-index: 999 !important;         /* Above page content but below fixed navbar (1000) */
     overflow: hidden !important;     /* No horizontal overflow */
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, visibility 0.3s ease !important;
+  }
+
+  .mobile-search-bar-flow.search-hidden {
+    transform: translateY(-120%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
   }
 
   .floating-search-form {

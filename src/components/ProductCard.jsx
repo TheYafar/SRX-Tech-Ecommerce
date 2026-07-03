@@ -47,7 +47,7 @@ export default function ProductCard({ product }) {
   return (
     <>
       <motion.div 
-        className="product-card hover-lift"
+        className="product-card hover-lift transform translate-z-0 will-change-transform contain-intrinsic-size overflow-hidden"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ y: -8 }}

@@ -44,10 +44,42 @@ export default function Navbar() {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [showMobileSearch, setShowMobileSearch] = useState(true);
 
   const searchRef = useRef(null);
   const userDropdownRef = useRef(null);
   const categoriesBtnRef = useRef(null);
+  const lastScrollY = useRef(0);
+
+  // ── Scroll listener to show/hide mobile search bar on scroll up/down ─────
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Always show if we are near the top
+      if (currentScrollY < 10) {
+        setShowMobileSearch(true);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      const diff = currentScrollY - lastScrollY.current;
+      // Skip small scroll updates to prevent stutter/jittering
+      if (Math.abs(diff) < 5) return;
+
+      if (diff > 0) {
+        // Scrolling down -> hide mobile search
+        setShowMobileSearch(false);
+      } else {
+        // Scrolling up -> show mobile search
+        setShowMobileSearch(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // ── Cargar categorías desde Supabase ──────────────────────────────────────
   useEffect(() => {
@@ -426,7 +458,7 @@ export default function Navbar() {
     </header>
 
       {/* Mobile Search Bar in normal flow */}
-      <div className="mobile-search-bar-flow">
+      <div className={`mobile-search-bar-flow ${!showMobileSearch ? 'search-hidden' : ''}`}>
         <form onSubmit={handleSearch} className="floating-search-form">
           <input
             type="text"

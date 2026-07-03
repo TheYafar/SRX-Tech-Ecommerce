@@ -417,6 +417,13 @@
   50%       { box-shadow: 0 4px 28px rgba(245, 158, 11, 0.55); }
 }
 
+.contact-details-section-container {
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
 .order-summary {
   padding: 1.5rem;
   background: linear-gradient(135deg, var(--bg-tertiary) 0%, #f8f9fa 100%);

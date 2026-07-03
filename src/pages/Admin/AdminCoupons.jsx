@@ -115,6 +115,7 @@ export default function AdminCoupons() {
   const [discountPercent, setDiscountPercent] = useState('');
   const [expiresAt, setExpiresAt]           = useState('');
   const [isSingleUse, setIsSingleUse]       = useState(false);
+  const [maxUses, setMaxUses]               = useState('');
   const [isSubmitting, setIsSubmitting]     = useState(false);
 
   // ── Email / campaña ──
@@ -242,6 +243,7 @@ export default function AdminCoupons() {
     setIsSubmitting(true);
     try {
       const expiresIso = expiresAt ? new Date(expiresAt + 'T23:59:59').toISOString() : null;
+      const maxUsesVal = maxUses ? parseInt(maxUses, 10) : null;
 
       // 1. Insertar en base de datos
       const { error } = await supabase
@@ -252,6 +254,7 @@ export default function AdminCoupons() {
           expires_at: expiresIso,
           is_active: true,
           is_single_use: isSingleUse,
+          max_uses: maxUsesVal,
         }])
         .select();
 
@@ -304,6 +307,7 @@ export default function AdminCoupons() {
       setCode('');
       setDiscountPercent('');
       setExpiresAt('');
+      setMaxUses('');
       setIsSingleUse(false);
       setSendEmail(false);
       setIsMassEmail(false);
@@ -408,6 +412,21 @@ export default function AdminCoupons() {
                   type="date"
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="coupon-max-uses">Límite de Canjes (Opcional)</label>
+              <div className="input-icon-wrapper">
+                <Ticket className="input-icon" size={18} />
+                <input
+                  id="coupon-max-uses"
+                  type="number"
+                  placeholder="Ej: 10 (Sin límite si queda vacío)"
+                  min="1"
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
                 />
               </div>
             </div>
@@ -698,6 +717,7 @@ export default function AdminCoupons() {
                   <th>Código</th>
                   <th>Descuento</th>
                   <th>Tipo</th>
+                  <th>Canjes (Usados / Máx)</th>
                   <th>Creado el</th>
                   <th>Expira el</th>
                   <th>Estado</th>
@@ -721,6 +741,13 @@ export default function AdminCoupons() {
                           ? <span className="badge-single-use">Un solo uso</span>
                           : <span className="badge-multi-use">Múltiple</span>
                         }
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: '600' }}>{coupon.used_count || 0}</span>
+                        <span style={{ color: '#64748b' }}> / </span>
+                        <span style={{ color: '#94a3b8' }}>
+                          {coupon.max_uses !== null && coupon.max_uses !== undefined ? coupon.max_uses : '∞'}
+                        </span>
                       </td>
                       <td>{formatDate(coupon.created_at)}</td>
                       <td>

@@ -9,6 +9,7 @@ import { usePayPalScriptReducer, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import PaymentInstructions from './PaymentInstructions';
 import { enviarCorreoCompraExitosa } from '../services/emailService';
+import { checkAndValidateCoupon, registerCouponUsage } from '../services/couponService';
 import './CheckoutModal.css';
 
 const CONFETTI_PARTICLES = [
@@ -81,6 +82,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
   });
   const [couponCode, setCouponCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState(0); // Porcentaje (Ej: 10 para 10%)
+  const [appliedCouponId, setAppliedCouponId] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
 
@@ -154,49 +156,33 @@ export default function CheckoutModal({ isOpen, onClose }) {
     if (!couponCode.trim()) {
       setCouponError('Ingresa tu cupón');
       setAppliedDiscount(0);
+      setAppliedCouponId(null);
       setCouponSuccess('');
       return;
     }
     try {
       setCouponError('');
       setCouponSuccess('');
-      const cleanCode = couponCode.trim().toUpperCase();
 
-      const { data, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', cleanCode)
-        .eq('is_active', true)
-        .single();
+      const result = await checkAndValidateCoupon(couponCode, user?.id || null);
 
-      if (error || !data) {
-        setCouponError('Cupón inválido o inactivo');
+      if (!result.success) {
+        setCouponError(result.message || 'Cupón inválido o inactivo');
         setAppliedDiscount(0);
+        setAppliedCouponId(null);
         return;
       }
 
-      // Comprobar expiración
-      const now = new Date();
-      if (data.expires_at && now > new Date(data.expires_at)) {
-        setCouponError('El cupón ha expirado');
-        setAppliedDiscount(0);
-        return;
-      }
-
-      const percent = data.discount_percent || data.discount_percentage || data.discount || 0;
-      if (percent <= 0) {
-        setCouponError('Cupón con valor de descuento inválido');
-        setAppliedDiscount(0);
-        return;
-      }
-
+      const percent = result.coupon.discount_percent || result.coupon.discount_percentage || result.coupon.discount || 0;
       setAppliedDiscount(percent);
+      setAppliedCouponId(result.coupon.id);
       setCouponSuccess(`¡Cupón del ${percent}% aplicado!`);
       setCouponError('');
     } catch (err) {
       console.error('Error validating coupon:', err);
       setCouponError('Error al validar cupón');
       setAppliedDiscount(0);
+      setAppliedCouponId(null);
     }
   };
 
@@ -205,6 +191,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
     let uploadedReceiptUrl = null;
 
     try {
+      // Re-validar límites de cupón si está aplicado antes de proceder
+      if (appliedCouponId) {
+        const result = await checkAndValidateCoupon(couponCode, user?.id || null);
+        if (!result.success) {
+          throw new Error(result.message || 'El cupón ya no es válido.');
+        }
+      }
+
       // Paso 1: Subir el comprobante a Supabase Storage (omitir si es pago directo por PayPal)
       if (formData.receiptFile && !paypalDetails) {
         uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
@@ -422,6 +416,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
       if (createdOrders.length === 0) {
         throw new Error('No se pudo registrar ninguna orden.');
+      }
+
+      // Paso 4.5: Registrar consumo del cupón si se aplicó uno
+      if (appliedCouponId) {
+        await registerCouponUsage(appliedCouponId, user?.id || null);
       }
 
       // 5. Guardar datos ANTES de limpiar carrito (para la pantalla de éxito)
@@ -724,59 +723,177 @@ export default function CheckoutModal({ isOpen, onClose }) {
               <p className="checkout-subtitle">Completa tu orden de compra</p>
             </div>
 
-            <div className="checkout-body">
-              {/* Payment Method Selection */}
-              <motion.div 
-                className="payment-methods"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <h3 className="section-title">Método de Pago</h3>
-                <div className="payment-grid">
-                  {paymentMethods.map((method) => (
-                    <label 
-                      key={method.id}
-                      className={`payment-method-card payment-option-card ${paymentMethod === method.id ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod(method.id)}
-                    >
-                      <input 
-                        type="radio" 
-                        name="payment" 
-                        value={method.id}
-                        checked={paymentMethod === method.id}
-                        onChange={() => setPaymentMethod(method.id)}
-                        className="hidden-radio"
-                      />
-                      <div className="payment-option-icon">
-                        {renderPaymentIcon(method.id)}
-                      </div>
-                      <span className="payment-option-name">{method.name}</span>
-                      {paymentMethod === method.id && (
-                        <motion.div 
-                          className="payment-option-check"
-                          layoutId="check"
-                        >
-                          <CheckCircle size={16} />
-                        </motion.div>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </motion.div>
+            {/* 1. Método de Pago */}
+            <motion.div 
+              className="payment-methods"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <h3 className="section-title">Método de Pago</h3>
+              <div className="payment-grid">
+                {paymentMethods.map((method) => (
+                  <label 
+                    key={method.id}
+                    className={`payment-method-card payment-option-card ${paymentMethod === method.id ? 'active' : ''}`}
+                    onClick={() => setPaymentMethod(method.id)}
+                  >
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value={method.id}
+                      checked={paymentMethod === method.id}
+                      onChange={() => setPaymentMethod(method.id)}
+                      className="hidden-radio"
+                    />
+                    <div className="payment-option-icon">
+                      {renderPaymentIcon(method.id)}
+                    </div>
+                    <span className="payment-option-name">{method.name}</span>
+                    {paymentMethod === method.id && (
+                      <motion.div 
+                        className="payment-option-check"
+                        layoutId="check"
+                      >
+                        <CheckCircle size={16} />
+                      </motion.div>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </motion.div>
 
-              {/* Payment Details Form */}
+            {/* 2. Datos de Contacto (User Details) */}
+            <motion.div 
+              className="contact-details-section-container"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              {renderContactFields()}
+            </motion.div>
+
+            {/* 3. Resumen del Pedido (Order Summary) */}
+            <motion.div 
+              className="order-summary"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h3 className="summary-title">Resumen del Pedido</h3>
+              
+              <div className="summary-items">
+                {filteredCartItems.map((item) => {
+                  const price = item.salePrice || item.price;
+                  return (
+                    <div key={item.product_id} className="summary-item">
+                      <div className="summary-item-info">
+                        <img src={item.image} alt={item.name} className="summary-item-image" />
+                        <div className="summary-item-details">
+                          <h4 className="summary-item-name">{item.name}</h4>
+                          <span className="summary-item-qty">x{item.quantity}</span>
+                        </div>
+                      </div>
+                      <span className="summary-item-price price-container">
+                        <span className="currency-symbol">$</span>
+                        <span className="price-value">{(price * item.quantity).toFixed(2)}</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Contenedor minimalista y elegante para el cupón */}
+              <div className="coupon-section">
+                <div className="coupon-input-group">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="Ingresa tu cupón"
+                    className="coupon-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={validateCoupon}
+                    className="coupon-btn"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+                {couponError && (
+                  <span className="coupon-message error" style={{ color: '#dc3545', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', fontWeight: '500' }}>
+                    {couponError}
+                  </span>
+                )}
+                {couponSuccess && (
+                  <span className="coupon-message success" style={{ color: '#28a745', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', fontWeight: '500' }}>
+                    {couponSuccess}
+                  </span>
+                )}
+              </div>
+
+              <div className="summary-totals">
+                <div className="summary-row">
+                  <span>Subtotal</span>
+                  <span className="price-container">
+                    <span className="currency-symbol">$</span>
+                    <span className="price-value">{calculatedSubtotal.toFixed(2)}</span>
+                  </span>
+                </div>
+                {appliedDiscount > 0 && (
+                  <div className="summary-row discount-row" style={{ color: '#28a745', fontWeight: '500' }}>
+                    <span>Descuento ({appliedDiscount}%):</span>
+                    <span className="price-container discount-price" style={{ color: '#28a745' }}>
+                      <span className="currency-symbol">-$</span>
+                      <span className="price-value">{discountAmount.toFixed(2)}</span>
+                    </span>
+                  </div>
+                )}
+
+                {isPayPalOrCard && paypalCommission > 0 && (
+                  <div className="summary-row commission-row" style={{ fontWeight: '500' }}>
+                    <span>Comisión por pasarela</span>
+                    <span className="price-container">
+                      <span className="currency-symbol">$</span>
+                      <span className="price-value">{paypalCommission.toFixed(2)} USD</span>
+                    </span>
+                  </div>
+                )}
+
+                <div className="summary-row total">
+                  <span>Total</span>
+                  <span className="price-container total-price">
+                    <span className="currency-symbol">$</span>
+                    <span className="price-value">{finalTotal.toFixed(2)}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="security-badges">
+                <div className="security-item">
+                  <Shield size={16} />
+                  <span>Pago 100% Seguro</span>
+                </div>
+                <div className="security-item">
+                  <Lock size={16} />
+                  <span>Encriptación SSL</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* 4. Detalles de Pago */}
+            <div className="checkout-body">
               <motion.div 
                 className="payment-details"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.4 }}
               >
                 <h3 className="section-title">Detalles de Pago</h3>
                 
                 {(paymentMethod === 'paypal' || paymentMethod === 'tarjeta') ? (
                   <div className="other-payment-methods">
-                    {renderContactFields()}
 
                     <div className="payment-instruction mb-4">
                       <div className="instruction-icon">
@@ -837,6 +954,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
                                   if (cleanItems.length === 0) {
                                     throw new Error('El carrito está vacío o no contiene productos válidos.');
+                                  }
+
+                                  // Re-validar límites de cupón si está aplicado antes de proceder
+                                  if (appliedCouponId) {
+                                    const result = await checkAndValidateCoupon(couponCode, user?.id || null);
+                                    if (!result.success) {
+                                      throw new Error(result.message || 'El cupón ya no es válido.');
+                                    }
                                   }
 
                                   // Obtener el stock real de los productos en Supabase para validar
@@ -965,7 +1090,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   </div>
                 ) : (
                   <form className="payment-details-form" onSubmit={handleSubmit}>
-                    {renderContactFields()}
 
                     <div className="payment-instruction mb-4">
                       <div className="instruction-icon">
@@ -1074,117 +1198,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 )}
               </motion.div>
             </div>
-
-            {/* Order Summary */}
-            <motion.div 
-              className="order-summary"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h3 className="summary-title">Resumen del Pedido</h3>
-              
-
-
-              <div className="summary-items">
-                {filteredCartItems.map((item) => {
-                  const price = item.salePrice || item.price;
-                  return (
-                    <div key={item.product_id} className="summary-item">
-                      <div className="summary-item-info">
-                        <img src={item.image} alt={item.name} className="summary-item-image" />
-                        <div className="summary-item-details">
-                          <h4 className="summary-item-name">{item.name}</h4>
-                          <span className="summary-item-qty">x{item.quantity}</span>
-                        </div>
-                      </div>
-                      <span className="summary-item-price price-container">
-                        <span className="currency-symbol">$</span>
-                        <span className="price-value">{(price * item.quantity).toFixed(2)}</span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Contenedor minimalista y elegante para el cupón */}
-              <div className="coupon-section">
-                <div className="coupon-input-group">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Ingresa tu cupón"
-                    className="coupon-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={validateCoupon}
-                    className="coupon-btn"
-                  >
-                    Aplicar
-                  </button>
-                </div>
-                {couponError && (
-                  <span className="coupon-message error" style={{ color: '#dc3545', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', fontWeight: '500' }}>
-                    {couponError}
-                  </span>
-                )}
-                {couponSuccess && (
-                  <span className="coupon-message success" style={{ color: '#28a745', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', fontWeight: '500' }}>
-                    {couponSuccess}
-                  </span>
-                )}
-              </div>
-
-              <div className="summary-totals">
-                <div className="summary-row">
-                  <span>Subtotal</span>
-                  <span className="price-container">
-                    <span className="currency-symbol">$</span>
-                    <span className="price-value">{calculatedSubtotal.toFixed(2)}</span>
-                  </span>
-                </div>
-                {appliedDiscount > 0 && (
-                  <div className="summary-row discount-row" style={{ color: '#28a745', fontWeight: '500' }}>
-                    <span>Descuento ({appliedDiscount}%):</span>
-                    <span className="price-container discount-price" style={{ color: '#28a745' }}>
-                      <span className="currency-symbol">-$</span>
-                      <span className="price-value">{discountAmount.toFixed(2)}</span>
-                    </span>
-                  </div>
-                )}
-
-                {isPayPalOrCard && paypalCommission > 0 && (
-                  <div className="summary-row commission-row" style={{ fontWeight: '500' }}>
-                    <span>Comisión por pasarela</span>
-                    <span className="price-container">
-                      <span className="currency-symbol">$</span>
-                      <span className="price-value">{paypalCommission.toFixed(2)} USD</span>
-                    </span>
-                  </div>
-                )}
-
-                <div className="summary-row total">
-                  <span>Total</span>
-                  <span className="price-container total-price">
-                    <span className="currency-symbol">$</span>
-                    <span className="price-value">{finalTotal.toFixed(2)}</span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="security-badges">
-                <div className="security-item">
-                  <Shield size={16} />
-                  <span>Pago 100% Seguro</span>
-                </div>
-                <div className="security-item">
-                  <Lock size={16} />
-                  <span>Encriptación SSL</span>
-                </div>
-              </div>
-            </motion.div>
           </div>
         )}
       </motion.div>

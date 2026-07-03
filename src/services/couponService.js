@@ -121,3 +121,128 @@ export async function dispatchMassCampaign(code, percent, emails) {
     handleServiceError(error, 'Error al enviar la campaña de cupones por correo.');
   }
 }
+
+/**
+ * Valida un cupón de descuento según sus límites globales y límites por usuario.
+ * 
+ * @param {string} code - Código del cupón.
+ * @param {string|null} userId - ID del usuario autenticado actual.
+ * @returns {Promise<{success: boolean, coupon?: object, message?: string}>}
+ */
+export async function checkAndValidateCoupon(code, userId) {
+  try {
+    const cleanCode = code.trim().toUpperCase();
+
+    // 1. Obtener datos del cupón
+    const { data: coupon, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', cleanCode)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !coupon) {
+      return { success: false, message: 'Cupón inválido o inactivo' };
+    }
+
+    // 2. Comprobar expiración
+    const now = new Date();
+    if (coupon.expires_at && now > new Date(coupon.expires_at)) {
+      return { success: false, message: 'El cupón ha expirado' };
+    }
+
+    // 3. Comprobar Límite Global (used_count >= max_uses)
+    const maxUses = coupon.max_uses !== null && coupon.max_uses !== undefined ? coupon.max_uses : (cleanCode === 'SRXTECH10' ? 10 : null);
+    if (maxUses !== null && (coupon.used_count || 0) >= maxUses) {
+      return { success: false, message: 'Este cupón ya alcanzó su límite máximo de canjes.' };
+    }
+
+    // 4. Comprobar Límite por Usuario (solo si es SRXTECH10 o si tiene restricción de un solo uso por usuario)
+    const isSingleUse = coupon.is_single_use || cleanCode === 'SRXTECH10';
+    if (isSingleUse) {
+      if (!userId) {
+        return { success: false, message: 'Debes iniciar sesión para usar este cupón.' };
+      }
+
+      const { data: usageData, error: usageError } = await supabase
+        .from('coupon_usages')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('coupon_id', Number(coupon.id));
+
+      if (usageError) {
+        console.error('Error fetching coupon usages:', usageError);
+      }
+
+      if (usageData && usageData.length > 0) {
+        return { success: false, message: 'Ya has utilizado este cupón anteriormente.' };
+      }
+    }
+
+    // 5. Validar que el porcentaje de descuento sea mayor a 0
+    const percent = coupon.discount_percent || coupon.discount_percentage || coupon.discount || 0;
+    if (percent <= 0) {
+      return { success: false, message: 'Cupón con valor de descuento inválido' };
+    }
+
+    return { success: true, coupon };
+  } catch (error) {
+    console.error('Error en checkAndValidateCoupon:', error);
+    return { success: false, message: 'Error al validar cupón en el servidor' };
+  }
+}
+
+/**
+ * Registra el consumo de un cupón incrementando used_count e insertando en coupon_usages.
+ * 
+ * @param {string|number} couponId - ID del cupón.
+ * @param {string|null} userId - ID del usuario comprador.
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function registerCouponUsage(couponId, userId) {
+  try {
+    // 1. Insertar en coupon_usages si hay un usuario autenticado
+    if (userId) {
+      const { error: usageError } = await supabase
+        .from('coupon_usages')
+        .insert([{
+          user_id: userId,
+          coupon_id: Number(couponId)
+        }]);
+
+      if (usageError) {
+        if (usageError.code === '23505') {
+          throw new Error('Ya has utilizado este cupón anteriormente.');
+        }
+        throw usageError;
+      }
+    }
+
+    // 2. Incrementar used_count en coupons
+    const { data: coupon, error: getError } = await supabase
+      .from('coupons')
+      .select('used_count, max_uses')
+      .eq('id', Number(couponId))
+      .single();
+
+    if (getError) throw getError;
+
+    const maxUses = coupon.max_uses !== null && coupon.max_uses !== undefined ? coupon.max_uses : null;
+    if (maxUses !== null && coupon.used_count >= maxUses) {
+      throw new Error('Este cupón ya alcanzó su límite máximo de canjes.');
+    }
+
+    const newUsedCount = (coupon.used_count || 0) + 1;
+    const { error: updateError } = await supabase
+      .from('coupons')
+      .update({ used_count: newUsedCount })
+      .eq('id', Number(couponId));
+
+    if (updateError) throw updateError;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error en registerCouponUsage:', error);
+    throw error;
+  }
+}
