@@ -23,7 +23,7 @@ import AdminCategoriesOrder from './pages/Admin/AdminCategoriesOrder';
 import AdminRoute from './components/AdminRoute';
 import './App.css';
 
-const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "EK6JF6DAIwyrQdsyYH_bj6b4_zsYkGrNboV5Tj5lDyQXsj74ygYevgAcwjUqFOHpE4fK3bJOIKdoW6i2";
+const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "BAADaFxIcCX9ytpQd3vHSEdhtxB-sl6WFnPuF0JgRcrfX2nFwPN5eixZpiAY1j30npqzVBk4eaheSIz1oc";
 
 function FacebookPixelTracker() {
   const location = useLocation();
