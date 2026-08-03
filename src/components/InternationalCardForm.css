@@ -1,0 +1,303 @@
+/* ── International Card Form & Virtual Card Styles ────────────────────────── */
+
+.international-card-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+/* ── Interactive Virtual Card Visual ────────────────────────────────────────── */
+.virtual-card-wrapper {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.virtual-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.586;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1f293d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(79, 110, 247, 0.15);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.virtual-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 20%, rgba(79, 110, 247, 0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.virtual-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+
+.virtual-card-chip {
+  width: 44px;
+  height: 32px;
+  background: linear-gradient(135deg, #ffe082 0%, #ffb300 100%);
+  border-radius: 6px;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.virtual-card-chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.virtual-card-brand-badge {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.brand-icon-visa {
+  color: #1a1f71;
+  background: #ffffff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.brand-icon-mastercard {
+  display: flex;
+  align-items: center;
+}
+
+.mc-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.mc-circle.red {
+  background: #eb001b;
+}
+
+.mc-circle.orange {
+  background: #ff5f00;
+  margin-left: -10px;
+  opacity: 0.9;
+}
+
+.brand-icon-amex {
+  background: #006fcf;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.brand-icon-generic {
+  color: #94a3b8;
+}
+
+.virtual-card-number {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #f8fafc;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  margin: 1.25rem 0 0.75rem 0;
+  z-index: 2;
+  word-spacing: 4px;
+}
+
+.virtual-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+.virtual-card-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.virtual-card-holder {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #ffffff;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.virtual-card-expires {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ── Accepted Brands & Security Header ──────────────────────────────────────── */
+.card-security-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.accepted-brands {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.accepted-brands-title {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.brand-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.security-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+/* ── Card Inputs Grid ────────────────────────────────────────────────────────── */
+.card-inputs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .card-inputs-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.card-field-label {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.card-input-icon {
+  position: absolute;
+  left: 12px;
+  color: #64748b;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.card-input-wrapper:focus-within .card-input-icon {
+  color: #4f6ef7;
+}
+
+.card-form-input {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.card-form-input:focus {
+  outline: none;
+  border-color: #4f6ef7;
+  box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.2);
+  background: #1e293b;
+}
+
+.card-form-input::placeholder {
+  color: #475569;
+}
+
+.card-form-input.is-invalid {
+  border-color: #ef4444;
+}
+
+.card-form-input.is-valid {
+  border-color: #22c55e;
+}
+
+.field-error-msg {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 500;
+  margin-top: 2px;
+}

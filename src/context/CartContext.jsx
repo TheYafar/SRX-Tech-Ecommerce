@@ -23,6 +23,31 @@ const getOrdersStorageKey = (user) => {
   return user ? `srx_orders_${user.id}` : 'srx_orders_guest';
 };
 
+// Helper to calculate effective price (incorporating offers, discounts, compare prices)
+export const getEffectivePrice = (item) => {
+  if (!item) return 0;
+
+  if (item.effectivePrice !== undefined && item.effectivePrice !== null && Number(item.effectivePrice) > 0) {
+    return Number(item.effectivePrice);
+  }
+
+  const priceUSD = Number(item.price_usd ?? item.price ?? 0);
+  const compareUSD = Number(item.compare_at_price_usd ?? item.compareAtPrice ?? 0);
+  const saleUSD = Number(item.sale_price_usd ?? item.salePrice ?? 0);
+
+  if (saleUSD > 0 && saleUSD < priceUSD) {
+    return saleUSD;
+  }
+  if (compareUSD > 0 && compareUSD < priceUSD) {
+    return compareUSD;
+  }
+  if (compareUSD > 0 && priceUSD < compareUSD) {
+    return priceUSD;
+  }
+
+  return priceUSD;
+};
+
 // ============================================================
 // CART PROVIDER — DUAL SESSION PERSISTENCE (GUEST VS AUTH)
 // ============================================================
@@ -103,8 +128,11 @@ export const CartProvider = ({ children }) => {
         if (qty < 1) {
           qty = 1;
         }
+        const effectivePrice = getEffectivePrice(product);
         return {
           ...product,
+          effectivePrice,
+          price: effectivePrice,
           quantity: qty
         };
       }
@@ -129,6 +157,7 @@ export const CartProvider = ({ children }) => {
   // ==============================================================
   const addToCart = useCallback(async (product, qty = 1) => {
     const quantityToAdd = product.quantity || qty;
+    const effectivePrice = getEffectivePrice(product);
 
     // Track AddToCart event in FB Pixel
     window.fbq = window.fbq || function() {
@@ -138,7 +167,7 @@ export const CartProvider = ({ children }) => {
       const eventData = {
         content_ids: [product.id],
         content_name: product.name || product.title,
-        value: Number(product.price_usd || product.price || 0),
+        value: Number(effectivePrice),
         currency: 'USD',
         content_type: 'product'
       };
@@ -167,10 +196,10 @@ export const CartProvider = ({ children }) => {
 
       if (existingItem) {
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: newQty } : item
+          item.id === product.id ? { ...item, effectivePrice, price: effectivePrice, quantity: newQty } : item
         );
       }
-      return [...prevItems, { ...product, quantity: newQty }];
+      return [...prevItems, { ...product, effectivePrice, price: effectivePrice, quantity: newQty }];
     });
 
     setIsCartOpen(true);
@@ -340,8 +369,8 @@ export const CartProvider = ({ children }) => {
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   const cartTotal = cartItems.reduce((total, item) => {
-    const activePrice = item.salePrice || item.price;
-    return total + activePrice * item.quantity;
+    const effectivePrice = getEffectivePrice(item);
+    return total + effectivePrice * item.quantity;
   }, 0);
 
   const checkout = useCallback((paymentMethod, userEmail) => {

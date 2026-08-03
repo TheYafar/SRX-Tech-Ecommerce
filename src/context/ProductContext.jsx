@@ -28,18 +28,35 @@ export const ProductProvider = ({ children }) => {
 
       if (error) throw error;
 
-      const mappedData = (data || []).map(p => ({
-        ...p,
-        image: p.images_urls?.[0] || 'https://via.placeholder.com/150',
-        price: p.price_usd || 0,
-        salePrice: p.sale_price_usd || (p.compare_at_price_usd && p.compare_at_price_usd < p.price_usd ? p.compare_at_price_usd : null),
-        tagline: p.description ? p.description.substring(0, 50) + '...' : '',
-        stock: p.stock || 0,
-        compareAtPrice: p.compare_at_price_usd || null,
-        offerEndsAt: p.offer_ends_at || null,
-        isBestSeller: p.is_best_seller || false,
-        category: p.categories?.name || '—'
-      }));
+      const mappedData = (data || []).map(p => {
+        const priceUSD = Number(p.price_usd || 0);
+        const compareUSD = Number(p.compare_at_price_usd || 0);
+        const saleUSD = Number(p.sale_price_usd || 0);
+
+        let effectiveSalePrice = null;
+        if (saleUSD > 0 && saleUSD < priceUSD) {
+          effectiveSalePrice = saleUSD;
+        } else if (compareUSD > 0 && compareUSD < priceUSD) {
+          effectiveSalePrice = compareUSD;
+        } else if (compareUSD > 0 && priceUSD < compareUSD) {
+          effectiveSalePrice = priceUSD;
+        }
+
+        return {
+          ...p,
+          image: p.images_urls?.[0] || 'https://via.placeholder.com/150',
+          price: priceUSD,
+          price_usd: priceUSD,
+          salePrice: effectiveSalePrice,
+          effectivePrice: effectiveSalePrice ?? priceUSD,
+          tagline: p.description ? p.description.substring(0, 50) + '...' : '',
+          stock: p.stock || 0,
+          compareAtPrice: p.compare_at_price_usd || null,
+          offerEndsAt: p.offer_ends_at || null,
+          isBestSeller: p.is_best_seller || false,
+          category: p.categories?.name || '—'
+        };
+      });
 
       setProducts(mappedData);
     } catch (error) {

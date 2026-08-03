@@ -78,6 +78,7 @@
 .method-badge.binance { background: #fcd53522; color: #b89816; }
 .method-badge.pago-móvil { background: #28a74522; color: #28a745; }
 .method-badge.paypal { background: #00308722; color: #003087; }
+.method-badge.tarjeta { background: #4f6ef722; color: #4f6ef7; }
 
 .status-badge {
   padding: 0.25rem 0.75rem;
@@ -212,6 +213,7 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 

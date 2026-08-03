@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useCart, getEffectivePrice } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard, Lock } from 'lucide-react';
@@ -96,7 +96,7 @@ export default function CartDrawer() {
           ) : (
             <div className="cart-items-list">
               {cartItems.map((item) => {
-                const price = item.salePrice || item.price;
+                const price = getEffectivePrice(item);
                 const itemStock = item.stock !== undefined && item.stock !== null ? item.stock : 0;
                 const isEncargo = itemStock <= 0;
                 return (

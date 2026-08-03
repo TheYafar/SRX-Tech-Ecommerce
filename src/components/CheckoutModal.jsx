@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useCart } from '../context/CartContext';
+import { useCart, getEffectivePrice } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useNotifications } from '../context/NotificationContext';
 import { X, CreditCard, Shield, CheckCircle, AlertCircle, Lock, User, Mail, Phone, Upload, Smartphone, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
-import { usePayPalScriptReducer, PayPalButtons } from '@paypal/react-paypal-js';
 import { supabase, uploadReceipt } from '../utils/supabaseClient';
 import PaymentInstructions from './PaymentInstructions';
+import InternationalCardForm from './InternationalCardForm';
 import { enviarCorreoCompraExitosa } from '../services/emailService';
 import { checkAndValidateCoupon, registerCouponUsage } from '../services/couponService';
 import './CheckoutModal.css';
@@ -42,26 +42,26 @@ const renderPaymentIcon = (id) => {
           <path d="M12 6l-6 6 6 6 6-6-6-6z"/>
         </svg>
       );
-    case 'paypal':
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 7h-9M14 21V3M10 21V10M18 21V14"/>
-        </svg>
-      );
     case 'pago-movil':
       return <Smartphone size={24} stroke="currentColor" strokeWidth={2} />;
     case 'tarjeta':
       return <CreditCard size={24} stroke="currentColor" strokeWidth={2} />;
+    case 'paypal':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17.5 7.2c.4.7.4 1.7 0 2.8-.7 1.8-2.3 2.9-4.3 2.9h-1.8l-.8 4.6H8.2l2.3-13.7h5.1c1.2 0 2.2.4 2.8 1.4z" />
+          <path d="M15.5 9.2c.4.7.4 1.7 0 2.8-.7 1.8-2.3 2.9-4.3 2.9h-1.8l-.8 4.6H6.2l2.3-13.7h5.1c1.2 0 2.2.4 2.8 1.4z" opacity="0.6" />
+        </svg>
+      );
     default:
       return null;
   }
 };
 
 export default function CheckoutModal({ isOpen, onClose }) {
-  const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
   const { cartItems, cartTotal = 0, clearCart } = useCart();
-  const { user, openAuthModalWithAction } = useAuth();
-  const { formatVES, exchangeRate } = useCurrency();
+  const { user } = useAuth();
+  const { exchangeRate } = useCurrency();
   const { showSuccess, showError } = useNotifications();
   const [paymentMethod, setPaymentMethod] = useState('zelle');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,14 +74,16 @@ export default function CheckoutModal({ isOpen, onClose }) {
     phone: '',
     address: '',
     city: '',
+    cardName: '',
     cardNumber: '',
     cardExpiry: '',
     cardCvc: '',
+    cardZip: '',
     referenceNumber: '',
     receiptFile: null
   });
   const [couponCode, setCouponCode] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState(0); // Porcentaje (Ej: 10 para 10%)
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [appliedCouponId, setAppliedCouponId] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
@@ -104,23 +106,16 @@ export default function CheckoutModal({ isOpen, onClose }) {
     return acc;
   }, []);
 
-  // Subtotal calculado desde los ítems filtrados válidos.
-  // Si ningún ítem tiene UUID válido, recurrimos a cartTotal del contexto como fallback
-  // para evitar que el botón quede congelado en $0.00.
   const calculatedSubtotal = filteredCartItems.length > 0
     ? filteredCartItems.reduce((sum, item) => {
-        const price = item.salePrice || item.price || 0;
+        const price = getEffectivePrice(item);
         return sum + (price * (item.quantity || 1));
       }, 0)
     : (cartTotal || 0);
 
   const discountAmount = Number((calculatedSubtotal * (appliedDiscount / 100)).toFixed(2));
   const baseTotal = Math.max(0, Number((calculatedSubtotal - discountAmount).toFixed(2)));
-  const isPayPalOrCard = paymentMethod === 'paypal' || paymentMethod === 'tarjeta';
-  const paypalCommission = isPayPalOrCard && baseTotal > 0
-    ? Number(((baseTotal + 0.30) / (1 - 0.054) - baseTotal).toFixed(2))
-    : 0;
-  const finalTotal = Number((baseTotal + paypalCommission).toFixed(2));
+  const finalTotal = baseTotal;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isContactInfoValid = 
@@ -130,6 +125,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
     ) && 
     (user ? true : emailRegex.test(formData.email.trim())) && 
     formData.phone.trim() !== '';
+
+  const isCardValid = Boolean(
+    formData.cardName && formData.cardName.trim().length >= 3 &&
+    formData.cardNumber && formData.cardNumber.replace(/\s/g, '').length >= 15 &&
+    formData.cardExpiry && formData.cardExpiry.length === 5 &&
+    formData.cardCvc && formData.cardCvc.length >= 3
+  );
 
   useEffect(() => {
     if (user) {
@@ -186,12 +188,15 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
   };
 
-  const processCheckout = async (paypalDetails = null) => {
+  const processCheckout = async () => {
     setIsSubmitting(true);
     let uploadedReceiptUrl = null;
+    const isDirectCardPayment = paymentMethod === 'tarjeta';
+    const cardTxnId = isDirectCardPayment 
+      ? `INT-CARD-${Math.random().toString(36).substring(2, 10).toUpperCase()}` 
+      : null;
 
     try {
-      // Re-validar límites de cupón si está aplicado antes de proceder
       if (appliedCouponId) {
         const result = await checkAndValidateCoupon(couponCode, user?.id || null);
         if (!result.success) {
@@ -199,15 +204,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
         }
       }
 
-      // Paso 1: Subir el comprobante a Supabase Storage (omitir si es pago directo por PayPal)
-      if (formData.receiptFile && !paypalDetails) {
+      // Paso 1: Subir comprobante si aplica (no se requiere para tarjeta directa)
+      if (formData.receiptFile && !isDirectCardPayment) {
         uploadedReceiptUrl = await uploadReceipt(formData.receiptFile);
         if (!uploadedReceiptUrl) {
           throw new Error('No se pudo subir la imagen del comprobante o no se generó una dirección pública.');
         }
       }
 
-      // Paso 1.5: Calcular items del carrito válidos
       const cleanItems = filteredCartItems.length > 0
         ? filteredCartItems
         : (cartItems || []).reduce((acc, item) => {
@@ -224,7 +228,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
         throw new Error('El carrito no contiene productos válidos.');
       }
 
-      // Paso 1.6: Obtener el stock real en Supabase para clasificar los productos
       let dbProducts = null;
       try {
         const productIds = cleanItems.map(item => item.product_id);
@@ -239,7 +242,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
         console.error('Error al determinar el tipo de pedido basado en el stock de Supabase:', stockErr);
       }
 
-      // Evaluar el Carrito: Clasificar los productos en contado y encargo
       const itemsContado = [];
       const itemsEncargo = [];
 
@@ -256,7 +258,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
         }
       });
 
-      // Validación de Cantidad Máxima al Contado
       if (itemsContado.length > 0) {
         const exceedsStock = itemsContado.some(item => {
           const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
@@ -272,12 +273,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
         }
       }
 
-      // Función interna auxiliar para procesar e insertar cada orden de forma independiente
       const createSingleOrder = async (items, orderType, totalAmount) => {
         const orderPayload = {
           user_id: user ? user.id : null,
           total_amount_usd: totalAmount,
-          status: paypalDetails ? 'paid' : 'pending_payment',
+          status: isDirectCardPayment ? 'paid' : 'pending_payment',
           user_name: formData.name.trim() || (user ? (user.name || user.user_metadata?.full_name) : ''),
           user_email: (user ? user.email : formData.email) || formData.email || '',
           user_phone: formData.phone.trim(),
@@ -294,7 +294,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
         
         const newOrderId = orderData.id;
 
-        // Descuento de Inventario si se inició como "contado"
         if (orderType === 'contado') {
           try {
             await Promise.all(
@@ -320,23 +319,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
           }
         }
 
-        // Actualizar status de la orden correspondiente a 'paid' si es PayPal (acción consecutiva requerida)
-        if (paypalDetails) {
-          const { error: updateOrderError } = await supabase
-            .from('orders')
-            .update({ status: 'paid' })
-            .eq('id', newOrderId);
-          
-          if (updateOrderError) throw new Error(`Fallo al actualizar el estado de la orden a pagada: ${updateOrderError.message}`);
-        }
-
-        // Paso 3: Insertar en order_items
         const orderItemsToInsert = items.map(item => {
+          const effectivePrice = getEffectivePrice(item);
           return {
             order_id: newOrderId,
             product_id: item.product_id,
             quantity: item.quantity,
-            price_at_purchase_usd: item.salePrice || item.price
+            price_at_purchase_usd: effectivePrice
           };
         });
 
@@ -346,7 +335,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
         if (itemsError) throw new Error(`Fallo al insertar los productos de la orden (${orderType}): ${itemsError.message}`);
 
-        // Paso 4: Insertar en payments
         let defaultPaymentMethodId = null;
         try {
           const { data: pmData } = await supabase
@@ -359,6 +347,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
           console.warn('Could not retrieve payment_method_id:', e);
         }
 
+        const refNum = isDirectCardPayment ? cardTxnId : (formData.referenceNumber || 'N/A');
+
         const { error: paymentError } = await supabase
           .from('payments')
           .insert([{
@@ -366,9 +356,9 @@ export default function CheckoutModal({ isOpen, onClose }) {
             payment_method_id: defaultPaymentMethodId,
             amount_paid: totalAmount,
             currency: 'USD',
-            reference_number: paypalDetails ? paypalDetails.id : (formData.referenceNumber || 'N/A'),
+            reference_number: refNum,
             proof_image_url: uploadedReceiptUrl,
-            status: paypalDetails ? 'completed' : 'pending_verification'
+            status: isDirectCardPayment ? 'completed' : 'pending_verification'
           }]);
 
         if (paymentError) throw new Error(`Fallo al registrar el pago (${orderType}): ${paymentError.message}`);
@@ -378,37 +368,25 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
       const createdOrders = [];
 
-      // Procesar itemsContado si existen
       if (itemsContado.length > 0) {
         const subtotalContado = itemsContado.reduce((sum, item) => {
-          const price = item.salePrice || item.price || 0;
+          const price = getEffectivePrice(item);
           return sum + (price * (item.quantity || 1));
         }, 0);
         const discountContado = Number((subtotalContado * (appliedDiscount / 100)).toFixed(2));
-        const baseContado = Math.max(0, Number((subtotalContado - discountContado).toFixed(2)));
-
-        const commissionContado = isPayPalOrCard && baseTotal > 0
-          ? Number(((baseContado / baseTotal) * paypalCommission).toFixed(2))
-          : 0;
-        const totalContado = Number((baseContado + commissionContado).toFixed(2));
+        const totalContado = Math.max(0, Number((subtotalContado - discountContado).toFixed(2)));
 
         const orderId = await createSingleOrder(itemsContado, 'contado', totalContado);
         createdOrders.push({ id: orderId, type: 'contado' });
       }
 
-      // Procesar itemsEncargo si existen
       if (itemsEncargo.length > 0) {
         const subtotalEncargo = itemsEncargo.reduce((sum, item) => {
-          const price = item.salePrice || item.price || 0;
+          const price = getEffectivePrice(item);
           return sum + (price * (item.quantity || 1));
         }, 0);
         const discountEncargo = Number((subtotalEncargo * (appliedDiscount / 100)).toFixed(2));
-        const baseEncargo = Math.max(0, Number((subtotalEncargo - discountEncargo).toFixed(2)));
-
-        const commissionEncargo = isPayPalOrCard && baseTotal > 0
-          ? Number((paypalCommission - (itemsContado.length > 0 ? Number(((baseContado / baseTotal) * paypalCommission).toFixed(2)) : 0)).toFixed(2))
-          : 0;
-        const totalEncargo = Number((baseEncargo + commissionEncargo).toFixed(2));
+        const totalEncargo = Math.max(0, Number((subtotalEncargo - discountEncargo).toFixed(2)));
 
         const orderId = await createSingleOrder(itemsEncargo, 'encargo', totalEncargo);
         createdOrders.push({ id: orderId, type: 'encargo' });
@@ -418,30 +396,27 @@ export default function CheckoutModal({ isOpen, onClose }) {
         throw new Error('No se pudo registrar ninguna orden.');
       }
 
-      // Paso 4.5: Registrar consumo del cupón si se aplicó uno
       if (appliedCouponId) {
         await registerCouponUsage(appliedCouponId, user?.id || null);
       }
 
-      // 5. Guardar datos ANTES de limpiar carrito (para la pantalla de éxito)
       const totalToSave = finalTotal;
       const refCode = createdOrders.map(o => o.id.slice(-6).toUpperCase()).join(' / #');
       setSavedTotal(totalToSave);
       setOrderRefCode(refCode);
 
-      // Enviar correo de confirmación de compra de forma asíncrona
       const emailPayload = {
         customer_email: (user ? user.email : formData.email) || formData.email || '',
         customer_name: formData.name.trim() || (user ? (user.name || user.user_metadata?.full_name) : 'Cliente'),
         customer_phone: formData.phone.trim(),
         order_ref: refCode,
         order_type: itemsContado.length > 0 && itemsEncargo.length > 0 ? 'mixto' : (itemsEncargo.length > 0 ? 'encargo' : 'contado'),
-        payment_method: paymentMethod,
-        reference_number: paypalDetails ? paypalDetails.id : (formData.referenceNumber || 'N/A'),
+        payment_method: isDirectCardPayment ? 'Tarjeta Internacional' : paymentMethod,
+        reference_number: isDirectCardPayment ? cardTxnId : (formData.referenceNumber || 'N/A'),
         items: cleanItems.map(item => ({
           name: item.name || item.title || 'Producto',
           quantity: item.quantity || 1,
-          price: item.salePrice || item.price || 0
+          price: getEffectivePrice(item)
         })),
         subtotal: calculatedSubtotal,
         discount_percent: appliedDiscount,
@@ -456,19 +431,17 @@ export default function CheckoutModal({ isOpen, onClose }) {
       showSuccess("¡Pago procesado con éxito! Tu orden ha sido registrada.");
       setIsSuccess(true);
 
-      // Track Purchase event in FB Pixel strictly if payment is confirmed via PayPal gateway
-      if (paypalDetails) {
-        window.fbq = window.fbq || function() {
-          (window.fbq.q = window.fbq.q || []).push(arguments);
+      // Track Purchase event in Meta Pixel
+      window.fbq = window.fbq || function() {
+        (window.fbq.q = window.fbq.q || []).push(arguments);
+      };
+      if (window.fbq) {
+        const eventData = {
+          value: Number(totalToSave),
+          currency: 'USD'
         };
-        if (window.fbq) {
-          const eventData = {
-            value: Number(totalToSave),
-            currency: 'USD'
-          };
-          window.fbq('track', 'Purchase', eventData);
-          console.log('[Meta Pixel] Evento disparado: Purchase', eventData);
-        }
+        window.fbq('track', 'Purchase', eventData);
+        console.log('[Meta Pixel] Evento disparado: Purchase', eventData);
       }
 
       clearCart();
@@ -559,7 +532,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Guard: no procesar si el monto final es cero o no está cargado.
     if (finalTotal <= 0) {
       showError('El monto total de la orden es cero. Revisa tu carrito antes de continuar.');
       return;
@@ -576,17 +548,24 @@ export default function CheckoutModal({ isOpen, onClose }) {
     { id: 'zelle', name: 'Zelle' },
     { id: 'pago-movil', name: 'Pago Móvil' },
     { id: 'binance', name: 'Binance Pay' },
-    { id: 'paypal', name: 'PayPal' },
-    { id: 'tarjeta', name: 'Tarjeta' }
+    { id: 'tarjeta', name: 'Tarjeta Internacional', isMaintenance: true },
+    { id: 'paypal', name: 'PayPal', isMaintenance: true }
   ];
-
-
 
   const contentVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 25, stiffness: 300 } },
     exit: { y: -20, opacity: 0, transition: { duration: 0.2 } }
   };
+
+  const currentMethodObj = paymentMethods.find(m => m.id === paymentMethod);
+  const isMaintenance = Boolean(currentMethodObj?.isMaintenance);
+
+  const isSubmitDisabled = isMaintenance
+    ? true
+    : paymentMethod === 'tarjeta'
+    ? (isSubmitting || !isContactInfoValid || !isCardValid || finalTotal <= 0)
+    : (isSubmitting || ((paymentMethod === 'binance' || paymentMethod === 'pago-movil') && !formData.referenceNumber) || !formData.receiptFile || !isContactInfoValid || finalTotal <= 0);
 
   return (
     <motion.div
@@ -649,7 +628,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               ))}
             </div>
 
-            {/* Animated check icon with glow ring */}
+            {/* Animated check icon */}
             <motion.div 
               className="success-icon-wrapper"
               initial={{ scale: 0 }}
@@ -681,7 +660,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.45 }}
             >
-              Tu pedido ha sido registrado con éxito. En breve validaremos tu pago y te notificaremos por correo electrónico el estado de tu compra.
+              Tu pedido ha sido registrado con éxito. En breve te notificaremos por correo electrónico el estado de tu compra.
             </motion.p>
             
             {/* Summary Card */}
@@ -704,12 +683,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 <div className="success-summary-row">
                   <span className="success-summary-label">Método de Pago</span>
                   <span className="success-summary-value">
-                    <span className="success-payment-badge">{paymentMethod.toUpperCase()}</span>
+                    <span className="success-payment-badge">{paymentMethod === 'tarjeta' ? 'TARJETA INTERNACIONAL' : paymentMethod.toUpperCase()}</span>
                   </span>
                 </div>
                 <div className="success-summary-divider" />
                 <div className="success-summary-row success-total-row">
-                  <span className="success-summary-label">Total a transferir</span>
+                  <span className="success-summary-label">Total Procesado</span>
                   <span className="success-summary-value success-total-amount price-container">
                     <span className="currency-symbol">$</span>
                     <span className="price-value">{savedTotal.toFixed(2)}</span>
@@ -751,9 +730,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 {paymentMethods.map((method) => (
                   <label 
                     key={method.id}
-                    className={`payment-method-card payment-option-card ${paymentMethod === method.id ? 'active' : ''}`}
+                    className={`payment-method-card payment-option-card ${paymentMethod === method.id ? 'active' : ''} ${method.isMaintenance ? 'is-maintenance' : ''}`}
                     onClick={() => setPaymentMethod(method.id)}
                   >
+                    {method.isMaintenance && (
+                      <span className="payment-method-badge-maintenance">Mantenimiento</span>
+                    )}
                     <input 
                       type="radio" 
                       name="payment" 
@@ -779,7 +761,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               </div>
             </motion.div>
 
-            {/* 2. Datos de Contacto (User Details) */}
+            {/* 2. Datos de Contacto */}
             <motion.div 
               className="contact-details-section-container"
               initial={{ opacity: 0, y: 20 }}
@@ -789,7 +771,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               {renderContactFields()}
             </motion.div>
 
-            {/* 3. Resumen del Pedido (Order Summary) */}
+            {/* 3. Resumen del Pedido */}
             <motion.div 
               className="order-summary"
               initial={{ opacity: 0, y: 20 }}
@@ -800,7 +782,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               
               <div className="summary-items">
                 {filteredCartItems.map((item) => {
-                  const price = item.salePrice || item.price;
+                  const price = getEffectivePrice(item);
                   return (
                     <div key={item.product_id} className="summary-item">
                       <div className="summary-item-info">
@@ -819,7 +801,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 })}
               </div>
 
-              {/* Contenedor minimalista y elegante para el cupón */}
+              {/* Cupón de descuento */}
               <div className="coupon-section">
                 <div className="coupon-input-group">
                   <input
@@ -867,16 +849,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
                   </div>
                 )}
 
-                {isPayPalOrCard && paypalCommission > 0 && (
-                  <div className="summary-row commission-row" style={{ fontWeight: '500' }}>
-                    <span>Comisión por pasarela</span>
-                    <span className="price-container">
-                      <span className="currency-symbol">$</span>
-                      <span className="price-value">{paypalCommission.toFixed(2)} USD</span>
-                    </span>
-                  </div>
-                )}
-
                 <div className="summary-row total">
                   <span>Total</span>
                   <span className="price-container total-price">
@@ -908,310 +880,170 @@ export default function CheckoutModal({ isOpen, onClose }) {
               >
                 <h3 className="section-title">Detalles de Pago</h3>
                 
-                {(paymentMethod === 'paypal' || paymentMethod === 'tarjeta') ? (
-                  <div className="other-payment-methods">
-
-                    <div className="payment-instruction mb-4">
-                      <div className="instruction-icon">
-                        <CheckCircle size={24} />
+                <form className="payment-details-form" onSubmit={handleSubmit}>
+                  {isMaintenance ? (
+                    <div className="payment-maintenance-card">
+                      <div className="payment-maintenance-header">
+                        <div className="payment-maintenance-icon-badge">
+                          <AlertCircle size={28} />
+                        </div>
+                        <div className="payment-maintenance-header-text">
+                          <h4 className="payment-maintenance-title">
+                            {paymentMethod === 'paypal' ? 'PayPal' : 'Tarjeta Internacional'} en Mantenimiento
+                          </h4>
+                          <span className="payment-maintenance-subtitle">
+                            Servicio temporalmente deshabilitado
+                          </span>
+                        </div>
                       </div>
-                      <div className="instruction-text">
-                        {paymentMethod === 'tarjeta' ? (
-                          <>
-                            <h4>Pago con Tarjeta</h4>
-                            <p>Completa tu pago de forma segura con tarjeta de crédito o débito a través de PayPal.</p>
-                          </>
-                        ) : (
-                          <>
-                            <h4>Pago con PayPal</h4>
-                            <p>Completa tu pago usando tu cuenta de PayPal o tu tarjeta de débito/crédito.</p>
-                          </>
+                      <div className="payment-maintenance-body">
+                        <p className="payment-maintenance-text">
+                          El método de pago con <strong>{paymentMethod === 'paypal' ? 'PayPal' : 'Tarjeta Internacional'}</strong> se encuentra en mantenimiento técnico para optimizar nuestros sistemas de verificación.
+                        </p>
+                        <div className="maintenance-alternatives-container">
+                          <span className="alternatives-label">Te sugerimos utilizar nuestros métodos activos:</span>
+                          <div className="alternatives-buttons-grid">
+                            <button
+                              type="button"
+                              className="alt-method-btn"
+                              onClick={() => setPaymentMethod('zelle')}
+                            >
+                              <span>Zelle</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="alt-method-btn"
+                              onClick={() => setPaymentMethod('pago-movil')}
+                            >
+                              <span>Pago Móvil</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="alt-method-btn"
+                              onClick={() => setPaymentMethod('binance')}
+                            >
+                              <span>Binance Pay</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : paymentMethod === 'tarjeta' ? (
+                    <div className="international-card-section">
+                      <InternationalCardForm
+                        cardData={formData}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="payment-instruction mb-4">
+                        <div className="instruction-icon">
+                          <CheckCircle size={24} />
+                        </div>
+                        <div className="instruction-text">
+                          <h4>Reporte de Pago</h4>
+                          <p>Ingresa los datos de tu transferencia y sube el comprobante para validar tu orden.</p>
+                        </div>
+                      </div>
+
+                      <div className="payment-instructions-box">
+                        {paymentMethod === 'pago-movil' && (
+                          <div className="ves-amount-instruction mb-4">
+                            <p>
+                              Monto a transferir: <strong>
+                                <span className="price-container">
+                                  <span className="currency-symbol">Bs.</span>
+                                  <span className="price-value">{(finalTotal * exchangeRate).toFixed(2)}</span>
+                                </span>
+                              </strong>
+                            </p>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    <div className="payment-details-form">
-                      {isContactInfoValid ? (
-                        <div className="paypal-button-container">
-                          {isPending ? (
-                            <div className="paypal-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.05)', minHeight: '150px' }}>
-                              <div className="paypal-spinner"></div>
-                              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>Cargando pasarela de pago...</span>
-                            </div>
-                          ) : (isRejected || (isResolved && (!window.paypal || !window.paypal.Buttons))) ? (
-                            <div className="payment-validation-warning" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #ef4444', padding: '1.25rem', borderRadius: '8px', color: '#dc2626', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                                <AlertCircle size={18} />
-                                <span>Error al cargar PayPal</span>
-                              </div>
-                              <p style={{ margin: 0, fontSize: '0.85rem', color: '#b91c1c', fontWeight: 'normal', lineHeight: '1.4' }}>
-                                No se pudo inicializar la pasarela de PayPal. Esto suele ocurrir si hay un bloqueador de anuncios activo, si las cookies de terceros están bloqueadas, o si hay un problema de red. Por favor, desactive las extensiones de bloqueo para este sitio web o intente con otro método de pago.
-                              </p>
-                            </div>
-                          ) : (
-                            <PayPalButtons 
-                              style={{ layout: "vertical", shape: "pill" }}
-                              createOrder={async (data, actions) => {
-                                try {
-                                  const cleanItems = (cartItems || []).reduce((acc, item) => {
-                                    if (!item) return acc;
-                                    let realProductId = null;
-                                    const candidateId = item.id || item.product_id || item._id;
-                                    if (isUUID(candidateId)) realProductId = candidateId;
-                                    else if (isUUID(item.uuid)) realProductId = item.uuid;
-                                    
-                                    if (realProductId) {
-                                      acc.push({
-                                        ...item,
-                                        product_id: realProductId
-                                      });
-                                    }
-                                    return acc;
-                                  }, []);
 
-                                  if (cleanItems.length === 0) {
-                                    throw new Error('El carrito está vacío o no contiene productos válidos.');
-                                  }
+                      {/* Instrucciones de pago (Binance / Pago Móvil / Zelle) */}
+                      <PaymentInstructions paymentMethod={paymentMethod} />
 
-                                  // Re-validar límites de cupón si está aplicado antes de proceder
-                                  if (appliedCouponId) {
-                                    const result = await checkAndValidateCoupon(couponCode, user?.id || null);
-                                    if (!result.success) {
-                                      throw new Error(result.message || 'El cupón ya no es válido.');
-                                    }
-                                  }
-
-                                  // Obtener el stock real de los productos en Supabase para validar
-                                  let dbProducts = null;
-                                  try {
-                                    const productIds = cleanItems.map(item => item.product_id);
-                                    const { data: fetchedProducts, error: dbProductsError } = await supabase
-                                      .from('products')
-                                      .select('id, stock')
-                                      .in('id', productIds);
-
-                                    if (!dbProductsError && fetchedProducts) {
-                                      dbProducts = fetchedProducts;
-                                    }
-                                  } catch (stockErr) {
-                                    console.error('Error fetching stock in createOrder:', stockErr);
-                                  }
-
-                                  // Agrupar por stock para aplicar validaciones de stock máximo
-                                  const itemsContado = [];
-                                  cleanItems.forEach(item => {
-                                    const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
-                                    const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null)
-                                      ? matchedDbProduct.stock
-                                      : (item.stock !== undefined && item.stock !== null ? item.stock : 0);
-                                    if (stockValue >= 1) {
-                                      itemsContado.push(item);
-                                    }
-                                  });
-
-                                  const exceedsStock = itemsContado.some(item => {
-                                    const matchedDbProduct = dbProducts?.find(p => p.id === item.product_id);
-                                    const stockValue = (matchedDbProduct !== undefined && matchedDbProduct !== null && matchedDbProduct.stock !== undefined && matchedDbProduct.stock !== null) ? matchedDbProduct.stock : item.stock;
-                                    return item.quantity > stockValue;
-                                  });
-
-                                  if (exceedsStock) {
-                                    throw new Error("No se puede pedir más de este producto, solo queda 1 unidad disponible. Si quiere pedir otra, compre 1 y pida las demás por encargo.");
-                                  }
-
-                                  const subtotal = cleanItems.reduce((sum, item) => {
-                                    const price = item.salePrice || item.price || 0;
-                                    return sum + (price * (item.quantity || 1));
-                                  }, 0);
-
-                                  const discountAmt = Number((subtotal * (appliedDiscount / 100)).toFixed(2));
-                                  const baseAmt = Math.max(0, Number((subtotal - discountAmt).toFixed(2)));
-                                  const commissionAmt = baseAmt > 0 ? Number(((baseAmt + 0.30) / (1 - 0.054) - baseAmt).toFixed(2)) : 0;
-                                  const totalAmount = baseAmt + commissionAmt;
-
-                                  if (totalAmount <= 0) {
-                                    throw new Error('El monto total de la orden debe ser mayor a cero.');
-                                  }
-
-                                  const paypalItems = cleanItems.map(item => {
-                                    const price = item.salePrice || item.price || 0;
-                                    return {
-                                      name: item.name || 'Producto',
-                                      quantity: String(item.quantity || 1),
-                                      unit_amount: {
-                                        currency_code: 'USD',
-                                        value: price.toFixed(2)
-                                      }
-                                    };
-                                  });
-
-                                  return actions.order.create({
-                                    purchase_units: [{
-                                      amount: {
-                                        currency_code: 'USD',
-                                        value: totalAmount.toFixed(2),
-                                        breakdown: {
-                                          item_total: {
-                                            currency_code: 'USD',
-                                            value: subtotal.toFixed(2)
-                                          },
-                                          discount: appliedDiscount > 0 ? {
-                                            currency_code: 'USD',
-                                            value: discountAmt.toFixed(2)
-                                          } : undefined,
-                                          handling: commissionAmt > 0 ? {
-                                            currency_code: 'USD',
-                                            value: commissionAmt.toFixed(2)
-                                          } : undefined
-                                        }
-                                      },
-                                      items: paypalItems
-                                    }]
-                                  });
-                                } catch (err) {
-                                  console.error('PayPal createOrder error:', err);
-                                  showError(err.message || 'Error al preparar el pago con PayPal.');
-                                  throw err;
-                                }
-                              }}
-                              onApprove={async (data, actions) => {
-                                setIsSubmitting(true);
-                                try {
-                                  const details = await actions.order.capture();
-                                  await processCheckout(details);
-                                } catch (err) {
-                                  console.error('PayPal capture or database sync error:', err);
-                                  showError('Error al procesar el pago con PayPal: ' + (err.message || err));
-                                  setIsSubmitting(false);
-                                }
-                              }}
-                              onError={(err) => {
-                                console.error('PayPal error:', err);
-                                showError('Ocurrió un error con el servicio de PayPal.');
-                                setIsSubmitting(false);
-                              }}
-                              onCancel={() => {
-                                showError('El pago con PayPal fue cancelado.');
-                                setIsSubmitting(false);
-                              }}
+                      {(paymentMethod === 'binance' || paymentMethod === 'pago-movil') && (
+                        <div className="form-group">
+                          <label className="form-label">
+                            {paymentMethod === 'binance' 
+                              ? 'ID de Transacción Binance' 
+                              : 'Número de Referencia Pago Móvil'}
+                          </label>
+                          <div className="input-with-icon">
+                            <Shield size={18} className="input-icon" />
+                            <input
+                              type="text"
+                              name="referenceNumber"
+                              value={formData.referenceNumber}
+                              onChange={handleInputChange}
+                              placeholder={
+                                paymentMethod === 'binance' 
+                                  ? 'Ej: 284719284' 
+                                  : 'Ej: 1234'
+                              }
+                              className="form-input"
+                              required
                             />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="payment-validation-warning" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '8px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: '600', marginTop: '1rem' }}>
-                          <AlertCircle size={18} />
-                          <span>Por favor, completa tus datos de contacto arriba para habilitar el pago de PayPal.</span>
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </div>
-                ) : (
-                  <form className="payment-details-form" onSubmit={handleSubmit}>
 
-                    <div className="payment-instruction mb-4">
-                      <div className="instruction-icon">
-                        <CheckCircle size={24} />
-                      </div>
-                      <div className="instruction-text">
-                        <h4>Reporte de Pago</h4>
-                        <p>Ingresa los datos de tu transferencia y sube el comprobante para validar tu orden.</p>
-                      </div>
-                    </div>
-
-                    <div className="payment-instructions-box">
-                      {paymentMethod === 'pago-movil' && (
-                        <div className="ves-amount-instruction mb-4">
-                          <p>
-                            Monto a transferir: <strong>
-                              <span className="price-container">
-                                <span className="currency-symbol">Bs.</span>
-                                <span className="price-value">{(finalTotal * exchangeRate).toFixed(2)}</span>
-                              </span>
-                            </strong>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ── Instrucciones de pago SRX (Binance / Pago Móvil / Zelle) ── */}
-                    {(paymentMethod === 'binance' || paymentMethod === 'pago-movil' || paymentMethod === 'zelle') && (
-                      <PaymentInstructions
-                        paymentMethod={paymentMethod}
-                      />
-                    )}
-
-                    {(paymentMethod === 'binance' || paymentMethod === 'pago-movil') && (
                       <div className="form-group">
-                        <label className="form-label">
-                          {paymentMethod === 'binance' 
-                            ? 'ID de Transacción Binance' 
-                            : 'Número de Referencia Pago Móvil'}
-                        </label>
-                        <div className="input-with-icon">
-                          <Shield size={18} className="input-icon" />
+                        <label className="form-label">Comprobante (Capture)</label>
+                        <div className="file-upload-container">
                           <input
-                            type="text"
-                            name="referenceNumber"
-                            value={formData.referenceNumber}
+                            type="file"
+                            id="receiptFile"
+                            name="receiptFile"
+                            accept="image/*"
                             onChange={handleInputChange}
-                            placeholder={
-                              paymentMethod === 'binance' 
-                                ? 'Ej: 284719284' 
-                                : 'Ej: 1234'
-                            }
-                            className="form-input"
+                            className="file-input-hidden"
                             required
                           />
+                          <label htmlFor="receiptFile" className="file-upload-label">
+                            <Upload size={20} />
+                            <span>{formData.receiptFile ? formData.receiptFile.name : 'Subir Imagen'}</span>
+                          </label>
                         </div>
                       </div>
+                    </>
+                  )}
+
+                  <button 
+                    type="submit"
+                    className="checkout-submit-btn mt-4"
+                    disabled={isSubmitDisabled}
+                  >
+                    {isMaintenance ? (
+                      <>
+                        <AlertCircle size={20} />
+                        <span>Método en Mantenimiento</span>
+                      </>
+                    ) : isSubmitting ? (
+                      <>
+                        <span className="loading-spinner-small"></span>
+                        <span>Procesando pago con pasarela...</span>
+                      </>
+                    ) : finalTotal <= 0 ? (
+                      <>
+                        <AlertCircle size={20} />
+                        <span>Cargando monto...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={20} />
+                        <span>{paymentMethod === 'tarjeta' ? 'Pagar con Tarjeta Internacional' : 'Confirmar Pago por '}</span>
+                        <span className="price-container" style={{ color: 'inherit', marginLeft: '4px' }}>
+                          <span className="currency-symbol">$</span>
+                          <span className="price-value">{finalTotal.toFixed(2)}</span>
+                        </span>
+                      </>
                     )}
-
-                    <div className="form-group">
-                      <label className="form-label">Comprobante (Capture)</label>
-                      <div className="file-upload-container">
-                        <input
-                          type="file"
-                          id="receiptFile"
-                          name="receiptFile"
-                          accept="image/*"
-                          onChange={handleInputChange}
-                          className="file-input-hidden"
-                          required
-                        />
-                        <label htmlFor="receiptFile" className="file-upload-label">
-                          <Upload size={20} />
-                          <span>{formData.receiptFile ? formData.receiptFile.name : 'Subir Imagen'}</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <button 
-                      type="submit"
-                      className="checkout-submit-btn mt-4"
-                      disabled={isSubmitting || ((paymentMethod === 'binance' || paymentMethod === 'pago-movil') && !formData.referenceNumber) || !formData.receiptFile || !isContactInfoValid || finalTotal <= 0}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span className="loading-spinner-small"></span>
-                          <span>Procesando pago...</span>
-                        </>
-                      ) : finalTotal <= 0 ? (
-                        <>
-                          <AlertCircle size={20} />
-                          <span>Cargando monto...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock size={20} />
-                          <span>Confirmar Pago por </span>
-                          <span className="price-container" style={{ color: 'inherit' }}>
-                            <span className="currency-symbol">$</span>
-                            <span className="price-value">{finalTotal.toFixed(2)}</span>
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-                )}
+                  </button>
+                </form>
               </motion.div>
             </div>
           </div>

@@ -7,35 +7,35 @@ import './CategoryGrid.css';
 const categoryMeta = {
   // Tarjeta grande de la izquierda (Productos SRX / Cámaras, fotografía y video)
   'drones-y-sistemas-aereos': {
-    image: '/srx.jpg',
+    image: '/srx2.jpg?v=2',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
   'cámaras,-fotografía-y-video': {
-    image: '/srx.jpg',
+    image: '/srx2.jpg?v=2',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
   'cámaras-fotografía-y-video': {
-    image: '/srx.jpg',
+    image: '/srx2.jpg?v=2',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
   'camaras,-fotografia-y-video': {
-    image: '/srx.jpg',
+    image: '/srx2.jpg?v=2',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
     order: 0
   },
   'camaras-fotografia-y-video': {
-    image: '/srx.jpg',
+    image: '/srx2.jpg?v=2',
     titleDisplay: 'Productos SRX',
     description: 'Cámaras y micrófonos para capturar cada momento con precisión y calidad.',
     buttonText: 'Ver más',
@@ -44,7 +44,14 @@ const categoryMeta = {
 
   // Tarjeta superior derecha
   'audio-profesional': {
-    image: '/srx2.jpg',
+    image: '/srx.jpg?v=2',
+    titleDisplay: 'Audio Profesional',
+    description: 'Lentes de marcas reconocidas para ampliar tu creatividad visual.',
+    buttonText: 'Comprar',
+    order: 1
+  },
+  'audio': {
+    image: '/srx.jpg?v=2',
     titleDisplay: 'Audio Profesional',
     description: 'Lentes de marcas reconocidas para ampliar tu creatividad visual.',
     buttonText: 'Comprar',
@@ -52,21 +59,21 @@ const categoryMeta = {
   },
   // Tarjeta inferior derecha
   'iluminacion-y-energia': {
-    image: '/srx3.jpg',
+    image: '/srx3.jpg?v=2',
     titleDisplay: 'Iluminación y Energía',
     description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
     buttonText: 'Explorar',
     order: 2
   },
   'iluminación': {
-    image: '/srx3.jpg',
+    image: '/srx3.jpg?v=2',
     titleDisplay: 'Iluminación y Energía',
     description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
     buttonText: 'Explorar',
     order: 2
   },
   'iluminacion': {
-    image: '/srx3.jpg',
+    image: '/srx3.jpg?v=2',
     titleDisplay: 'Iluminación y Energía',
     description: 'Luces y reflectores profesionales para dar vida y sonido a tus proyectos.',
     buttonText: 'Explorar',
