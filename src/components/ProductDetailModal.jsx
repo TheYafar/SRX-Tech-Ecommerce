@@ -9,6 +9,8 @@ import { useProducts } from '../context/ProductContext';
 import { supabase } from '../utils/supabaseClient';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock, Smartphone, Package } from 'lucide-react';
 import { generateSlug } from '../utils/slugify';
+import { getProductWhatsAppUrl } from '../utils/whatsapp';
+import { WhatsAppIcon } from './WhatsAppFloatingButton';
 import './ProductDetailModal.css';
 
 // ── Sub-componente: SpecTabs ────────────────────────────────────────────────
@@ -643,6 +645,20 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
                       </motion.button>
                     </>
                   )}
+
+                  {/* Botón WhatsApp */}
+                  <motion.a
+                    href={getProductWhatsAppUrl(product, formatUSD(finalPrice), quantity)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-whatsapp-order"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    aria-label={`Pedir ${product.name} por WhatsApp`}
+                  >
+                    <WhatsAppIcon size={20} color="#ffffff" />
+                    <span>Pedir por WhatsApp</span>
+                  </motion.a>
                 </motion.div>
 
                 {/* Complementary Product Section */}

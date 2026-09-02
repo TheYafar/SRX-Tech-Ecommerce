@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import CartDrawer from '../components/CartDrawer';
 import AuthModal from '../components/AuthModal';
 import BottomNav from '../components/BottomNav';
+import WhatsAppFloatingButton from '../components/WhatsAppFloatingButton';
 import { NotificationManager } from '../components/Notification';
 import { useProducts } from '../context/ProductContext';
 import { generateSlug } from '../utils/slugify';
@@ -58,7 +59,7 @@ export default function MainLayout() {
       <CartDrawer />
       <AuthModal />
       <BottomNav />
-
+      <WhatsAppFloatingButton />
 
       {/* Global Notification Container */}
       <NotificationManager />
