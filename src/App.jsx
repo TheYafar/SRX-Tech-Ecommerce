@@ -11,6 +11,7 @@ import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Store from './pages/Store';
 import Profile from './pages/Profile';
+import ThankYou from './pages/ThankYou';
 import NotFound from './pages/NotFound';
 import ResetPassword from './pages/ResetPassword';
 import AdminLayout from './layouts/AdminLayout';
@@ -91,6 +92,7 @@ export default function App() {
                       <Route path="tienda" element={<Store />} />
                       <Route path="tienda/:slug" element={<Store />} />
                       <Route path="profile" element={<Profile />} />
+                      <Route path="gracias-por-tu-compra" element={<ThankYou />} />
                       <Route path="register" element={<RegisterRedirect />} />
                       <Route path="signup" element={<RegisterRedirect />} />
                       <Route path="reset-password" element={<ResetPassword />} />
