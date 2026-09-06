@@ -146,6 +146,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
   }, [user]);
 
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
+
   if (!isOpen) return null;
 
   const handleInputChange = (e) => {
@@ -543,14 +551,6 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
     await processCheckout();
   };
-
-  useEffect(() => {
-    return () => {
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleRedirectToThankYou = (refCode = orderRefCode, total = savedTotal) => {
     if (redirectTimeoutRef.current) {
