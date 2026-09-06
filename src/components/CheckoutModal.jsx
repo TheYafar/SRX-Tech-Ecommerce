@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -59,6 +60,8 @@ const renderPaymentIcon = (id) => {
 };
 
 export default function CheckoutModal({ isOpen, onClose }) {
+  const navigate = useNavigate();
+  const redirectTimeoutRef = useRef(null);
   const { cartItems, cartTotal = 0, clearCart } = useCart();
   const { user } = useAuth();
   const { exchangeRate } = useCurrency();
@@ -444,11 +447,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
         console.log('[Meta Pixel] Evento disparado: Purchase', eventData);
       }
 
+      // Limpieza inmediata del carrito para evitar compras duplicadas
       clearCart();
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
+
+      // Redirección suave a la ruta de agradecimiento tras mostrar el mensaje de confirmación
+      redirectTimeoutRef.current = setTimeout(() => {
+        handleRedirectToThankYou(refCode, totalToSave);
+      }, 4000);
     } catch (err) {
       console.error('Error in processCheckout:', err);
       showError(`Fallo en el proceso de compra: ${err.message || err}`);
@@ -539,9 +544,31 @@ export default function CheckoutModal({ isOpen, onClose }) {
     await processCheckout();
   };
 
-  const handleSuccessClose = () => {
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleRedirectToThankYou = (refCode = orderRefCode, total = savedTotal) => {
+    if (redirectTimeoutRef.current) {
+      clearTimeout(redirectTimeoutRef.current);
+    }
+    clearCart();
     setIsSuccess(false);
     onClose();
+    navigate('/gracias-por-tu-compra', {
+      state: {
+        orderRef: refCode,
+        total: total
+      }
+    });
+  };
+
+  const handleSuccessClose = () => {
+    handleRedirectToThankYou();
   };
 
   const paymentMethods = [
@@ -707,7 +734,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
               onClick={handleSuccessClose}
             >
               <ShoppingBag size={20} />
-              <span>Volver a la Tienda</span>
+              <span>Ver confirmación</span>
               <ArrowRight size={18} />
             </motion.button>
           </motion.div>
