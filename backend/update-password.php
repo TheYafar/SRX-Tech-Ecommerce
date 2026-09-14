@@ -1,17 +1,39 @@
 <?php
-$allowed_origins = ['http://localhost:5173', 'https://srxtech.net'];
-if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
-    header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+// backend/update-password.php
+// Actualiza la contraseña en Supabase Auth Admin mediante el token de recuperación
+
+if (file_exists(__DIR__ . '/env_loader.php')) {
+    require_once __DIR__ . '/env_loader.php';
 }
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+if (function_exists('set_cors_headers')) {
+    set_cors_headers("POST, OPTIONS");
+} else {
+    $allowed_origins = ['http://localhost:5173', 'https://srxtech.net', 'https://TheYafar.github.io'];
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+    if (in_array($origin, $allowed_origins, true)) {
+        header("Access-Control-Allow-Origin: " . $origin);
+    } else {
+        header("Access-Control-Allow-Origin: https://srxtech.net");
+    }
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey, X-Requested-With");
+    header("Access-Control-Allow-Credentials: true");
+    header("Content-Type: application/json; charset=UTF-8");
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit(0);
+    }
+}
 
-$data           = json_decode(file_get_contents("php://input"), true);
-$token          = isset($data['token'])          ? trim($data['token'])          : '';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(["success" => false, "error" => "Método no permitido. Solo se acepta POST."]);
+    exit;
+}
+
+$data            = json_decode(file_get_contents("php://input"), true);
+$token           = isset($data['token'])           ? trim($data['token'])           : '';
 $nuevaContrasena = isset($data['nuevaContrasena']) ? trim($data['nuevaContrasena']) : '';
 
 if (empty($token) || empty($nuevaContrasena)) {
@@ -20,9 +42,20 @@ if (empty($token) || empty($nuevaContrasena)) {
     exit;
 }
 
-// CONFIGURACIÓN DEL PROYECTO SRX-Tech-Ecommerce
-$supabase_url = 'https://wcnobggfbmpisahxihfu.supabase.co';
-$service_key  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjbm9iZ2dmYm1waXNhaHhpaGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ1NzgxOCwiZXhwIjoyMDk1MDMzODE4fQ.GlGdzK1LUB13BhRHOaRRfCu5BAZ_JOVYkh4o9UmZA_s';
+// CONFIGURACIÓN DE SUPABASE DESDE VARIABLES DE ENTORNO O .ENV
+$supabase_url = function_exists('get_backend_env') 
+    ? get_backend_env('SUPABASE_URL', 'https://wcnobggfbmpisahxihfu.supabase.co') 
+    : (getenv('SUPABASE_URL') ?: 'https://wcnobggfbmpisahxihfu.supabase.co');
+
+$service_key = function_exists('get_backend_env') 
+    ? get_backend_env('SUPABASE_SERVICE_ROLE_KEY') 
+    : (getenv('SUPABASE_SERVICE_ROLE_KEY') ?: '');
+
+if (empty($service_key)) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "SUPABASE_SERVICE_ROLE_KEY no configurado en el servidor."]);
+    exit;
+}
 
 // ─── PASO 1: Buscar el token en la tabla password_resets ──────────────────────
 $select_url = rtrim($supabase_url, '/') . '/rest/v1/password_resets?token=eq.' . urlencode($token) . '&select=user_id,expires_at';
@@ -63,8 +96,7 @@ if (strtotime($expires_at) < time()) {
     exit;
 }
 
-// ─── PASO 2 (NUEVO): GET previo para verificar el email real del user_id ─────
-// Esto blinda contra user_id incorrecto y genera un log auditable.
+// ─── PASO 2: GET previo para verificar el email real del user_id ─────
 $verify_url = rtrim($supabase_url, '/') . '/auth/v1/admin/users/' . $user_id;
 
 $chV = curl_init();
@@ -83,7 +115,6 @@ curl_close($chV);
 
 $verify_data = json_decode($verify_response, true);
 
-// Si Supabase no devuelve el usuario o devuelve error, detenemos todo
 if ($verify_code !== 200 || empty($verify_data) || !isset($verify_data['id'])) {
     http_response_code(400);
     echo json_encode([
@@ -100,18 +131,9 @@ if ($verify_code !== 200 || empty($verify_data) || !isset($verify_data['id'])) {
 
 $user_email = $verify_data['email'] ?? 'email-no-disponible';
 
-// Log auditable: quién va a recibir el cambio de clave
-file_put_contents(
-    __DIR__ . '/auth_debug.log',
-    "[" . date('Y-m-d H:i:s') . "] Intentando cambiar clave al usuario: " . $user_email . " con ID: " . $user_id . "\n",
-    FILE_APPEND
-);
-
 // ─── PASO 3: Actualizar la contraseña en Supabase Auth Admin (PUT) ───────────
 $update_url = rtrim($supabase_url, '/') . '/auth/v1/admin/users/' . $user_id;
 
-// email_confirm: true evita que el usuario quede en estado 'unconfirmed'
-// lo que bloquearía el login incluso con clave correcta.
 $update_payload = json_encode([
     "password"      => $nuevaContrasena,
     "email_confirm" => true
@@ -135,28 +157,17 @@ curl_close($ch2);
 
 $update_data = json_decode($update_response, true);
 
-// Log de la respuesta cruda de Supabase para diagnóstico
-file_put_contents(
-    __DIR__ . '/auth_debug.log',
-    "[" . date('Y-m-d H:i:s') . "] Respuesta PUT Supabase (HTTP " . $update_code . "): " . $update_response . "\n",
-    FILE_APPEND
-);
-
-// ─── CORTE DE ÉXITO FALSO ─────────────────────────────────────────────────────
-// Se exige HTTP 200 Y que la respuesta contenga el 'id' del usuario modificado.
-// Si Supabase devuelve cualquier otra cosa, abortamos con error detallado.
 if ($update_code !== 200 || !isset($update_data['id'])) {
     http_response_code(400);
     echo json_encode([
         "success"           => false,
-        "error"             => "Supabase Auth Admin no confirmó el cambio de clave. Revisar auth_debug.log.",
+        "error"             => "Supabase Auth Admin no confirmó el cambio de clave.",
         "supabase_http"     => $update_code,
         "supabase_response" => $update_data
     ]);
     exit;
 }
 
-// Verificación extra: que el ID devuelto coincida con el que queríamos modificar
 if ($update_data['id'] !== $user_id) {
     http_response_code(500);
     echo json_encode([
@@ -182,12 +193,6 @@ curl_setopt_array($ch3, [
 ]);
 curl_exec($ch3);
 curl_close($ch3);
-
-file_put_contents(
-    __DIR__ . '/auth_debug.log',
-    "[" . date('Y-m-d H:i:s') . "] Contraseña actualizada con éxito para: " . $user_email . " (" . $user_id . ")\n\n",
-    FILE_APPEND
-);
 
 // ─── RESPUESTA FINAL DE ÉXITO VERIFICADO ─────────────────────────────────────
 echo json_encode([

@@ -5,12 +5,14 @@
 // https://srxtech.net/send-email.php
 // El servidor PHP inyecta la API Key de Resend de forma segura.
 //
-// URL relativa: en producción resuelve al mismo dominio.
-// En desarrollo, Vite hace proxy de /send-email.php → srxtech.net
-// (ver vite.config.js → server.proxy)
-// ─────────────────────────────────────────────────────────────
+// En desarrollo local (localhost), usa la ruta relativa con proxy de Vite.
+// En producción (GitHub Pages o dominio externo), resuelve a https://srxtech.net
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL ||
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? ''
+    : 'https://srxtech.net');
 
-const PHP_BRIDGE_URL = '/send-email.php';
+const PHP_BRIDGE_URL = `${BACKEND_BASE_URL}/send-email.php`;
 
 
 // ─── Utilidades ───────────────────────────────────────────────
@@ -377,7 +379,7 @@ export async function sendCouponEmail(userEmail, couponCode, discountPercent) {
  */
 export async function enviarCorreoCompraExitosa(purchaseData) {
   try {
-    const response = await fetch('/send-purchase-success-email.php', {
+    const response = await fetch(`${BACKEND_BASE_URL}/send-purchase-success-email.php`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

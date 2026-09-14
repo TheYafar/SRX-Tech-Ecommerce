@@ -1,25 +1,32 @@
 <?php
 // ═══════════════════════════════════════════════════════════════════════════════
-//  send-purchase-success-email.php
+//  backend/send-purchase-success-email.php
 //  Recibe datos de una compra exitosa y envía un correo detallado de confirmación
-//  de compra con diseño premium (compatible Gmail/Outlook) usando la API de Resend.
+//  de compra con diseño premium usando la API de Resend.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// 1. Cabeceras CORS
-$allowed_origins = ['http://localhost:5173', 'https://srxtech.net'];
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-if (in_array($origin, $allowed_origins, true)) {
-    header("Access-Control-Allow-Origin: " . $origin);
-    header("Access-Control-Allow-Credentials: true");
-} else {
-    header("Access-Control-Allow-Origin: https://srxtech.net");
+if (file_exists(__DIR__ . '/env_loader.php')) {
+    require_once __DIR__ . '/env_loader.php';
 }
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey");
-header("Content-Type: application/json; charset=UTF-8");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+if (function_exists('set_cors_headers')) {
+    set_cors_headers("POST, OPTIONS");
+} else {
+    $allowed_origins = ['http://localhost:5173', 'https://srxtech.net', 'https://TheYafar.github.io'];
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+    if (in_array($origin, $allowed_origins, true)) {
+        header("Access-Control-Allow-Origin: " . $origin);
+    } else {
+        header("Access-Control-Allow-Origin: https://srxtech.net");
+    }
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey, X-Requested-With");
+    header("Access-Control-Allow-Credentials: true");
+    header("Content-Type: application/json; charset=UTF-8");
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit(0);
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -58,26 +65,15 @@ if (empty($customer_email) || !filter_var($customer_email, FILTER_VALIDATE_EMAIL
     exit;
 }
 
-// 4. Credenciales de producción (con fallback .env)
-$supabase_url = 'https://wcnobggfbmpisahxihfu.supabase.co';
-$service_key  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjbm9iZ2dmYm1waXNhaHhpaGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ1NzgxOCwiZXhwIjoyMDk1MDMzODE4fQ.GlGdzK1LUB13BhRHOaRRfCu5BAZ_JOVYkh4o9UmZA_s';
-$resend_key   = 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T';
+// 4. Cargar Clave de Resend de forma segura
+$resend_key = function_exists('get_backend_env') 
+    ? get_backend_env('RESEND_API_KEY') 
+    : (getenv('RESEND_API_KEY') ?: '');
 
-// Fallback desde archivo .env local si existe
-$envPath = dirname(__DIR__) . '/.env';
-if (file_exists($envPath)) {
-    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    $envVars = [];
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        $parts = explode('=', $line, 2);
-        if (count($parts) === 2) {
-            $envVars[trim($parts[0])] = trim($parts[1]);
-        }
-    }
-    $supabase_url = getenv('SUPABASE_URL') ?: ($envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? $supabase_url);
-    $service_key  = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: ($envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? $envVars['VITE_SUPABASE_SERVICE_ROLE_KEY'] ?? $service_key);
-    $resend_key   = getenv('RESEND_API_KEY') ?: ($envVars['RESEND_API_KEY'] ?? $envVars['VITE_RESEND_API_KEY'] ?? $resend_key);
+if (empty($resend_key)) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "Configuración incompleta: RESEND_API_KEY no encontrada en el servidor."]);
+    exit;
 }
 
 // 5. Constantes de la plantilla HTML

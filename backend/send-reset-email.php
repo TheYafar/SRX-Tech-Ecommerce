@@ -1,25 +1,29 @@
 <?php
-// ═══════════════════════════════════════════════════════════════════════════════
-//  send-reset-email.php
-//  Recibe correo de usuario, valida en Supabase Auth Admin, registra el token
-//  en public.password_resets y envía correo usando Resend API.
-// ═══════════════════════════════════════════════════════════════════════════════
+// backend/send-reset-email.php
+// Genera token de recuperación en Supabase y envía correo con Resend API
 
-// 1. Cabeceras CORS
-$allowed_origins = ['http://localhost:5173', 'https://srxtech.net'];
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-if (in_array($origin, $allowed_origins, true)) {
-    header("Access-Control-Allow-Origin: " . $origin);
-    header("Access-Control-Allow-Credentials: true");
-} else {
-    header("Access-Control-Allow-Origin: https://srxtech.net");
+if (file_exists(__DIR__ . '/env_loader.php')) {
+    require_once __DIR__ . '/env_loader.php';
 }
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey");
-header("Content-Type: application/json; charset=UTF-8");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+if (function_exists('set_cors_headers')) {
+    set_cors_headers("POST, OPTIONS");
+} else {
+    $allowed_origins = ['http://localhost:5173', 'https://srxtech.net', 'https://TheYafar.github.io'];
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+    if (in_array($origin, $allowed_origins, true)) {
+        header("Access-Control-Allow-Origin: " . $origin);
+    } else {
+        header("Access-Control-Allow-Origin: https://srxtech.net");
+    }
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey, X-Requested-With");
+    header("Access-Control-Allow-Credentials: true");
+    header("Content-Type: application/json; charset=UTF-8");
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit(0);
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -28,13 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 2. Leer Body JSON
-$rawBody = file_get_contents("php://input");
-$data = json_decode($rawBody, true);
+$raw_input = file_get_contents('php://input');
+$data = json_decode($raw_input, true);
 
-if (json_last_error() !== JSON_ERROR_NONE) {
+if (json_last_error() !== JSON_ERROR_NONE || empty($data)) {
     http_response_code(400);
-    echo json_encode(["success" => false, "error" => "Cuerpo de solicitud JSON inválido."]);
+    echo json_encode(["success" => false, "error" => "Cuerpo de la petición vacío o JSON no válido."]);
     exit;
 }
 
@@ -46,35 +49,28 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-$supabase_url = 'https://wcnobggfbmpisahxihfu.supabase.co';
-$service_key  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjbm9iZ2dmYm1waXNhaHhpaGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ1NzgxOCwiZXhwIjoyMDk1MDMzODE4fQ.GlGdzK1LUB13BhRHOaRRfCu5BAZ_JOVYkh4o9UmZA_s'; // Clave de administrador de producción
-$resend_key   = 're_NyPW1t5R_ChUxtARKZTfP7ohVTo5qqJ8T';
+// 3. Credenciales desde entorno o .env
+$supabase_url = function_exists('get_backend_env') 
+    ? get_backend_env('SUPABASE_URL', 'https://wcnobggfbmpisahxihfu.supabase.co') 
+    : (getenv('SUPABASE_URL') ?: 'https://wcnobggfbmpisahxihfu.supabase.co');
 
-// Carga dinámica de fallback desde archivo .env para máxima tolerancia
-$envPath = dirname(__DIR__) . '/.env';
-$envVars = [];
-if (file_exists($envPath)) {
-    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        $parts = explode('=', $line, 2);
-        if (count($parts) === 2) {
-            $envVars[trim($parts[0])] = trim($parts[1]);
-        }
-    }
+$service_key = function_exists('get_backend_env') 
+    ? get_backend_env('SUPABASE_SERVICE_ROLE_KEY') 
+    : (getenv('SUPABASE_SERVICE_ROLE_KEY') ?: '');
+
+$resend_key = function_exists('get_backend_env') 
+    ? get_backend_env('RESEND_API_KEY') 
+    : (getenv('RESEND_API_KEY') ?: '');
+
+if (empty($service_key)) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "SUPABASE_SERVICE_ROLE_KEY no configurado en el servidor."]);
+    exit;
 }
 
-// Cargar desde entornos locales/globales o fallback
-$supabase_url = getenv('SUPABASE_URL') ?: getenv('VITE_SUPABASE_URL') ?: ($envVars['SUPABASE_URL'] ?? $envVars['VITE_SUPABASE_URL'] ?? $supabase_url);
-$service_key  = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: getenv('VITE_SUPABASE_SERVICE_ROLE_KEY') ?: ($envVars['SUPABASE_SERVICE_ROLE_KEY'] ?? $envVars['VITE_SUPABASE_SERVICE_ROLE_KEY'] ?? $service_key);
-$resend_key   = getenv('RESEND_API_KEY') ?: getenv('VITE_RESEND_API_KEY') ?: ($envVars['RESEND_API_KEY'] ?? $envVars['VITE_RESEND_API_KEY'] ?? $resend_key);
-
-if ($service_key === 'sb_secret_AQUI_DEBES_PEGAR_TU_SERVICE_ROLE_KEY' || empty($service_key)) {
+if (empty($resend_key)) {
     http_response_code(500);
-    echo json_encode([
-        "success" => false,
-        "error" => "SUPABASE_SERVICE_ROLE_KEY no configurado. Reemplaza el placeholder directamente en send-reset-email.php o en el archivo .env."
-    ]);
+    echo json_encode(["success" => false, "error" => "RESEND_API_KEY no configurado en el servidor."]);
     exit;
 }
 
@@ -116,11 +112,7 @@ if ($http_code !== 200) {
     exit;
 }
 
-// ─── Filtrado estricto por email ──────────────────────────────────────────────
-// La API de Supabase puede devolver toda la lista de usuarios; nunca asumimos
-// que el primer elemento de la lista es el correcto. Comparamos email a email.
 $user = null;
-
 if (isset($res_data['users']) && is_array($res_data['users'])) {
     foreach ($res_data['users'] as $u) {
         if (strcasecmp(trim($u['email'] ?? ''), trim($email)) === 0) {
@@ -129,7 +121,6 @@ if (isset($res_data['users']) && is_array($res_data['users'])) {
         }
     }
 } elseif (is_array($res_data)) {
-    // Formato alternativo: array plano de usuarios
     foreach ($res_data as $u) {
         if (is_array($u) && strcasecmp(trim($u['email'] ?? ''), trim($email)) === 0) {
             $user = $u;
@@ -138,8 +129,6 @@ if (isset($res_data['users']) && is_array($res_data['users'])) {
     }
 }
 
-// Si después del recorrido completo no hay coincidencia real, detenemos aquí.
-// Nunca se debe tomar el primer ID por defecto.
 if ($user === null) {
     http_response_code(404);
     echo json_encode([
@@ -151,9 +140,9 @@ if ($user === null) {
 
 $user_id = $user['id'];
 $token = bin2hex(random_bytes(32));
-$expires_at = date('c', strtotime('+1 hour')); // Formato ISO 8601 compatible con timestamptz
+$expires_at = date('c', strtotime('+1 hour'));
 
-// 5. POST (INSERT) a la tabla password_resets de Supabase Rest API
+// 5. INSERT a la tabla password_resets
 $insert_url = rtrim($supabase_url, '/') . '/rest/v1/password_resets';
 $insert_payload = json_encode([
     "user_id" => $user_id,
@@ -197,10 +186,9 @@ if ($ins_code < 200 || $ins_code >= 300) {
     exit;
 }
 
-// 6. Disparar el correo usando Resend API con enlace del HashRouter
+// 6. Disparar el correo usando Resend API
 $resetLink = "https://srxtech.net/#/reset-password?token=" . $token;
 
-// Plantilla responsiva y premium para SRX Tech
 $htmlContent = '
 <!DOCTYPE html>
 <html>
@@ -300,7 +288,6 @@ if ($res_email_code < 200 || $res_email_code >= 300) {
     exit;
 }
 
-// 7. Respuesta Exitosa
 http_response_code(200);
 echo json_encode([
     "success" => true,

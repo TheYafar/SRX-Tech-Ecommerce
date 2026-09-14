@@ -276,7 +276,12 @@ export default function AdminCoupons() {
           ...(isMassEmail ? {} : { single_recipient: customerEmail.trim() }),
         };
 
-        const response = await fetch('/send-coupon-email.php', {
+        const backendBaseUrl = import.meta.env.VITE_BACKEND_URL ||
+          (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? ''
+            : 'https://srxtech.net');
+
+        const response = await fetch(`${backendBaseUrl}/send-coupon-email.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(emailPayload),
