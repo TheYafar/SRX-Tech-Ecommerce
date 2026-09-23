@@ -9,6 +9,7 @@ import { useProducts } from '../context/ProductContext';
 import { supabase } from '../utils/supabaseClient';
 import { X, ShoppingCart, CheckCircle, Star, Shield, Truck, Heart, Share2, ChevronRight, Zap, Lock, Smartphone, Package } from 'lucide-react';
 import { generateSlug } from '../utils/slugify';
+import { trackMetaEvent } from '../services/metaTracking';
 import { getProductWhatsAppUrl } from '../utils/whatsapp';
 import { WhatsAppIcon } from './WhatsAppFloatingButton';
 import './ProductDetailModal.css';
@@ -197,23 +198,18 @@ export default function ProductDetailModal({ product, isOpen, onClose, onMouseEn
     }
   }, [product]);
 
-  // Track ViewContent event in FB Pixel
+  // Track ViewContent: Pixel + API de Conversiones (mismo event_id para deduplicar)
   useEffect(() => {
     if (isOpen && product?.id) {
-      window.fbq = window.fbq || function() {
-        (window.fbq.q = window.fbq.q || []).push(arguments);
-      };
-      if (window.fbq) {
-        const eventData = {
-          content_ids: [product.id],
-          content_name: product.name,
-          value: Number(product.price_usd || product.price || 0),
-          currency: 'USD',
-          content_type: 'product'
-        };
-        window.fbq('track', 'ViewContent', eventData);
-        console.log('[Meta Pixel] Evento disparado: ViewContent', eventData);
-      }
+      const price = Number(product.price_usd || product.price || 0);
+      trackMetaEvent('ViewContent', {
+        content_ids: [String(product.id)],
+        contents: [{ id: String(product.id), quantity: 1, item_price: price }],
+        content_name: product.name,
+        value: price,
+        currency: 'USD',
+        content_type: 'product'
+      });
     }
   }, [product?.id, isOpen]);
 

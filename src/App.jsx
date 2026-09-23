@@ -21,10 +21,17 @@ import AdminProducts from './pages/Admin/AdminProducts';
 import AdminCoupons from './pages/Admin/AdminCoupons';
 import AdminCategoriesOrder from './pages/Admin/AdminCategoriesOrder';
 import AdminRoute from './components/AdminRoute';
+import { trackMetaEvent, setMetaUser } from './services/metaTracking';
 import './App.css';
 
 function FacebookPixelTracker() {
   const location = useLocation();
+  const { user } = useAuth();
+
+  // Mantiene al módulo de seguimiento al tanto de quién navega (para emparejar en Meta).
+  useEffect(() => {
+    setMetaUser(user);
+  }, [user]);
 
   useEffect(() => {
     window.fbq = window.fbq || function() {
@@ -48,14 +55,9 @@ function FacebookPixelTracker() {
     window.fbq('init', '1341230694784299');
   }, []);
 
+  // PageView: Pixel + API de Conversiones con el mismo event_id (deduplicación).
   useEffect(() => {
-    window.fbq = window.fbq || function() {
-      (window.fbq.q = window.fbq.q || []).push(arguments);
-    };
-    if (window.fbq) {
-      window.fbq('track', 'PageView');
-      console.log('[Meta Pixel] Evento disparado: PageView', { path: location.pathname });
-    }
+    trackMetaEvent('PageView', {});
   }, [location.pathname]);
 
   return null;

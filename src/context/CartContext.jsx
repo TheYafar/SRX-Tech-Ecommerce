@@ -5,6 +5,7 @@ import { useNotifications } from './NotificationContext';
 import { useAuth } from './AuthContext';
 import { useProducts } from './ProductContext';
 import { supabase } from '../utils/supabaseClient';
+import { trackMetaEvent } from '../services/metaTracking';
 
 const CartContext = createContext();
 
@@ -159,21 +160,15 @@ export const CartProvider = ({ children }) => {
     const quantityToAdd = product.quantity || qty;
     const effectivePrice = getEffectivePrice(product);
 
-    // Track AddToCart event in FB Pixel
-    window.fbq = window.fbq || function() {
-      (window.fbq.q = window.fbq.q || []).push(arguments);
-    };
-    if (window.fbq) {
-      const eventData = {
-        content_ids: [product.id],
-        content_name: product.name || product.title,
-        value: Number(effectivePrice),
-        currency: 'USD',
-        content_type: 'product'
-      };
-      window.fbq('track', 'AddToCart', eventData);
-      console.log('[Meta Pixel] Evento disparado: AddToCart', eventData);
-    }
+    // Track AddToCart: Pixel + API de Conversiones (mismo event_id para deduplicar)
+    trackMetaEvent('AddToCart', {
+      content_ids: [String(product.id)],
+      contents: [{ id: String(product.id), quantity: quantityToAdd, item_price: Number(effectivePrice) }],
+      content_name: product.name || product.title,
+      value: Number(effectivePrice) * quantityToAdd,
+      currency: 'USD',
+      content_type: 'product'
+    });
 
     // Get latest stock from availableProducts or fallback to product.stock
     const latestProduct = availableProducts.find(p => p.id === product.id) || product;

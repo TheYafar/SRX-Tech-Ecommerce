@@ -11,6 +11,7 @@ import PaymentInstructions from './PaymentInstructions';
 import InternationalCardForm from './InternationalCardForm';
 import { enviarCorreoCompraExitosa } from '../services/emailService';
 import { checkAndValidateCoupon, registerCouponUsage } from '../services/couponService';
+import { trackMetaEvent, registerOrderContext, trackPixelPurchase } from '../services/metaTracking';
 import './CheckoutModal.css';
 
 const CONFETTI_PARTICLES = [
@@ -153,6 +154,32 @@ export default function CheckoutModal({ isOpen, onClose }) {
       }
     };
   }, []);
+
+  // InitiateCheckout: una vez por cada apertura del checkout (Pixel + API de Conversiones)
+  const initiateCheckoutTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) {
+      initiateCheckoutTrackedRef.current = false;
+      return;
+    }
+    if (initiateCheckoutTrackedRef.current || filteredCartItems.length === 0) return;
+    initiateCheckoutTrackedRef.current = true;
+
+    const contents = filteredCartItems.map((item) => ({
+      id: String(item.product_id),
+      quantity: item.quantity || 1,
+      item_price: getEffectivePrice(item)
+    }));
+    trackMetaEvent('InitiateCheckout', {
+      content_ids: contents.map((c) => c.id),
+      contents,
+      num_items: contents.reduce((n, c) => n + c.quantity, 0),
+      value: Number(calculatedSubtotal.toFixed(2)),
+      currency: 'USD',
+      content_type: 'product'
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, filteredCartItems.length]);
 
   if (!isOpen) return null;
 
@@ -388,7 +415,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
         const totalContado = Math.max(0, Number((subtotalContado - discountContado).toFixed(2)));
 
         const orderId = await createSingleOrder(itemsContado, 'contado', totalContado);
-        createdOrders.push({ id: orderId, type: 'contado' });
+        createdOrders.push({ id: orderId, type: 'contado', total: totalContado, items: itemsContado });
       }
 
       if (itemsEncargo.length > 0) {
@@ -400,7 +427,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
         const totalEncargo = Math.max(0, Number((subtotalEncargo - discountEncargo).toFixed(2)));
 
         const orderId = await createSingleOrder(itemsEncargo, 'encargo', totalEncargo);
-        createdOrders.push({ id: orderId, type: 'encargo' });
+        createdOrders.push({ id: orderId, type: 'encargo', total: totalEncargo, items: itemsEncargo });
       }
 
       if (createdOrders.length === 0) {
@@ -442,18 +469,25 @@ export default function CheckoutModal({ isOpen, onClose }) {
       showSuccess("¡Pago procesado con éxito! Tu orden ha sido registrada.");
       setIsSuccess(true);
 
-      // Track Purchase event in Meta Pixel
-      window.fbq = window.fbq || function() {
-        (window.fbq.q = window.fbq.q || []).push(arguments);
-      };
-      if (window.fbq) {
-        const eventData = {
-          value: Number(totalToSave),
-          currency: 'USD'
-        };
-        window.fbq('track', 'Purchase', eventData);
-        console.log('[Meta Pixel] Evento disparado: Purchase', eventData);
-      }
+      // Meta: guardar el contexto del navegador (IP, user agent, fbp, fbc) en cada orden.
+      // El evento Purchase NO se dispara aquí para pagos por verificar (Zelle, Pago Móvil,
+      // Binance): la Edge Function 'meta-capi' lo envía cuando el admin aprueba el pago.
+      // Solo si el pago ya está confirmado al crear la orden (tarjeta directa) se dispara
+      // el Purchase del Pixel, con el mismo event_id que usará el servidor (deduplicación).
+      createdOrders.forEach((order) => {
+        registerOrderContext(order.id);
+        if (isDirectCardPayment) {
+          trackPixelPurchase({
+            orderId: order.id,
+            value: order.total,
+            items: order.items.map((item) => ({
+              id: item.product_id,
+              quantity: item.quantity || 1,
+              price: getEffectivePrice(item)
+            }))
+          });
+        }
+      });
 
       // Limpieza inmediata del carrito para evitar compras duplicadas
       clearCart();

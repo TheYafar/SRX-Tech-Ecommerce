@@ -3,6 +3,7 @@ import { createContext, useState, useEffect, useContext, useRef, useCallback } f
 import { useNotifications } from './NotificationContext';
 import { supabase } from '../utils/supabaseClient';
 import { sendCouponEmail } from '../services/emailService';
+import { trackMetaEvent } from '../services/metaTracking';
 
 const AuthContext = createContext();
 
@@ -203,6 +204,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       const formattedUser = data?.user ? await formatUser(data.user, userRef.current?.role) : null;
+
+      // Track CompleteRegistration: Pixel + API de Conversiones
+      trackMetaEvent(
+        'CompleteRegistration',
+        { status: true, content_name: 'registro_cliente' },
+        { userData: { email, name, external_id: data?.user?.id } }
+      );
 
       if (email) {
         sendCouponEmail(email, 'BIENVENIDA10', 10)
