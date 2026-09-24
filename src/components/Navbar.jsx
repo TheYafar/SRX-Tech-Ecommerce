@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useScroll } from '../hooks/useScroll';
+import { trackMetaEvent } from '../services/metaTracking';
 import { ShoppingCart, User, Menu, X, Search, LogOut, ChevronDown, Grid, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../utils/supabaseClient';
@@ -146,7 +147,10 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      setNavFilter({ type: 'search', value: searchQuery.trim() });
+      const query = searchQuery.trim();
+      // Search: Pixel + API de Conversiones (mismo event_id para deduplicar)
+      trackMetaEvent('Search', { search_string: query, content_type: 'product' });
+      setNavFilter({ type: 'search', value: query });
       navigate('/tienda');
       setSearchQuery('');
       setIsSearchOpen(false);
