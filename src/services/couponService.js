@@ -134,12 +134,10 @@ export async function checkAndValidateCoupon(code, userId) {
     const cleanCode = code.trim().toUpperCase();
 
     // 1. Obtener datos del cupón
+    // Se consulta por una funcion de la base de datos: asi nadie puede listar todos los cupones.
     const { data: coupon, error } = await supabase
-      .from('coupons')
-      .select('*')
-      .eq('code', cleanCode)
-      .eq('is_active', true)
-      .single();
+      .rpc('get_coupon_by_code', { p_code: cleanCode })
+      .maybeSingle();
 
     if (error || !coupon) {
       return { success: false, message: 'Cupón inválido o inactivo' };
@@ -200,49 +198,14 @@ export async function checkAndValidateCoupon(code, userId) {
  * @returns {Promise<{success: boolean}>}
  */
 export async function registerCouponUsage(couponId, userId) {
-  try {
-    // 1. Insertar en coupon_usages si hay un usuario autenticado
-    if (userId) {
-      const { error: usageError } = await supabase
-        .from('coupon_usages')
-        .insert([{
-          user_id: userId,
-          coupon_id: Number(couponId)
-        }]);
-
-      if (usageError) {
-        if (usageError.code === '23505') {
-          throw new Error('Ya has utilizado este cupón anteriormente.');
-        }
-        throw usageError;
-      }
-    }
-
-    // 2. Incrementar used_count en coupons
-    const { data: coupon, error: getError } = await supabase
-      .from('coupons')
-      .select('used_count, max_uses')
-      .eq('id', Number(couponId))
-      .single();
-
-    if (getError) throw getError;
-
-    const maxUses = coupon.max_uses !== null && coupon.max_uses !== undefined ? coupon.max_uses : null;
-    if (maxUses !== null && coupon.used_count >= maxUses) {
-      throw new Error('Este cupón ya alcanzó su límite máximo de canjes.');
-    }
-
-    const newUsedCount = (coupon.used_count || 0) + 1;
-    const { error: updateError } = await supabase
-      .from('coupons')
-      .update({ used_count: newUsedCount })
-      .eq('id', Number(couponId));
-
-    if (updateError) throw updateError;
-
-    return { success: true };
-  } catch (error) {
+  // La base de datos valida y registra el canje en un solo paso (funcion redeem_coupon):
+  // comprueba vigencia y limites, guarda el uso del usuario y suma +1 a used_count.
+  // userId se mantiene en la firma por compatibilidad; el servidor usa la sesion real.
+  void userId;
+  const { error } = await supabase.rpc('redeem_coupon', { p_coupon_id: Number(couponId) });
+  if (error) {
     console.error('Error en registerCouponUsage:', error);
-    throw error;
+    throw new Error(error.message || 'No se pudo registrar el uso del cupon.');
   }
+  return { success: true };
 }

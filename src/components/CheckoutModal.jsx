@@ -322,40 +322,16 @@ export default function CheckoutModal({ isOpen, onClose }) {
           order_type: orderType
         };
 
-        const { data: orderData, error: orderError } = await supabase
+        // El id del pedido se genera aqui: asi un invitado no necesita leer el pedido de vuelta
+        // (la base de datos ya no deja leer pedidos ajenos). El stock de los pedidos "contado"
+        // lo descuenta la base de datos automaticamente al guardar los items.
+        const newOrderId = crypto.randomUUID();
+
+        const { error: orderError } = await supabase
           .from('orders')
-          .insert([orderPayload])
-          .select()
-          .single();
+          .insert([{ id: newOrderId, ...orderPayload }]);
 
         if (orderError) throw new Error(`Fallo al crear la orden (${orderType}): ${orderError.message}`);
-        
-        const newOrderId = orderData.id;
-
-        if (orderType === 'contado') {
-          try {
-            await Promise.all(
-              items.map(async (item) => {
-                const { data: prodData, error: prodError } = await supabase
-                  .from('products')
-                  .select('stock')
-                  .eq('id', item.product_id)
-                  .single();
-
-                if (!prodError && prodData) {
-                  const currentStock = prodData.stock != null ? prodData.stock : 0;
-                  const newStock = Math.max(0, currentStock - (item.quantity || 1));
-                  await supabase
-                    .from('products')
-                    .update({ stock: newStock })
-                    .eq('id', item.product_id);
-                }
-              })
-            );
-          } catch (stockUpdateErr) {
-            console.error('Error al descontar stock de los productos:', stockUpdateErr);
-          }
-        }
 
         const orderItemsToInsert = items.map(item => {
           const effectivePrice = getEffectivePrice(item);
